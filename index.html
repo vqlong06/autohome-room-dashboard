@@ -1,0 +1,1195 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cảm biến phòng AutoHome</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #171a21;
+      --muted: #667085;
+      --line: #d9dee7;
+      --accent: #0f8b8d;
+      --warm: #c26a2d;
+      --cool: #2d7fb8;
+      --shadow: rgba(16, 24, 40, 0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111318;
+        --panel: #181b22;
+        --text: #f1f4f8;
+        --muted: #a6afbd;
+        --line: #303641;
+        --accent: #39b8b5;
+        --warm: #dc8b49;
+        --cool: #62a8dc;
+        --shadow: rgba(0, 0, 0, 0.25);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    body.latest-only .compare-grid {
+      display: none;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .dashboard {
+      width: min(960px, 100%);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      line-height: 1.12;
+      font-weight: 760;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 170px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+      text-align: right;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--warm);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--warm), transparent 82%);
+    }
+
+    .dot.live {
+      background: var(--accent);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent), transparent 82%);
+    }
+
+    .grid,
+    .device-grid,
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric-card,
+    .comfort-card,
+    .device-card,
+    .compare-card,
+    .details {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 18px 40px var(--shadow);
+    }
+
+    .device-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 12px;
+    }
+
+    .device-card {
+      min-height: 86px;
+      padding: 14px 16px;
+    }
+
+    .device-label {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .device-value {
+      display: block;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 780;
+      overflow-wrap: anywhere;
+    }
+
+    .device-value.ok {
+      color: var(--accent);
+    }
+
+    .device-value.warn {
+      color: var(--warm);
+    }
+
+    .device-value.bad {
+      color: #d9534f;
+    }
+
+    .device-copy {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .comfort-card {
+      min-height: 152px;
+      margin-bottom: 12px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: 18px;
+      align-items: center;
+    }
+
+    .comfort-kicker {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 680;
+    }
+
+    .comfort-title {
+      margin: 0;
+      font-size: 42px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .comfort-title.good {
+      color: var(--accent);
+    }
+
+    .comfort-title.warm {
+      color: var(--warm);
+    }
+
+    .comfort-title.cool {
+      color: var(--cool);
+    }
+
+    .comfort-copy {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .comfort-facts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .pill {
+      min-height: 52px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 35%);
+    }
+
+    .pill-label,
+    .stat-label {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 680;
+      text-transform: uppercase;
+    }
+
+    .pill-value,
+    .stat-value {
+      display: block;
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .metric-card {
+      min-height: 300px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .metric-label,
+    .compare-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .value {
+      font-size: 58px;
+      line-height: 1;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .unit {
+      color: var(--muted);
+      font-size: 19px;
+      font-weight: 650;
+    }
+
+    .quick-stats {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .quick-stat {
+      min-height: 58px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 35%);
+    }
+
+    .meter {
+      height: 7px;
+      width: 100%;
+      overflow: hidden;
+      border-radius: 4px;
+      background: color-mix(in srgb, var(--line), transparent 15%);
+    }
+
+    .meter > span {
+      display: block;
+      width: 0;
+      height: 100%;
+      border-radius: 4px;
+      background: var(--accent);
+      transition: width 220ms ease;
+    }
+
+    .meter > span.warm {
+      background: var(--warm);
+    }
+
+    canvas {
+      width: 100%;
+      height: 72px;
+      display: block;
+    }
+
+    .compare-grid {
+      margin-top: 12px;
+    }
+
+    .compare-card {
+      min-height: 138px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .delta {
+      display: inline-flex;
+      align-items: baseline;
+      min-height: 44px;
+      color: var(--muted);
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .delta.up {
+      color: var(--warm);
+    }
+
+    .delta.down {
+      color: var(--cool);
+    }
+
+    .delta.flat {
+      color: var(--accent);
+    }
+
+    .compare-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .details {
+      margin-top: 12px;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .detail-label {
+      margin: 0 0 3px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 680;
+      text-transform: uppercase;
+    }
+
+    .detail-value {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        align-items: flex-start;
+        padding: 16px;
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .status {
+        justify-content: flex-start;
+        min-width: 0;
+        text-align: left;
+      }
+
+      .comfort-card {
+        grid-template-columns: 1fr;
+      }
+
+      .comfort-title {
+        font-size: 34px;
+      }
+
+      .grid,
+      .device-grid,
+      .compare-grid,
+      .details {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-card {
+        min-height: 300px;
+      }
+
+      .value {
+        font-size: 48px;
+      }
+
+      .quick-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .delta {
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="dashboard" aria-label="Bảng điều khiển cảm biến phòng">
+      <div class="topbar">
+        <div>
+          <h1>Phòng AutoHome</h1>
+          <p class="subtitle">Nhiệt độ và độ ẩm theo thời gian thực</p>
+        </div>
+        <div class="status">
+          <span id="statusDot" class="dot" aria-hidden="true"></span>
+          <span id="statusText">Chưa có dữ liệu</span>
+        </div>
+      </div>
+
+      <section class="device-grid" aria-label="Trạng thái thiết bị">
+        <article class="device-card">
+          <p class="device-label">ESP32</p>
+          <span id="deviceStatus" class="device-value">Đang kiểm tra</span>
+          <p id="deviceDetail" class="device-copy">Chưa nhận heartbeat</p>
+        </article>
+        <article class="device-card">
+          <p class="device-label">Cảm biến</p>
+          <span id="sensorStatus" class="device-value">Đang kiểm tra</span>
+          <p id="sensorDetail" class="device-copy">SHT30</p>
+        </article>
+        <article class="device-card">
+          <p class="device-label">Wi-Fi ESP32</p>
+          <span id="wifiStatus" class="device-value">--</span>
+          <p id="wifiDetail" class="device-copy">--</p>
+        </article>
+        <article class="device-card">
+          <p class="device-label">Lần nhận</p>
+          <span id="lastSeen" class="device-value">--</span>
+          <p id="uptime" class="device-copy">--</p>
+        </article>
+      </section>
+
+      <section class="comfort-card" aria-label="Trạng thái phòng">
+        <div>
+          <p class="comfort-kicker">Trạng thái phòng</p>
+          <p id="comfortTitle" class="comfort-title">Đang đo</p>
+          <p id="comfortCopy" class="comfort-copy">Đang lấy dữ liệu từ cảm biến</p>
+        </div>
+        <div class="comfort-facts">
+          <div class="pill">
+            <span class="pill-label">Nhiệt độ</span>
+            <span id="comfortTemp" class="pill-value">--.-°C</span>
+          </div>
+          <div class="pill">
+            <span class="pill-label">Độ ẩm</span>
+            <span id="comfortHumidity" class="pill-value">--%</span>
+          </div>
+          <div class="pill">
+            <span class="pill-label">Nhiệt 1 giờ</span>
+            <span id="comfortTempTrend" class="pill-value">--</span>
+          </div>
+          <div class="pill">
+            <span class="pill-label">Ẩm 1 giờ</span>
+            <span id="comfortHumidityTrend" class="pill-value">--</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid">
+        <article class="metric-card">
+          <div>
+            <p class="metric-label">Nhiệt độ</p>
+            <div class="value-row">
+              <span id="temperature" class="value">--.-</span>
+              <span class="unit">&deg;C</span>
+            </div>
+            <div class="quick-stats">
+              <div class="quick-stat">
+                <span class="stat-label">Thấp nhất</span>
+                <span id="tempMinToday" class="stat-value">--</span>
+              </div>
+              <div class="quick-stat">
+                <span class="stat-label">Cao nhất</span>
+                <span id="tempMaxToday" class="stat-value">--</span>
+              </div>
+              <div class="quick-stat">
+                <span class="stat-label">1 giờ</span>
+                <span id="tempTrend1h" class="stat-value">--</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="meter" aria-hidden="true"><span id="tempMeter" class="warm"></span></div>
+            <canvas id="tempChart" width="400" height="72"></canvas>
+          </div>
+        </article>
+
+        <article class="metric-card">
+          <div>
+            <p class="metric-label">Độ ẩm</p>
+            <div class="value-row">
+              <span id="humidity" class="value">--</span>
+              <span class="unit">%</span>
+            </div>
+            <div class="quick-stats">
+              <div class="quick-stat">
+                <span class="stat-label">Thấp nhất</span>
+                <span id="humidityMinToday" class="stat-value">--</span>
+              </div>
+              <div class="quick-stat">
+                <span class="stat-label">Cao nhất</span>
+                <span id="humidityMaxToday" class="stat-value">--</span>
+              </div>
+              <div class="quick-stat">
+                <span class="stat-label">1 giờ</span>
+                <span id="humidityTrend1h" class="stat-value">--</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="meter" aria-hidden="true"><span id="humidityMeter"></span></div>
+            <canvas id="humidityChart" width="400" height="72"></canvas>
+          </div>
+        </article>
+      </div>
+
+      <section class="compare-grid" aria-label="So sánh nhiệt độ">
+        <article class="compare-card">
+          <p class="compare-label">Hôm nay so với hôm qua</p>
+          <span id="dayDelta" class="delta">--</span>
+          <p id="daySummary" class="compare-copy">Đang tích lũy dữ liệu</p>
+        </article>
+
+        <article class="compare-card">
+          <p class="compare-label">Tuần này so với tuần trước</p>
+          <span id="weekDelta" class="delta">--</span>
+          <p id="weekSummary" class="compare-copy">Đang tích lũy dữ liệu</p>
+        </article>
+      </section>
+
+      <section class="details" aria-label="Chi tiết cảm biến">
+        <div>
+          <p class="detail-label">Cập nhật</p>
+          <p id="updatedAt" class="detail-value">--:--:--</p>
+        </div>
+        <div>
+          <p class="detail-label">Nguồn</p>
+          <p id="source" class="detail-value">Chưa có dữ liệu</p>
+        </div>
+        <div>
+          <p class="detail-label">Lịch sử</p>
+          <p id="history" class="detail-value">--</p>
+        </div>
+        <div>
+          <p class="detail-label">Bản</p>
+          <p id="appVersion" class="detail-value">--</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = 'https://ucgbvsmxljilmgrdfazk.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_HRYudnWYxKH7VKEqJMGVXQ_FjR311MO';
+    const SUPABASE_ROOM_ID = 'main-room';
+    const CLOUD_STALE_MS = 2 * 60 * 1000;
+    const params = new URLSearchParams(location.search);
+
+    function isLocalDashboardHost(hostname) {
+      return hostname === 'localhost'
+        || hostname === '127.0.0.1'
+        || hostname.startsWith('192.168.')
+        || hostname.startsWith('10.')
+        || /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
+    }
+
+    const state = {
+      points: [],
+      demoStart: Date.now(),
+      demoMode: params.get('demo') === '1',
+      cloudMode: params.get('source') === 'cloud'
+        || params.get('cloud') === '1'
+        || (!params.get('source') && !isLocalDashboardHost(location.hostname))
+    };
+
+    document.body.classList.toggle('latest-only', state.cloudMode);
+
+    const els = {
+      statusDot: document.getElementById('statusDot'),
+      statusText: document.getElementById('statusText'),
+      deviceStatus: document.getElementById('deviceStatus'),
+      deviceDetail: document.getElementById('deviceDetail'),
+      sensorStatus: document.getElementById('sensorStatus'),
+      sensorDetail: document.getElementById('sensorDetail'),
+      wifiStatus: document.getElementById('wifiStatus'),
+      wifiDetail: document.getElementById('wifiDetail'),
+      lastSeen: document.getElementById('lastSeen'),
+      uptime: document.getElementById('uptime'),
+      comfortTitle: document.getElementById('comfortTitle'),
+      comfortCopy: document.getElementById('comfortCopy'),
+      comfortTemp: document.getElementById('comfortTemp'),
+      comfortHumidity: document.getElementById('comfortHumidity'),
+      comfortTempTrend: document.getElementById('comfortTempTrend'),
+      comfortHumidityTrend: document.getElementById('comfortHumidityTrend'),
+      temperature: document.getElementById('temperature'),
+      humidity: document.getElementById('humidity'),
+      tempMinToday: document.getElementById('tempMinToday'),
+      tempMaxToday: document.getElementById('tempMaxToday'),
+      tempTrend1h: document.getElementById('tempTrend1h'),
+      humidityMinToday: document.getElementById('humidityMinToday'),
+      humidityMaxToday: document.getElementById('humidityMaxToday'),
+      humidityTrend1h: document.getElementById('humidityTrend1h'),
+      tempMeter: document.getElementById('tempMeter'),
+      humidityMeter: document.getElementById('humidityMeter'),
+      tempChart: document.getElementById('tempChart'),
+      humidityChart: document.getElementById('humidityChart'),
+      dayDelta: document.getElementById('dayDelta'),
+      daySummary: document.getElementById('daySummary'),
+      weekDelta: document.getElementById('weekDelta'),
+      weekSummary: document.getElementById('weekSummary'),
+      updatedAt: document.getElementById('updatedAt'),
+      source: document.getElementById('source'),
+      history: document.getElementById('history'),
+      appVersion: document.getElementById('appVersion')
+    };
+
+    function makeDemoStats(temperatureC, humidity) {
+      const seconds = (Date.now() - state.demoStart) / 1000;
+      const todayAvgC = temperatureC - 0.18 + Math.sin(seconds / 41) * 0.08;
+      const yesterdayAvgC = todayAvgC - 0.55 + Math.sin(seconds / 63) * 0.05;
+      const currentWeekAvgC = temperatureC - 0.32 + Math.sin(seconds / 77) * 0.06;
+      const previousWeekAvgC = currentWeekAvgC + 0.42 + Math.cos(seconds / 81) * 0.05;
+      const temperatureTrend1hC = 0.35 + Math.sin(seconds / 31) * 0.12;
+      const humidityTrend1h = -2 + Math.cos(seconds / 27) * 1.2;
+
+      return {
+        timeSynced: true,
+        daysStored: 14,
+        todayAvgC,
+        yesterdayAvgC,
+        currentWeekAvgC,
+        previousWeekAvgC,
+        todayMinC: Math.min(temperatureC - 1.1, todayAvgC - 0.6),
+        todayMaxC: Math.max(temperatureC + 0.8, todayAvgC + 0.9),
+        todayMinHumidity: Math.min(humidity - 7, 54),
+        todayMaxHumidity: Math.max(humidity + 8, 68),
+        temperatureTrend1hC,
+        humidityTrend1h,
+        todaySamples: 620,
+        yesterdaySamples: 864,
+        currentWeekSamples: 2480,
+        previousWeekSamples: 2480
+      };
+    }
+
+    function makeDemoReading() {
+      const seconds = (Date.now() - state.demoStart) / 1000;
+      const temperatureC = 27 + Math.sin(seconds / 34) * 0.7 + Math.sin(seconds / 9) * 0.16;
+      const humidity = 61 + Math.sin(seconds / 43) * 4 + Math.cos(seconds / 17) * 0.9;
+
+      return {
+        appVersion: 'web-demo',
+        deviceOnline: true,
+        wifiConnected: true,
+        wifiMode: 'STA',
+        wifiRssi: -54,
+        freeHeap: 210000,
+        lastSensorOkMs: seconds * 1000,
+        temperatureC,
+        humidity,
+        sensorOnline: true,
+        source: 'Demo',
+        uptimeMs: seconds * 1000,
+        stats: makeDemoStats(temperatureC, humidity)
+      };
+    }
+
+    function makeNoDataReading(source = 'No data', deviceOnline = false) {
+      return {
+        appVersion: 'web-local',
+        cloudMode: state.cloudMode,
+        deviceOnline,
+        wifiConnected: false,
+        wifiMode: '--',
+        wifiRssi: null,
+        freeHeap: null,
+        lastSensorOkMs: null,
+        temperatureC: null,
+        humidity: null,
+        sensorOnline: false,
+        source,
+        uptimeMs: 0,
+        stats: null
+      };
+    }
+
+    function cloudReadingFromRow(row) {
+      const updatedAtMs = Date.parse(row.updated_at);
+      const cloudAgeMs = Number.isFinite(updatedAtMs) ? Date.now() - updatedAtMs : null;
+      const fresh = Number.isFinite(cloudAgeMs) && cloudAgeMs <= CLOUD_STALE_MS;
+      const deviceOnline = Boolean(row.device_online) && fresh;
+
+      return {
+        appVersion: row.app_version || 'cloud',
+        cloudMode: true,
+        updatedAtIso: row.updated_at,
+        cloudAgeMs,
+        deviceOnline,
+        wifiConnected: deviceOnline && Boolean(row.wifi_connected),
+        wifiMode: row.wifi_mode || '--',
+        wifiRssi: row.wifi_rssi,
+        freeHeap: row.free_heap,
+        lastSensorOkMs: row.last_sensor_ok_ms,
+        temperatureC: deviceOnline ? row.temperature_c : null,
+        humidity: deviceOnline ? row.humidity : null,
+        sensorOnline: deviceOnline && Boolean(row.sensor_online),
+        source: deviceOnline ? (row.source || 'Supabase') : 'Cloud stale',
+        uptimeMs: deviceOnline ? row.uptime_ms : 0,
+        ip: row.local_ip,
+        stats: null
+      };
+    }
+
+    async function fetchCloudReading() {
+      const columns = [
+        'room_id',
+        'updated_at',
+        'app_version',
+        'device_online',
+        'wifi_connected',
+        'wifi_mode',
+        'wifi_rssi',
+        'free_heap',
+        'last_sensor_ok_ms',
+        'temperature_c',
+        'humidity',
+        'sensor_online',
+        'source',
+        'uptime_ms',
+        'local_ip'
+      ].join(',');
+      const endpoint = `${SUPABASE_URL}/rest/v1/room_latest?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&select=${columns}&limit=1`;
+
+      try {
+        const response = await fetch(endpoint, {
+          cache: 'no-store',
+          headers: {
+            apikey: SUPABASE_PUBLISHABLE_KEY
+          }
+        });
+        if (!response.ok) throw new Error('Cloud endpoint unavailable');
+        const rows = await response.json();
+        if (!Array.isArray(rows) || rows.length === 0) {
+          return makeNoDataReading('Chưa có dữ liệu cloud');
+        }
+        return cloudReadingFromRow(rows[0]);
+      } catch (error) {
+        return makeNoDataReading('Mất kết nối Supabase');
+      }
+    }
+
+    async function fetchReading() {
+      if (state.demoMode) {
+        return makeDemoReading();
+      }
+
+      if (state.cloudMode) {
+        return fetchCloudReading();
+      }
+
+      try {
+        const response = await fetch('/api/readings?ts=' + Date.now(), { cache: 'no-store' });
+        if (!response.ok) throw new Error('No reading endpoint');
+        const reading = await response.json();
+        reading.deviceOnline = true;
+        return reading;
+      } catch (error) {
+        return makeNoDataReading('Mất kết nối ESP32');
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function finiteNumber(value) {
+      if (value === null || value === undefined || value === '') return null;
+      const number = Number(value);
+      return Number.isFinite(number) ? number : null;
+    }
+
+    function formatTemperature(value) {
+      return finiteNumber(value) === null ? '--.-°C' : `${Number(value).toFixed(1)}°C`;
+    }
+
+    function formatHumidity(value) {
+      return finiteNumber(value) === null ? '--%' : `${Math.round(Number(value))}%`;
+    }
+
+    function formatDelta(value) {
+      const number = finiteNumber(value);
+      if (number === null) return '--';
+      const sign = number > 0 ? '+' : '';
+      return `${sign}${number.toFixed(1)}°C`;
+    }
+
+    function formatHumidityDelta(value) {
+      const number = finiteNumber(value);
+      if (number === null) return '--';
+      const rounded = Math.round(number);
+      const sign = rounded > 0 ? '+' : '';
+      return `${sign}${rounded}%`;
+    }
+
+    function formatUptime(ms) {
+      const value = Number(ms);
+      if (!Number.isFinite(value) || value <= 0) return '--';
+      const totalSeconds = Math.floor(value / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      if (hours > 0) return `${hours} giờ ${minutes} phút`;
+      if (minutes > 0) return `${minutes} phút ${seconds} giây`;
+      return `${seconds} giây`;
+    }
+
+    function formatSensorAge(reading) {
+      const uptimeMs = Number(reading.uptimeMs);
+      const lastSensorOkMs = Number(reading.lastSensorOkMs);
+      if (!Number.isFinite(uptimeMs) || !Number.isFinite(lastSensorOkMs) || lastSensorOkMs <= 0) {
+        return 'Chưa từng đọc được';
+      }
+
+      const ageMs = Math.max(0, uptimeMs - lastSensorOkMs);
+      if (ageMs < 5000) return 'Vừa đọc được';
+      return `Lần cuối ${formatUptime(ageMs)} trước`;
+    }
+
+    function formatCloudAge(reading) {
+      const ageMs = Number(reading.cloudAgeMs);
+      if (!Number.isFinite(ageMs) || ageMs < 0) return 'Chưa có heartbeat cloud';
+      if (ageMs < 5000) return 'Cloud vừa cập nhật';
+      return `Cloud ${formatUptime(ageMs)} trước`;
+    }
+
+    function formatRssi(rssi) {
+      const value = Number(rssi);
+      if (!Number.isFinite(value)) return '--';
+      if (value >= -60) return `${value} dBm · mạnh`;
+      if (value >= -72) return `${value} dBm · ổn`;
+      return `${value} dBm · yếu`;
+    }
+
+    function comparisonClass(delta) {
+      if (delta > 0.15) return 'up';
+      if (delta < -0.15) return 'down';
+      return 'flat';
+    }
+
+    function comfortState(temperature, humidity) {
+      if (temperature >= 30) {
+        return {
+          title: 'Nóng',
+          tone: 'warm',
+          copy: 'Phòng đang nóng, nên bật điều hòa hoặc tăng quạt.'
+        };
+      }
+
+      if (humidity >= 75) {
+        return {
+          title: 'Ẩm cao',
+          tone: 'warm',
+          copy: 'Độ ẩm cao, phòng có thể bí và dễ khó chịu.'
+        };
+      }
+
+      if (temperature >= 28) {
+        return {
+          title: 'Hơi nóng',
+          tone: 'warm',
+          copy: 'Nhiệt độ hơi cao, theo dõi thêm nếu phòng có người.'
+        };
+      }
+
+      if (humidity <= 40) {
+        return {
+          title: 'Hơi khô',
+          tone: 'cool',
+          copy: 'Độ ẩm thấp, có thể cần tạo ẩm nhẹ nếu thấy khô.'
+        };
+      }
+
+      if (temperature >= 24 && temperature <= 28 && humidity >= 45 && humidity <= 70) {
+        return {
+          title: 'Dễ chịu',
+          tone: 'good',
+          copy: 'Nhiệt độ và độ ẩm đang ở vùng thoải mái.'
+        };
+      }
+
+      return {
+        title: 'Ổn định',
+        tone: 'good',
+        copy: 'Thông số phòng đang trong vùng ổn.'
+      };
+    }
+
+    function updateMeters(reading) {
+      const temperature = finiteNumber(reading.temperatureC);
+      const humidity = finiteNumber(reading.humidity);
+      const tempPercent = temperature === null ? 0 : clamp(((temperature - 16) / 20) * 100, 0, 100);
+      els.tempMeter.style.width = tempPercent + '%';
+      els.humidityMeter.style.width = humidity === null ? '0%' : clamp(humidity, 0, 100) + '%';
+    }
+
+    function resizeCanvas(canvas) {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(1, Math.floor(rect.width * ratio));
+      const height = Math.max(1, Math.floor(rect.height * ratio));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      return { width, height };
+    }
+
+    function drawChart(canvas, key, color) {
+      const ctx = canvas.getContext('2d');
+      const { width, height } = resizeCanvas(canvas);
+      const points = state.points.slice(-60).map(point => point[key]);
+      ctx.clearRect(0, 0, width, height);
+      if (points.length < 2) return;
+
+      const min = Math.min(...points);
+      const max = Math.max(...points);
+      const span = Math.max(0.8, max - min);
+      const pad = 8 * (window.devicePixelRatio || 1);
+
+      ctx.lineWidth = 2.5 * (window.devicePixelRatio || 1);
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+
+      points.forEach((value, index) => {
+        const x = (index / (points.length - 1)) * (width - pad * 2) + pad;
+        const y = height - pad - ((value - min) / span) * (height - pad * 2);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+
+      ctx.stroke();
+    }
+
+    function updateDeviceStatus(reading) {
+      const deviceOnline = Boolean(reading.deviceOnline);
+      const sensorOnline = Boolean(reading.sensorOnline);
+      const wifiConnected = Boolean(reading.wifiConnected);
+
+      els.deviceStatus.textContent = deviceOnline ? 'Online' : 'Offline';
+      els.deviceStatus.className = `device-value ${deviceOnline ? 'ok' : 'bad'}`;
+      els.deviceDetail.textContent = deviceOnline ? `Uptime ${formatUptime(reading.uptimeMs)}` : (reading.cloudMode ? formatCloudAge(reading) : 'Không nhận heartbeat');
+
+      els.sensorStatus.textContent = sensorOnline ? 'Online' : 'Offline';
+      els.sensorStatus.className = `device-value ${sensorOnline ? 'ok' : 'warn'}`;
+      els.sensorDetail.textContent = sensorOnline ? 'SHT30 đang gửi dữ liệu' : formatSensorAge(reading);
+
+      if (!deviceOnline) {
+        els.wifiStatus.textContent = '--';
+        els.wifiStatus.className = 'device-value bad';
+        els.wifiDetail.textContent = 'Không kết nối được ESP32';
+        els.lastSeen.textContent = reading.cloudMode ? formatCloudAge(reading) : 'Mất kết nối';
+        els.lastSeen.className = 'device-value bad';
+        els.uptime.textContent = reading.cloudMode ? 'Dữ liệu cloud đã cũ' : 'Không có phản hồi';
+        return;
+      }
+
+      els.wifiStatus.textContent = wifiConnected ? 'Đã kết nối' : (reading.wifiMode === 'AP' ? 'AP fallback' : 'Chưa rõ');
+      els.wifiStatus.className = `device-value ${wifiConnected ? 'ok' : 'warn'}`;
+      els.wifiDetail.textContent = wifiConnected ? formatRssi(reading.wifiRssi) : `Mode ${reading.wifiMode || '--'}`;
+      els.lastSeen.textContent = reading.cloudMode ? formatCloudAge(reading) : 'Vừa xong';
+      els.lastSeen.className = 'device-value ok';
+      els.uptime.textContent = `ESP32 chạy ${formatUptime(reading.uptimeMs)}`;
+    }
+
+    function updateStatus(reading) {
+      const deviceOnline = Boolean(reading.deviceOnline);
+      const isLive = Boolean(reading.sensorOnline);
+      const isDemo = reading.source === 'Demo';
+      els.statusDot.classList.toggle('live', deviceOnline);
+      els.statusText.textContent = !deviceOnline
+        ? (reading.cloudMode ? 'ESP32 offline · cloud đã cũ' : 'ESP32 offline')
+        : (isLive ? 'ESP32 online · SHT30 online' : (isDemo ? 'Dữ liệu demo' : 'ESP32 online · cảm biến offline'));
+      els.source.textContent = !deviceOnline
+        ? (reading.cloudMode ? 'Supabase' : 'Mất kết nối ESP32')
+        : (reading.cloudMode ? (isLive ? 'Supabase · SHT30' : 'Supabase') : (isLive ? 'SHT30' : (isDemo ? 'Demo' : 'Chưa có cảm biến')));
+    }
+
+    function updateComfort(temperature, humidity, stats, reading = {}) {
+      if (finiteNumber(temperature) === null || finiteNumber(humidity) === null) {
+        const deviceOnline = Boolean(reading.deviceOnline);
+        els.comfortTitle.textContent = deviceOnline ? 'Chưa có dữ liệu' : 'ESP32 offline';
+        els.comfortTitle.className = 'comfort-title';
+        els.comfortCopy.textContent = deviceOnline
+          ? 'ESP32 chưa đọc được cảm biến SHT30. Kiểm tra dây VCC, GND, SDA, SCL.'
+          : 'Không nhận được heartbeat từ ESP32. Kiểm tra nguồn 5V hoặc Wi-Fi.';
+        els.comfortTemp.textContent = '--.-°C';
+        els.comfortHumidity.textContent = '--%';
+        els.comfortTempTrend.textContent = '--';
+        els.comfortHumidityTrend.textContent = '--';
+        return;
+      }
+
+      const state = comfortState(temperature, humidity);
+      els.comfortTitle.textContent = state.title;
+      els.comfortTitle.className = `comfort-title ${state.tone}`;
+      els.comfortCopy.textContent = state.copy;
+      els.comfortTemp.textContent = formatTemperature(temperature);
+      els.comfortHumidity.textContent = formatHumidity(humidity);
+      els.comfortTempTrend.textContent = formatDelta(stats?.temperatureTrend1hC);
+      els.comfortHumidityTrend.textContent = formatHumidityDelta(stats?.humidityTrend1h);
+    }
+
+    function updateMetricStats(stats) {
+      els.tempMinToday.textContent = formatTemperature(stats?.todayMinC);
+      els.tempMaxToday.textContent = formatTemperature(stats?.todayMaxC);
+      els.tempTrend1h.textContent = formatDelta(stats?.temperatureTrend1hC);
+      els.humidityMinToday.textContent = formatHumidity(stats?.todayMinHumidity);
+      els.humidityMaxToday.textContent = formatHumidity(stats?.todayMaxHumidity);
+      els.humidityTrend1h.textContent = formatHumidityDelta(stats?.humidityTrend1h);
+    }
+
+    function updateComparison(deltaEl, summaryEl, current, previous, currentLabel, previousLabel) {
+      if (current === null || previous === null) {
+        deltaEl.textContent = '--';
+        deltaEl.className = 'delta';
+        summaryEl.textContent = 'Cần thêm dữ liệu lịch sử';
+        return;
+      }
+
+      const delta = current - previous;
+      deltaEl.textContent = formatDelta(delta);
+      deltaEl.className = `delta ${comparisonClass(delta)}`;
+      summaryEl.textContent = `${currentLabel} ${formatTemperature(current)} · ${previousLabel} ${formatTemperature(previous)}`;
+    }
+
+    function updateStats(stats, reading = {}) {
+      if (reading.cloudMode) {
+        els.dayDelta.textContent = '--';
+        els.weekDelta.textContent = '--';
+        els.dayDelta.className = 'delta';
+        els.weekDelta.className = 'delta';
+        els.daySummary.textContent = 'Cloud chỉ xem dữ liệu hiện tại';
+        els.weekSummary.textContent = 'Cloud chỉ xem dữ liệu hiện tại';
+        els.history.textContent = 'Latest-only';
+        updateMetricStats(null);
+        return;
+      }
+
+      if (!stats) {
+        els.dayDelta.textContent = '--';
+        els.weekDelta.textContent = '--';
+        els.dayDelta.className = 'delta';
+        els.weekDelta.className = 'delta';
+        els.daySummary.textContent = 'Chưa có dữ liệu cảm biến';
+        els.weekSummary.textContent = 'Chưa có dữ liệu cảm biến';
+        els.history.textContent = 'Chưa sẵn sàng';
+        updateMetricStats(null);
+        return;
+      }
+
+      updateMetricStats(stats);
+
+      if (stats.timeSynced === false) {
+        els.dayDelta.textContent = '--';
+        els.weekDelta.textContent = '--';
+        els.dayDelta.className = 'delta';
+        els.weekDelta.className = 'delta';
+        els.daySummary.textContent = 'Đang chờ đồng bộ thời gian';
+        els.weekSummary.textContent = 'Đang chờ đồng bộ thời gian';
+        els.history.textContent = 'Chưa sẵn sàng';
+        return;
+      }
+
+      const todayAvgC = finiteNumber(stats.todayAvgC);
+      const yesterdayAvgC = finiteNumber(stats.yesterdayAvgC);
+      const currentWeekAvgC = finiteNumber(stats.currentWeekAvgC);
+      const previousWeekAvgC = finiteNumber(stats.previousWeekAvgC);
+
+      updateComparison(els.dayDelta, els.daySummary, todayAvgC, yesterdayAvgC, 'Hôm nay', 'hôm qua');
+      updateComparison(els.weekDelta, els.weekSummary, currentWeekAvgC, previousWeekAvgC, 'Tuần này', 'tuần trước');
+
+      const daysStored = Number(stats.daysStored || 0);
+      els.history.textContent = daysStored > 0 ? `${daysStored} ngày` : 'Đang tích lũy';
+    }
+
+    function render(reading) {
+      const temperature = finiteNumber(reading.temperatureC);
+      const humidity = finiteNumber(reading.humidity);
+
+      const displayDate = reading.updatedAtIso ? new Date(reading.updatedAtIso) : new Date();
+      els.updatedAt.textContent = new Intl.DateTimeFormat('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }).format(displayDate);
+
+      updateDeviceStatus(reading);
+      updateStatus(reading);
+      updateStats(reading.stats, reading);
+      els.appVersion.textContent = reading.appVersion || '--';
+
+      if (temperature === null || humidity === null) {
+        els.temperature.textContent = '--.-';
+        els.humidity.textContent = '--';
+        updateComfort(null, null, reading.stats, reading);
+        updateMeters({ temperatureC: null, humidity: null });
+        drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
+        drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+        return;
+      }
+
+      state.points.push({ temperatureC: temperature, humidity });
+      state.points = state.points.slice(-90);
+
+      els.temperature.textContent = temperature.toFixed(1);
+      els.humidity.textContent = humidity.toFixed(0);
+
+      updateComfort(temperature, humidity, reading.stats, reading);
+      updateMeters({ temperatureC: temperature, humidity });
+      drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
+      drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+    }
+
+    async function tick() {
+      render(await fetchReading());
+    }
+
+    window.addEventListener('resize', () => {
+      drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
+      drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+    });
+
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
