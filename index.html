@@ -45,10 +45,6 @@
       letter-spacing: 0;
     }
 
-    body.latest-only .compare-grid {
-      display: none;
-    }
-
     .app {
       min-height: 100vh;
       display: flex;
@@ -120,6 +116,7 @@
     .comfort-card,
     .device-card,
     .compare-card,
+    .history-card,
     .details {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -331,6 +328,7 @@
 
     .compare-grid {
       margin-top: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .compare-card {
@@ -371,6 +369,79 @@
       font-size: 14px;
       line-height: 1.45;
       overflow-wrap: anywhere;
+    }
+
+    .history-card {
+      margin-top: 12px;
+      padding: 18px 20px;
+    }
+
+    .history-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .range-tabs {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 35%);
+    }
+
+    .range-tab {
+      appearance: none;
+      min-width: 58px;
+      height: 30px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .range-tab.active {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .history-legend {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-line {
+      width: 18px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .legend-line.warm {
+      background: var(--warm);
+    }
+
+    #historyChart {
+      height: 130px;
     }
 
     .details {
@@ -441,6 +512,18 @@
 
       .quick-stats {
         grid-template-columns: 1fr;
+      }
+
+      .history-head {
+        flex-direction: column;
+      }
+
+      .range-tabs {
+        width: 100%;
+      }
+
+      .range-tab {
+        flex: 1;
       }
 
       .delta {
@@ -587,6 +670,31 @@
           <span id="weekDelta" class="delta">--</span>
           <p id="weekSummary" class="compare-copy">Đang tích lũy dữ liệu</p>
         </article>
+
+        <article class="compare-card">
+          <p class="compare-label">Tháng này so với tháng trước</p>
+          <span id="monthDelta" class="delta">--</span>
+          <p id="monthSummary" class="compare-copy">Đang tích lũy dữ liệu</p>
+        </article>
+      </section>
+
+      <section class="history-card" aria-label="Lịch sử nhiệt độ và độ ẩm">
+        <div class="history-head">
+          <div>
+            <p class="compare-label">Lịch sử</p>
+            <p id="historySummary" class="compare-copy">Đang tải dữ liệu</p>
+          </div>
+          <div class="range-tabs" aria-label="Chọn khoảng lịch sử">
+            <button class="range-tab active" type="button" data-range="day">24h</button>
+            <button class="range-tab" type="button" data-range="week">7 ngày</button>
+            <button class="range-tab" type="button" data-range="month">30 ngày</button>
+          </div>
+        </div>
+        <canvas id="historyChart" width="860" height="130"></canvas>
+        <div class="history-legend" aria-hidden="true">
+          <span class="legend-item"><span class="legend-line warm"></span>Nhiệt độ</span>
+          <span class="legend-item"><span class="legend-line"></span>Độ ẩm</span>
+        </div>
       </section>
 
       <section class="details" aria-label="Chi tiết cảm biến">
@@ -615,6 +723,9 @@
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_HRYudnWYxKH7VKEqJMGVXQ_FjR311MO';
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
+    const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
+    const MS_HOUR = 60 * 60 * 1000;
+    const MS_DAY = 24 * MS_HOUR;
     const params = new URLSearchParams(location.search);
 
     function isLocalDashboardHost(hostname) {
@@ -627,14 +738,17 @@
 
     const state = {
       points: [],
+      historyPoints: [],
+      historyRange: 'day',
+      historyAttemptedAt: 0,
+      historyLoadedAt: 0,
+      historyError: false,
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
         || params.get('cloud') === '1'
         || (!params.get('source') && !isLocalDashboardHost(location.hostname))
     };
-
-    document.body.classList.toggle('latest-only', state.cloudMode);
 
     const els = {
       statusDot: document.getElementById('statusDot'),
@@ -671,11 +785,44 @@
       daySummary: document.getElementById('daySummary'),
       weekDelta: document.getElementById('weekDelta'),
       weekSummary: document.getElementById('weekSummary'),
+      monthDelta: document.getElementById('monthDelta'),
+      monthSummary: document.getElementById('monthSummary'),
+      historySummary: document.getElementById('historySummary'),
+      historyChart: document.getElementById('historyChart'),
+      rangeTabs: Array.from(document.querySelectorAll('[data-range]')),
       updatedAt: document.getElementById('updatedAt'),
       source: document.getElementById('source'),
       history: document.getElementById('history'),
       appVersion: document.getElementById('appVersion')
     };
+
+    function ensureDemoHistory() {
+      if (state.historyPoints.length > 0) return;
+
+      const now = Date.now();
+      const start = now - 35 * MS_DAY;
+      const step = 2 * MS_HOUR;
+      const points = [];
+
+      for (let timestamp = start; timestamp <= now; timestamp += step) {
+        const hours = (timestamp - start) / MS_HOUR;
+        const dailyWave = Math.sin((hours / 24) * Math.PI * 2 - 0.9);
+        const slowWave = Math.sin(hours / 73);
+        const temperatureC = 26.4 + dailyWave * 1.1 + slowWave * 0.7;
+        const humidity = 60 - dailyWave * 5 + Math.cos(hours / 57) * 4;
+        points.push({
+          recordedAtMs: timestamp,
+          temperatureC,
+          humidity,
+          chipTemperatureC: 49 + Math.sin(hours / 37) * 2,
+          sensorOnline: true
+        });
+      }
+
+      state.historyPoints = points;
+      state.historyLoadedAt = now;
+      state.historyError = false;
+    }
 
     function makeDemoStats(temperatureC, humidity) {
       const seconds = (Date.now() - state.demoStart) / 1000;
@@ -683,6 +830,8 @@
       const yesterdayAvgC = todayAvgC - 0.55 + Math.sin(seconds / 63) * 0.05;
       const currentWeekAvgC = temperatureC - 0.32 + Math.sin(seconds / 77) * 0.06;
       const previousWeekAvgC = currentWeekAvgC + 0.42 + Math.cos(seconds / 81) * 0.05;
+      const currentMonthAvgC = temperatureC - 0.22 + Math.sin(seconds / 91) * 0.05;
+      const previousMonthAvgC = currentMonthAvgC - 0.36 + Math.cos(seconds / 103) * 0.05;
       const temperatureTrend1hC = 0.35 + Math.sin(seconds / 31) * 0.12;
       const humidityTrend1h = -2 + Math.cos(seconds / 27) * 1.2;
 
@@ -693,6 +842,8 @@
         yesterdayAvgC,
         currentWeekAvgC,
         previousWeekAvgC,
+        currentMonthAvgC,
+        previousMonthAvgC,
         todayMinC: Math.min(temperatureC - 1.1, todayAvgC - 0.6),
         todayMaxC: Math.max(temperatureC + 0.8, todayAvgC + 0.9),
         todayMinHumidity: Math.min(humidity - 7, 54),
@@ -702,11 +853,15 @@
         todaySamples: 620,
         yesterdaySamples: 864,
         currentWeekSamples: 2480,
-        previousWeekSamples: 2480
+        previousWeekSamples: 2480,
+        currentMonthSamples: 6200,
+        previousMonthSamples: 6200
       };
     }
 
     function makeDemoReading() {
+      ensureDemoHistory();
+
       const seconds = (Date.now() - state.demoStart) / 1000;
       const temperatureC = 27 + Math.sin(seconds / 34) * 0.7 + Math.sin(seconds / 9) * 0.16;
       const humidity = 61 + Math.sin(seconds / 43) * 4 + Math.cos(seconds / 17) * 0.9;
@@ -798,6 +953,44 @@
       }
     }
 
+    async function fetchCloudHistory() {
+      const startIso = startOfPreviousMonth(new Date()).toISOString();
+      const endpoint = `${SUPABASE_URL}/rest/v1/room_readings?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&recorded_at=gte.${encodeURIComponent(startIso)}&select=recorded_at,temperature_c,humidity,chip_temperature_c,sensor_online&order=recorded_at.asc&limit=10000`;
+
+      state.historyAttemptedAt = Date.now();
+
+      try {
+        const response = await fetch(endpoint, {
+          cache: 'no-store',
+          headers: {
+            apikey: SUPABASE_PUBLISHABLE_KEY
+          }
+        });
+        if (!response.ok) throw new Error('History endpoint unavailable');
+        const rows = await response.json();
+        state.historyPoints = Array.isArray(rows)
+          ? rows.map(row => ({
+            recordedAtMs: Date.parse(row.recorded_at),
+            temperatureC: finiteNumber(row.temperature_c),
+            humidity: finiteNumber(row.humidity),
+            chipTemperatureC: finiteNumber(row.chip_temperature_c),
+            sensorOnline: Boolean(row.sensor_online)
+          })).filter(point => Number.isFinite(point.recordedAtMs))
+          : [];
+        state.historyLoadedAt = Date.now();
+        state.historyError = false;
+      } catch (error) {
+        state.historyError = true;
+      }
+    }
+
+    async function maybeFetchCloudHistory(force = false) {
+      if (state.demoMode) return;
+      const ageMs = Date.now() - state.historyAttemptedAt;
+      if (!force && ageMs < CLOUD_HISTORY_REFRESH_MS) return;
+      await fetchCloudHistory();
+    }
+
     async function fetchReading() {
       if (state.demoMode) {
         return makeDemoReading();
@@ -826,6 +1019,151 @@
       if (value === null || value === undefined || value === '') return null;
       const number = Number(value);
       return Number.isFinite(number) ? number : null;
+    }
+
+    function startOfDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    function startOfWeek(date) {
+      const start = startOfDay(date);
+      const daysSinceMonday = (start.getDay() + 6) % 7;
+      start.setDate(start.getDate() - daysSinceMonday);
+      return start;
+    }
+
+    function startOfMonth(date) {
+      return new Date(date.getFullYear(), date.getMonth(), 1);
+    }
+
+    function startOfPreviousMonth(date) {
+      return new Date(date.getFullYear(), date.getMonth() - 1, 1);
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return next;
+    }
+
+    function validHistoryPoints() {
+      return state.historyPoints
+        .filter(point => Number.isFinite(point.recordedAtMs)
+          && point.sensorOnline
+          && finiteNumber(point.temperatureC) !== null
+          && finiteNumber(point.humidity) !== null)
+        .sort((a, b) => a.recordedAtMs - b.recordedAtMs);
+    }
+
+    function averageFromHistory(points, startMs, endMs, key) {
+      let sum = 0;
+      let samples = 0;
+
+      points.forEach(point => {
+        const value = finiteNumber(point[key]);
+        if (value === null || point.recordedAtMs < startMs || point.recordedAtMs >= endMs) return;
+        sum += value;
+        samples += 1;
+      });
+
+      return {
+        value: samples > 0 ? sum / samples : null,
+        samples
+      };
+    }
+
+    function minMaxFromHistory(points, startMs, endMs, key) {
+      let min = null;
+      let max = null;
+
+      points.forEach(point => {
+        const value = finiteNumber(point[key]);
+        if (value === null || point.recordedAtMs < startMs || point.recordedAtMs >= endMs) return;
+        min = min === null ? value : Math.min(min, value);
+        max = max === null ? value : Math.max(max, value);
+      });
+
+      return { min, max };
+    }
+
+    function trendFromHistory(points, key, horizonMs) {
+      const values = points.filter(point => finiteNumber(point[key]) !== null);
+      if (values.length < 2) return null;
+
+      const latest = values[values.length - 1];
+      const targetMs = latest.recordedAtMs - horizonMs;
+      let reference = null;
+
+      values.forEach(point => {
+        if (point.recordedAtMs <= targetMs) reference = point;
+      });
+
+      if (!reference || latest.recordedAtMs - reference.recordedAtMs < horizonMs * 0.65) {
+        return null;
+      }
+
+      return finiteNumber(latest[key]) - finiteNumber(reference[key]);
+    }
+
+    function countHistoryDays(points) {
+      const days = new Set();
+      points.forEach(point => days.add(startOfDay(new Date(point.recordedAtMs)).toISOString()));
+      return days.size;
+    }
+
+    function buildHistoryStats() {
+      const points = validHistoryPoints();
+      if (points.length === 0) return null;
+
+      const now = new Date();
+      const nowMs = now.getTime();
+      const todayStart = startOfDay(now);
+      const yesterdayStart = addDays(todayStart, -1);
+      const weekStart = startOfWeek(now);
+      const previousWeekStart = addDays(weekStart, -7);
+      const monthStart = startOfMonth(now);
+      const previousMonthStart = startOfPreviousMonth(now);
+
+      const todayElapsedMs = nowMs - todayStart.getTime();
+      const weekElapsedMs = nowMs - weekStart.getTime();
+      const monthElapsedMs = nowMs - monthStart.getTime();
+      const yesterdayEndMs = Math.min(yesterdayStart.getTime() + todayElapsedMs, todayStart.getTime());
+      const previousWeekEndMs = Math.min(previousWeekStart.getTime() + weekElapsedMs, weekStart.getTime());
+      const previousMonthEndMs = Math.min(previousMonthStart.getTime() + monthElapsedMs, monthStart.getTime());
+
+      const todayAverage = averageFromHistory(points, todayStart.getTime(), nowMs, 'temperatureC');
+      const yesterdayAverage = averageFromHistory(points, yesterdayStart.getTime(), yesterdayEndMs, 'temperatureC');
+      const currentWeekAverage = averageFromHistory(points, weekStart.getTime(), nowMs, 'temperatureC');
+      const previousWeekAverage = averageFromHistory(points, previousWeekStart.getTime(), previousWeekEndMs, 'temperatureC');
+      const currentMonthAverage = averageFromHistory(points, monthStart.getTime(), nowMs, 'temperatureC');
+      const previousMonthAverage = averageFromHistory(points, previousMonthStart.getTime(), previousMonthEndMs, 'temperatureC');
+      const todayTemperature = minMaxFromHistory(points, todayStart.getTime(), nowMs, 'temperatureC');
+      const todayHumidity = minMaxFromHistory(points, todayStart.getTime(), nowMs, 'humidity');
+
+      return {
+        timeSynced: true,
+        daysStored: countHistoryDays(points),
+        pointCount: points.length,
+        latestHistoryAtMs: points[points.length - 1].recordedAtMs,
+        todayAvgC: todayAverage.value,
+        yesterdayAvgC: yesterdayAverage.value,
+        currentWeekAvgC: currentWeekAverage.value,
+        previousWeekAvgC: previousWeekAverage.value,
+        currentMonthAvgC: currentMonthAverage.value,
+        previousMonthAvgC: previousMonthAverage.value,
+        todayMinC: todayTemperature.min,
+        todayMaxC: todayTemperature.max,
+        todayMinHumidity: todayHumidity.min,
+        todayMaxHumidity: todayHumidity.max,
+        temperatureTrend1hC: trendFromHistory(points, 'temperatureC', MS_HOUR),
+        humidityTrend1h: trendFromHistory(points, 'humidity', MS_HOUR),
+        todaySamples: todayAverage.samples,
+        yesterdaySamples: yesterdayAverage.samples,
+        currentWeekSamples: currentWeekAverage.samples,
+        previousWeekSamples: previousWeekAverage.samples,
+        currentMonthSamples: currentMonthAverage.samples,
+        previousMonthSamples: previousMonthAverage.samples
+      };
     }
 
     function formatTemperature(value) {
@@ -1008,6 +1346,84 @@
       ctx.stroke();
     }
 
+    function selectedHistoryStartMs() {
+      const now = Date.now();
+      if (state.historyRange === 'month') return now - 30 * MS_DAY;
+      if (state.historyRange === 'week') return now - 7 * MS_DAY;
+      return now - MS_DAY;
+    }
+
+    function drawHistoryLine(ctx, points, key, color, width, height, pad) {
+      const values = points
+        .map(point => finiteNumber(point[key]))
+        .filter(value => value !== null);
+      if (points.length < 2 || values.length < 2) return;
+
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const span = Math.max(key === 'humidity' ? 8 : 1.2, max - min);
+      const startMs = points[0].recordedAtMs;
+      const endMs = points[points.length - 1].recordedAtMs;
+      const rangeMs = Math.max(1, endMs - startMs);
+
+      ctx.lineWidth = 2.4 * (window.devicePixelRatio || 1);
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+
+      let started = false;
+      points.forEach(point => {
+        const value = finiteNumber(point[key]);
+        if (value === null) return;
+
+        const x = ((point.recordedAtMs - startMs) / rangeMs) * (width - pad * 2) + pad;
+        const y = height - pad - ((value - min) / span) * (height - pad * 2);
+        if (!started) {
+          ctx.moveTo(x, y);
+          started = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+
+      ctx.stroke();
+    }
+
+    function updateHistorySummary(stats) {
+      if (state.historyError) {
+        els.historySummary.textContent = 'Chưa đọc được bảng lịch sử trên Supabase';
+        return;
+      }
+
+      if (!stats || !stats.pointCount) {
+        els.historySummary.textContent = 'Đang chờ ESP32 ghi mẫu lịch sử đầu tiên';
+        return;
+      }
+
+      const latest = new Intl.DateTimeFormat('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit'
+      }).format(new Date(stats.latestHistoryAtMs));
+      els.historySummary.textContent = `${stats.pointCount} mẫu · mới nhất ${latest}`;
+    }
+
+    function drawHistoryChart() {
+      const canvas = els.historyChart;
+      const ctx = canvas.getContext('2d');
+      const { width, height } = resizeCanvas(canvas);
+      const points = validHistoryPoints().filter(point => point.recordedAtMs >= selectedHistoryStartMs());
+
+      ctx.clearRect(0, 0, width, height);
+      if (points.length < 2) return;
+
+      const pad = 12 * (window.devicePixelRatio || 1);
+      drawHistoryLine(ctx, points, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim(), width, height, pad);
+      drawHistoryLine(ctx, points, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), width, height, pad);
+    }
+
     function updateDeviceStatus(reading) {
       const deviceOnline = Boolean(reading.deviceOnline);
       const sensorOnline = Boolean(reading.sensorOnline);
@@ -1103,59 +1519,60 @@
       summaryEl.textContent = `${currentLabel} ${formatTemperature(current)} · ${previousLabel} ${formatTemperature(previous)}`;
     }
 
+    function resetComparison(deltaEl, summaryEl, message) {
+      deltaEl.textContent = '--';
+      deltaEl.className = 'delta';
+      summaryEl.textContent = message;
+    }
+
     function updateStats(stats, reading = {}) {
-      if (reading.cloudMode) {
-        els.dayDelta.textContent = '--';
-        els.weekDelta.textContent = '--';
-        els.dayDelta.className = 'delta';
-        els.weekDelta.className = 'delta';
-        els.daySummary.textContent = 'Cloud chỉ xem dữ liệu hiện tại';
-        els.weekSummary.textContent = 'Cloud chỉ xem dữ liệu hiện tại';
-        els.history.textContent = 'Latest-only';
+      const historyStats = buildHistoryStats();
+      const comparisonStats = historyStats || stats;
+      const metricStats = reading.cloudMode ? historyStats : (stats || historyStats);
+
+      updateHistorySummary(historyStats);
+      drawHistoryChart();
+
+      if (!comparisonStats) {
+        resetComparison(els.dayDelta, els.daySummary, 'Chưa có dữ liệu cảm biến');
+        resetComparison(els.weekDelta, els.weekSummary, 'Chưa có dữ liệu cảm biến');
+        resetComparison(els.monthDelta, els.monthSummary, state.historyError ? 'Chưa tạo hoặc chưa đọc được bảng lịch sử' : 'Đang tích lũy dữ liệu');
+        els.history.textContent = state.historyError ? 'Lỗi history' : 'Chưa sẵn sàng';
         updateMetricStats(null);
         return;
       }
 
-      if (!stats) {
-        els.dayDelta.textContent = '--';
-        els.weekDelta.textContent = '--';
-        els.dayDelta.className = 'delta';
-        els.weekDelta.className = 'delta';
-        els.daySummary.textContent = 'Chưa có dữ liệu cảm biến';
-        els.weekSummary.textContent = 'Chưa có dữ liệu cảm biến';
-        els.history.textContent = 'Chưa sẵn sàng';
-        updateMetricStats(null);
-        return;
-      }
+      updateMetricStats(metricStats);
 
-      updateMetricStats(stats);
-
-      if (stats.timeSynced === false) {
-        els.dayDelta.textContent = '--';
-        els.weekDelta.textContent = '--';
-        els.dayDelta.className = 'delta';
-        els.weekDelta.className = 'delta';
-        els.daySummary.textContent = 'Đang chờ đồng bộ thời gian';
-        els.weekSummary.textContent = 'Đang chờ đồng bộ thời gian';
+      if (comparisonStats.timeSynced === false) {
+        resetComparison(els.dayDelta, els.daySummary, 'Đang chờ đồng bộ thời gian');
+        resetComparison(els.weekDelta, els.weekSummary, 'Đang chờ đồng bộ thời gian');
+        resetComparison(els.monthDelta, els.monthSummary, 'Đang chờ dữ liệu lịch sử cloud');
         els.history.textContent = 'Chưa sẵn sàng';
         return;
       }
 
-      const todayAvgC = finiteNumber(stats.todayAvgC);
-      const yesterdayAvgC = finiteNumber(stats.yesterdayAvgC);
-      const currentWeekAvgC = finiteNumber(stats.currentWeekAvgC);
-      const previousWeekAvgC = finiteNumber(stats.previousWeekAvgC);
+      const todayAvgC = finiteNumber(comparisonStats.todayAvgC);
+      const yesterdayAvgC = finiteNumber(comparisonStats.yesterdayAvgC);
+      const currentWeekAvgC = finiteNumber(comparisonStats.currentWeekAvgC);
+      const previousWeekAvgC = finiteNumber(comparisonStats.previousWeekAvgC);
+      const currentMonthAvgC = finiteNumber(comparisonStats.currentMonthAvgC);
+      const previousMonthAvgC = finiteNumber(comparisonStats.previousMonthAvgC);
 
       updateComparison(els.dayDelta, els.daySummary, todayAvgC, yesterdayAvgC, 'Hôm nay', 'hôm qua');
       updateComparison(els.weekDelta, els.weekSummary, currentWeekAvgC, previousWeekAvgC, 'Tuần này', 'tuần trước');
+      updateComparison(els.monthDelta, els.monthSummary, currentMonthAvgC, previousMonthAvgC, 'Tháng này', 'tháng trước');
 
-      const daysStored = Number(stats.daysStored || 0);
-      els.history.textContent = daysStored > 0 ? `${daysStored} ngày` : 'Đang tích lũy';
+      const daysStored = Number(historyStats?.daysStored || comparisonStats.daysStored || 0);
+      els.history.textContent = daysStored > 0
+        ? `${daysStored} ngày${historyStats ? ' cloud' : ''}`
+        : 'Đang tích lũy';
     }
 
     function render(reading) {
       const temperature = finiteNumber(reading.temperatureC);
       const humidity = finiteNumber(reading.humidity);
+      const displayStats = reading.stats || buildHistoryStats();
 
       const displayDate = reading.updatedAtIso ? new Date(reading.updatedAtIso) : new Date();
       els.updatedAt.textContent = new Intl.DateTimeFormat('vi-VN', {
@@ -1172,7 +1589,7 @@
       if (temperature === null || humidity === null) {
         els.temperature.textContent = '--.-';
         els.humidity.textContent = '--';
-        updateComfort(null, null, reading.stats, reading);
+        updateComfort(null, null, displayStats, reading);
         updateMeters({ temperatureC: null, humidity: null });
         drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
         drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
@@ -1185,19 +1602,29 @@
       els.temperature.textContent = temperature.toFixed(1);
       els.humidity.textContent = humidity.toFixed(0);
 
-      updateComfort(temperature, humidity, reading.stats, reading);
+      updateComfort(temperature, humidity, displayStats, reading);
       updateMeters({ temperatureC: temperature, humidity });
       drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
       drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
     }
 
     async function tick() {
+      await maybeFetchCloudHistory();
       render(await fetchReading());
     }
 
     window.addEventListener('resize', () => {
       drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
       drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+      drawHistoryChart();
+    });
+
+    els.rangeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        state.historyRange = tab.dataset.range || 'day';
+        els.rangeTabs.forEach(item => item.classList.toggle('active', item === tab));
+        drawHistoryChart();
+      });
     });
 
     tick();
