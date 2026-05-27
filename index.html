@@ -128,7 +128,7 @@
     }
 
     .device-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       margin-bottom: 12px;
     }
 
@@ -470,6 +470,11 @@
           <p id="deviceDetail" class="device-copy">Chưa nhận heartbeat</p>
         </article>
         <article class="device-card">
+          <p class="device-label">Chip ESP32</p>
+          <span id="chipTemp" class="device-value">--.-°C</span>
+          <p id="chipDetail" class="device-copy">Nhiệt nội bộ</p>
+        </article>
+        <article class="device-card">
           <p class="device-label">Cảm biến</p>
           <span id="sensorStatus" class="device-value">Đang kiểm tra</span>
           <p id="sensorDetail" class="device-copy">SHT30</p>
@@ -636,6 +641,8 @@
       statusText: document.getElementById('statusText'),
       deviceStatus: document.getElementById('deviceStatus'),
       deviceDetail: document.getElementById('deviceDetail'),
+      chipTemp: document.getElementById('chipTemp'),
+      chipDetail: document.getElementById('chipDetail'),
       sensorStatus: document.getElementById('sensorStatus'),
       sensorDetail: document.getElementById('sensorDetail'),
       wifiStatus: document.getElementById('wifiStatus'),
@@ -711,6 +718,7 @@
         wifiMode: 'STA',
         wifiRssi: -54,
         freeHeap: 210000,
+        chipTemperatureC: 48.5 + Math.sin(seconds / 29) * 1.4,
         lastSensorOkMs: seconds * 1000,
         temperatureC,
         humidity,
@@ -730,6 +738,7 @@
         wifiMode: '--',
         wifiRssi: null,
         freeHeap: null,
+        chipTemperatureC: null,
         lastSensorOkMs: null,
         temperatureC: null,
         humidity: null,
@@ -756,6 +765,7 @@
         wifiMode: row.wifi_mode || '--',
         wifiRssi: row.wifi_rssi,
         freeHeap: row.free_heap,
+        chipTemperatureC: deviceOnline ? row.chip_temperature_c : null,
         lastSensorOkMs: row.last_sensor_ok_ms,
         temperatureC: deviceOnline ? row.temperature_c : null,
         humidity: deviceOnline ? row.humidity : null,
@@ -768,24 +778,7 @@
     }
 
     async function fetchCloudReading() {
-      const columns = [
-        'room_id',
-        'updated_at',
-        'app_version',
-        'device_online',
-        'wifi_connected',
-        'wifi_mode',
-        'wifi_rssi',
-        'free_heap',
-        'last_sensor_ok_ms',
-        'temperature_c',
-        'humidity',
-        'sensor_online',
-        'source',
-        'uptime_ms',
-        'local_ip'
-      ].join(',');
-      const endpoint = `${SUPABASE_URL}/rest/v1/room_latest?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&select=${columns}&limit=1`;
+      const endpoint = `${SUPABASE_URL}/rest/v1/room_latest?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&select=*&limit=1`;
 
       try {
         const response = await fetch(endpoint, {
@@ -895,6 +888,22 @@
       if (value >= -60) return `${value} dBm · mạnh`;
       if (value >= -72) return `${value} dBm · ổn`;
       return `${value} dBm · yếu`;
+    }
+
+    function chipTemperatureClass(value) {
+      const temperature = finiteNumber(value);
+      if (temperature === null) return 'device-value';
+      if (temperature >= 85) return 'device-value bad';
+      if (temperature >= 70) return 'device-value warn';
+      return 'device-value ok';
+    }
+
+    function chipTemperatureDetail(value) {
+      const temperature = finiteNumber(value);
+      if (temperature === null) return 'Chưa có dữ liệu';
+      if (temperature >= 85) return 'Chip rất nóng';
+      if (temperature >= 70) return 'Chip hơi nóng';
+      return 'Nhiệt nội bộ';
     }
 
     function comparisonClass(delta) {
@@ -1007,6 +1016,9 @@
       els.deviceStatus.textContent = deviceOnline ? 'Online' : 'Offline';
       els.deviceStatus.className = `device-value ${deviceOnline ? 'ok' : 'bad'}`;
       els.deviceDetail.textContent = deviceOnline ? `Uptime ${formatUptime(reading.uptimeMs)}` : (reading.cloudMode ? formatCloudAge(reading) : 'Không nhận heartbeat');
+      els.chipTemp.textContent = deviceOnline ? formatTemperature(reading.chipTemperatureC) : '--.-°C';
+      els.chipTemp.className = deviceOnline ? chipTemperatureClass(reading.chipTemperatureC) : 'device-value bad';
+      els.chipDetail.textContent = deviceOnline ? chipTemperatureDetail(reading.chipTemperatureC) : 'Không nhận heartbeat';
 
       els.sensorStatus.textContent = sensorOnline ? 'Online' : 'Offline';
       els.sensorStatus.className = `device-value ${sensorOnline ? 'ok' : 'warn'}`;
