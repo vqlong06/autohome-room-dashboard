@@ -535,6 +535,153 @@
         font-size: 30px;
       }
     }
+
+    /* ===================== MOTION & ATMOSPHERE ===================== */
+
+    /* Ambient drifting gradient background */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .ambient::before,
+    .ambient::after {
+      content: "";
+      position: absolute;
+      width: 62vmax;
+      height: 62vmax;
+      border-radius: 50%;
+      filter: blur(72px);
+      opacity: 0.34;
+      will-change: transform;
+    }
+    .ambient::before {
+      background: radial-gradient(circle at center, var(--accent), transparent 66%);
+      top: -22vmax;
+      left: -12vmax;
+      animation: drift1 26s ease-in-out infinite alternate;
+    }
+    .ambient::after {
+      background: radial-gradient(circle at center, var(--warm), transparent 66%);
+      bottom: -26vmax;
+      right: -16vmax;
+      animation: drift2 33s ease-in-out infinite alternate;
+    }
+    @media (prefers-color-scheme: light) {
+      .ambient::before,
+      .ambient::after { opacity: 0.16; }
+    }
+    @keyframes drift1 {
+      from { transform: translate3d(0, 0, 0) scale(1); }
+      to   { transform: translate3d(13vmax, 9vmax, 0) scale(1.16); }
+    }
+    @keyframes drift2 {
+      from { transform: translate3d(0, 0, 0) scale(1.12); }
+      to   { transform: translate3d(-11vmax, -7vmax, 0) scale(0.94); }
+    }
+
+    /* Card depth + hover lift */
+    .metric-card,
+    .comfort-card,
+    .device-card,
+    .compare-card,
+    .history-card,
+    .details {
+      position: relative;
+      transition: transform 360ms cubic-bezier(.2,.7,.2,1),
+                  box-shadow 360ms ease,
+                  border-color 360ms ease;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .metric-card:hover,
+      .comfort-card:hover,
+      .device-card:hover,
+      .compare-card:hover,
+      .history-card:hover {
+        transform: translateY(-3px);
+        border-color: color-mix(in srgb, var(--accent), var(--line) 45%);
+        box-shadow: 0 28px 64px var(--shadow);
+      }
+    }
+
+    /* Scroll-reveal (progressive enhancement: only hides when JS adds .anim-ready) */
+    .anim-ready .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 640ms cubic-bezier(.2,.7,.2,1),
+                  transform 640ms cubic-bezier(.2,.7,.2,1);
+      transition-delay: var(--reveal-delay, 0ms);
+      will-change: opacity, transform;
+    }
+    .anim-ready .reveal.in {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* Breathing live status dot */
+    .dot.live {
+      animation: breathe 2.4s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent), transparent 82%); }
+      50%      { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent), transparent 90%); }
+    }
+
+    /* Hero numbers: tabular figures, subtle gradient, update bump */
+    .value,
+    .delta,
+    .comfort-title,
+    .stat-value,
+    .pill-value {
+      font-variant-numeric: tabular-nums;
+    }
+    @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+      .value {
+        background: linear-gradient(180deg, var(--text), color-mix(in srgb, var(--text), var(--muted) 50%));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    }
+    .value {
+      transition: transform 240ms cubic-bezier(.2,.7,.2,1);
+    }
+    .value.bump {
+      transform: scale(1.06);
+    }
+    .comfort-title {
+      transition: color 420ms ease;
+    }
+
+    /* Richer meter fill */
+    .meter > span {
+      background: linear-gradient(90deg, color-mix(in srgb, var(--accent), transparent 35%), var(--accent));
+      transition: width 600ms cubic-bezier(.2,.7,.2,1);
+    }
+    .meter > span.warm {
+      background: linear-gradient(90deg, color-mix(in srgb, var(--warm), transparent 35%), var(--warm));
+    }
+
+    /* Smooth tab + status transitions */
+    .range-tab {
+      transition: background 240ms ease, color 240ms ease, border-color 240ms ease;
+    }
+    .device-value,
+    #statusText {
+      transition: color 320ms ease;
+    }
+
+    /* Honour reduced-motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      .ambient::before,
+      .ambient::after { animation: none; }
+      .dot.live { animation: none; }
+      .anim-ready .reveal { opacity: 1; transform: none; transition: none; }
+      .metric-card, .comfort-card, .device-card,
+      .compare-card, .history-card, .details { transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -729,6 +876,7 @@
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
+    const CLOUD_HISTORY_LIMIT = 20000;
     const MS_HOUR = 60 * 60 * 1000;
     const MS_DAY = 24 * MS_HOUR;
     const params = new URLSearchParams(location.search);
@@ -961,7 +1109,7 @@
 
     async function fetchCloudHistory() {
       const startIso = startOfPreviousMonth(new Date()).toISOString();
-      const endpoint = `${SUPABASE_URL}/rest/v1/room_readings?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&recorded_at=gte.${encodeURIComponent(startIso)}&select=recorded_at,temperature_c,humidity,chip_temperature_c,sensor_online&order=recorded_at.asc&limit=10000`;
+      const endpoint = `${SUPABASE_URL}/rest/v1/room_readings?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&recorded_at=gte.${encodeURIComponent(startIso)}&select=recorded_at,temperature_c,humidity,chip_temperature_c,sensor_online&order=recorded_at.asc&limit=${CLOUD_HISTORY_LIMIT}`;
 
       state.historyAttemptedAt = Date.now();
 
@@ -1432,7 +1580,7 @@
       }
 
       if (!stats || !stats.pointCount) {
-        els.historySummary.textContent = 'Đang chờ ESP32 ghi mẫu lịch sử đầu tiên';
+        els.historySummary.textContent = 'Đang chờ Supabase snapshot mẫu lịch sử đầu tiên';
         return;
       }
 
@@ -1455,7 +1603,7 @@
 
       const liveSuffix = stats.pointCount > storedPointCount ? ' + hiện tại' : '';
       const lineSuffix = stats.pointCount < 2 ? ' · cần thêm mẫu để vẽ đường' : '';
-      els.historySummary.textContent = `${storedPointCount} mẫu cloud${liveSuffix} · mới nhất ${latest}${lineSuffix}`;
+      els.historySummary.textContent = `${storedPointCount} mẫu history${liveSuffix} · mới nhất ${latest}${lineSuffix}`;
     }
 
     function drawHistoryChart() {
@@ -1621,7 +1769,7 @@
 
       const daysStored = Number(historyStats?.daysStored || comparisonStats.daysStored || 0);
       els.history.textContent = daysStored > 0
-        ? `${daysStored} ngày${historyStats ? ' cloud' : ''}`
+        ? `${daysStored} ngày${historyStats ? ' history' : ''}`
         : 'Đang tích lũy';
     }
 
@@ -1656,6 +1804,8 @@
       if (temperature === null || humidity === null) {
         els.temperature.textContent = '--.-';
         els.humidity.textContent = '--';
+        els.temperature.dataset.val = '';
+        els.humidity.dataset.val = '';
         updateComfort(null, null, displayStats, reading);
         updateMeters({ temperatureC: null, humidity: null });
         drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
@@ -1666,8 +1816,8 @@
       state.points.push({ temperatureC: temperature, humidity });
       state.points = state.points.slice(-90);
 
-      els.temperature.textContent = temperature.toFixed(1);
-      els.humidity.textContent = humidity.toFixed(0);
+      animateValue(els.temperature, temperature, 1);
+      animateValue(els.humidity, humidity, 0);
 
       updateComfort(temperature, humidity, displayStats, reading);
       updateMeters({ temperatureC: temperature, humidity });
@@ -1694,8 +1844,74 @@
       });
     });
 
+    /* ===================== MOTION CONTROL (added) ===================== */
+    const prefersReducedMotion =
+      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Animated count-up for the big hero numbers
+    function animateValue(el, target, decimals) {
+      if (!el || !Number.isFinite(target)) return;
+      const prev = el.dataset.val;
+      const from = (prev !== undefined && prev !== '') ? parseFloat(prev) : 0;
+      el.dataset.val = String(target);
+
+      const minStep = decimals === 0 ? 1 : 0.05;
+      if (prefersReducedMotion || Math.abs(target - from) < minStep) {
+        el.textContent = target.toFixed(decimals);
+        return;
+      }
+
+      el.classList.add('bump');
+      setTimeout(() => el.classList.remove('bump'), 240);
+
+      const duration = 650;
+      const start = performance.now();
+      function frame(now) {
+        const t = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+        el.textContent = (from + (target - from) * eased).toFixed(decimals);
+        if (t < 1) requestAnimationFrame(frame);
+        else el.textContent = target.toFixed(decimals);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // Ambient background + staggered scroll reveal
+    (function setupMotion() {
+      if (!document.querySelector('.ambient')) {
+        const amb = document.createElement('div');
+        amb.className = 'ambient';
+        amb.setAttribute('aria-hidden', 'true');
+        document.body.prepend(amb);
+      }
+      if (prefersReducedMotion || !('IntersectionObserver' in window)) return;
+
+      document.documentElement.classList.add('anim-ready');
+
+      const blocks = Array.from(document.querySelectorAll(
+        '.topbar, .device-grid, .comfort-card, .grid, .compare-grid, .history-card, .details'
+      ));
+      blocks.forEach((el, i) => {
+        el.classList.add('reveal');
+        el.style.setProperty('--reveal-delay', (Math.min(i, 7) * 70) + 'ms');
+      });
+
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+      blocks.forEach((el) => io.observe(el));
+      // Safety net: never leave a block hidden
+      setTimeout(() => blocks.forEach((el) => el.classList.add('in')), 1400);
+    })();
+
     tick();
-    setInterval(tick, 1000);
+    setInterval(tick, 5000);
   </script>
 </body>
 </html>
