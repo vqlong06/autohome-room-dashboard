@@ -748,6 +748,7 @@
       historyAttemptedAt: 0,
       historyLoadedAt: 0,
       historyError: false,
+      latestReadingForHistory: null,
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
@@ -1051,13 +1052,40 @@
       return next;
     }
 
-    function validHistoryPoints() {
+    function liveHistoryPoint() {
+      const point = state.latestReadingForHistory;
+      if (!point
+        || !Number.isFinite(point.recordedAtMs)
+        || finiteNumber(point.temperatureC) === null
+        || finiteNumber(point.humidity) === null) {
+        return null;
+      }
+      return point;
+    }
+
+    function validStoredHistoryPoints() {
       return state.historyPoints
         .filter(point => Number.isFinite(point.recordedAtMs)
           && point.sensorOnline
           && finiteNumber(point.temperatureC) !== null
           && finiteNumber(point.humidity) !== null)
         .sort((a, b) => a.recordedAtMs - b.recordedAtMs);
+    }
+
+    function validHistoryPoints() {
+      const points = validStoredHistoryPoints();
+      const livePoint = liveHistoryPoint();
+
+      if (livePoint) {
+        const lastPoint = points[points.length - 1];
+        if (!lastPoint || Math.abs(livePoint.recordedAtMs - lastPoint.recordedAtMs) > 30 * 1000) {
+          points.push(livePoint);
+        } else if (livePoint.recordedAtMs >= lastPoint.recordedAtMs) {
+          points[points.length - 1] = livePoint;
+        }
+      }
+
+      return points.sort((a, b) => a.recordedAtMs - b.recordedAtMs);
     }
 
     function averageFromHistory(points, startMs, endMs, key) {
@@ -1119,6 +1147,7 @@
     function buildHistoryStats() {
       const points = validHistoryPoints();
       if (points.length === 0) return null;
+      const storedPoints = validStoredHistoryPoints();
 
       const now = new Date();
       const nowMs = now.getTime();
@@ -1149,6 +1178,7 @@
         timeSynced: true,
         daysStored: countHistoryDays(points),
         pointCount: points.length,
+        storedPointCount: storedPoints.length,
         latestHistoryAtMs: points[points.length - 1].recordedAtMs,
         todayAvgC: todayAverage.value,
         yesterdayAvgC: yesterdayAverage.value,
@@ -1396,7 +1426,7 @@
     }
 
     function updateHistorySummary(stats) {
-      if (state.historyError) {
+      if (state.historyError && (!stats || !stats.pointCount)) {
         els.historySummary.textContent = 'Chưa đọc được bảng lịch sử trên Supabase';
         return;
       }
@@ -1412,7 +1442,20 @@
         day: '2-digit',
         month: '2-digit'
       }).format(new Date(stats.latestHistoryAtMs));
-      els.historySummary.textContent = `${stats.pointCount} mẫu · mới nhất ${latest}`;
+      const storedPointCount = Number(stats.storedPointCount || 0);
+      if (state.historyError) {
+        els.historySummary.textContent = `Không đọc được cloud history · đang dùng dữ liệu hiện tại ${latest}`;
+        return;
+      }
+
+      if (storedPointCount === 0) {
+        els.historySummary.textContent = `Dữ liệu hiện tại · ${latest}`;
+        return;
+      }
+
+      const liveSuffix = stats.pointCount > storedPointCount ? ' + hiện tại' : '';
+      const lineSuffix = stats.pointCount < 2 ? ' · cần thêm mẫu để vẽ đường' : '';
+      els.historySummary.textContent = `${storedPointCount} mẫu cloud${liveSuffix} · mới nhất ${latest}${lineSuffix}`;
     }
 
     function drawHistoryChart() {
@@ -1422,9 +1465,17 @@
       const points = validHistoryPoints().filter(point => point.recordedAtMs >= selectedHistoryStartMs());
 
       ctx.clearRect(0, 0, width, height);
-      if (points.length < 2) return;
+      if (points.length === 0) return;
 
       const pad = 12 * (window.devicePixelRatio || 1);
+      if (points.length === 1) {
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--warm').trim();
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 2, 5 * (window.devicePixelRatio || 1), 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+
       drawHistoryLine(ctx, points, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim(), width, height, pad);
       drawHistoryLine(ctx, points, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), width, height, pad);
     }
@@ -1577,6 +1628,17 @@
     function render(reading) {
       const temperature = finiteNumber(reading.temperatureC);
       const humidity = finiteNumber(reading.humidity);
+      if (Boolean(reading.deviceOnline) && Boolean(reading.sensorOnline) && temperature !== null && humidity !== null) {
+        state.latestReadingForHistory = {
+          recordedAtMs: reading.updatedAtIso ? Date.parse(reading.updatedAtIso) : Date.now(),
+          temperatureC: temperature,
+          humidity,
+          chipTemperatureC: finiteNumber(reading.chipTemperatureC),
+          sensorOnline: true
+        };
+      } else if (!reading.deviceOnline || !reading.sensorOnline) {
+        state.latestReadingForHistory = null;
+      }
       const displayStats = reading.stats || buildHistoryStats();
 
       const displayDate = reading.updatedAtIso ? new Date(reading.updatedAtIso) : new Date();
