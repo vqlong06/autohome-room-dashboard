@@ -122,6 +122,8 @@
     .device-card,
     .compare-card,
     .history-card,
+    .weather-card,
+    .insights-card,
     .details {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -536,6 +538,264 @@
       }
     }
 
+    /* ===================== WEATHER COMPARISON ===================== */
+    .weather-card {
+      margin-top: 12px;
+      padding: 20px;
+    }
+    .weather-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+    .weather-cond {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 680;
+      text-align: right;
+    }
+    .weather-icon {
+      font-size: 22px;
+      line-height: 1;
+    }
+    .weather-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+    .weather-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+    .weather-table th,
+    .weather-table td {
+      padding: 11px 8px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .weather-table thead th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      border-bottom: 1px solid var(--line);
+    }
+    .weather-table tbody th {
+      text-align: left;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 680;
+    }
+    .weather-table thead th:first-child,
+    .weather-table tbody th {
+      padding-left: 0;
+    }
+    .weather-table tbody td {
+      font-size: 17px;
+      font-weight: 760;
+    }
+    .weather-table tbody tr + tr th,
+    .weather-table tbody tr + tr td {
+      border-top: 1px solid color-mix(in srgb, var(--line), transparent 40%);
+    }
+    .delta-cell { color: var(--muted); }
+    .delta-cell.up { color: var(--warm); }
+    .delta-cell.down { color: var(--cool); }
+    .delta-cell.flat { color: var(--accent); }
+    .weather-summary {
+      margin-top: 14px;
+      font-size: 15px;
+    }
+    .weather-attrib {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      opacity: 0.75;
+    }
+    @media (max-width: 720px) {
+      .weather-head { flex-direction: column; gap: 8px; }
+      .weather-cond { text-align: left; }
+      .weather-table th,
+      .weather-table td { padding: 10px 6px; }
+      .weather-table tbody td { font-size: 15px; }
+      .weather-table thead th { font-size: 11px; }
+    }
+
+    /* ===================== THEME OVERRIDE (manual) ===================== */
+    html[data-theme="dark"] {
+      --bg: #111318; --panel: #181b22; --text: #f1f4f8; --muted: #a6afbd;
+      --line: #303641; --accent: #39b8b5; --warm: #dc8b49; --cool: #62a8dc;
+      --shadow: rgba(0, 0, 0, 0.25);
+    }
+    html[data-theme="light"] {
+      --bg: #f6f7f9; --panel: #ffffff; --text: #171a21; --muted: #667085;
+      --line: #d9dee7; --accent: #0f8b8d; --warm: #c26a2d; --cool: #2d7fb8;
+      --shadow: rgba(16, 24, 40, 0.08);
+    }
+
+    /* ===================== AQI / FORECAST / ADVICE ===================== */
+    .aqi-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 760;
+      border: 1px solid var(--line);
+    }
+    .aqi-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+    .aqi-good   { color: #2e9e6b; } .aqi-good   .aqi-dot { background: #2e9e6b; }
+    .aqi-mod    { color: #c9a227; } .aqi-mod    .aqi-dot { background: #c9a227; }
+    .aqi-usg    { color: #d9822b; } .aqi-usg    .aqi-dot { background: #d9822b; }
+    .aqi-bad    { color: #d9534f; } .aqi-bad    .aqi-dot { background: #d9534f; }
+    .aqi-vbad   { color: #a64ca6; } .aqi-vbad   .aqi-dot { background: #a64ca6; }
+
+    .advice {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel), var(--bg) 35%);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 14.5px;
+      line-height: 1.45;
+    }
+    .advice.open  { border-color: color-mix(in srgb, #2e9e6b, var(--line) 40%); }
+    .advice.close { border-color: color-mix(in srgb, var(--warm), var(--line) 40%); }
+    .advice-icon { font-size: 20px; line-height: 1.2; }
+    .advice-text b { color: var(--text); }
+
+    .forecast-strip {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .forecast-cell {
+      flex: 0 0 auto;
+      min-width: 62px;
+      padding: 10px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel), var(--bg) 35%);
+      text-align: center;
+    }
+    .forecast-hour { display: block; color: var(--muted); font-size: 12px; font-weight: 680; }
+    .forecast-ico  { display: block; font-size: 18px; margin: 4px 0 2px; }
+    .forecast-temp { display: block; font-size: 15px; font-weight: 780; font-variant-numeric: tabular-nums; }
+
+    /* ===================== INSIGHTS CARD ===================== */
+    .insights-card { margin-top: 12px; padding: 20px; }
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .insight {
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel), var(--bg) 35%);
+    }
+    .insight-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .insight-value {
+      display: block;
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .insight-value.good { color: var(--accent); }
+    .insight-value.warm { color: var(--warm); }
+    .insight-value.cool { color: var(--cool); }
+    .insight-value.bad  { color: #d9534f; }
+    .insight-copy { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .score-bar {
+      margin-top: 8px; height: 6px; border-radius: 4px;
+      background: color-mix(in srgb, var(--line), transparent 15%); overflow: hidden;
+    }
+    .score-bar > span { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--accent); transition: width 600ms cubic-bezier(.2,.7,.2,1); }
+    .digest { margin-top: 14px; font-size: 14.5px; line-height: 1.5; color: var(--text); }
+
+    /* ===================== SETTINGS BUTTON + PANEL ===================== */
+    .icon-btn {
+      width: 38px; height: 38px; flex: 0 0 auto;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 10px; cursor: pointer;
+      border: 1px solid var(--line); background: var(--panel); color: var(--text);
+      font-size: 18px; transition: transform 200ms ease, border-color 200ms ease;
+    }
+    .icon-btn:hover { transform: rotate(35deg); border-color: color-mix(in srgb, var(--accent), var(--line) 40%); }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+    .panel-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: color-mix(in srgb, #000, transparent 45%);
+      display: none; align-items: flex-start; justify-content: center;
+      padding: 24px; overflow-y: auto;
+      backdrop-filter: blur(3px);
+    }
+    .panel-overlay.open { display: flex; }
+    .panel {
+      width: min(440px, 100%); margin-top: 4vh;
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 14px; box-shadow: 0 30px 80px rgba(0,0,0,0.35);
+      padding: 20px;
+    }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .panel-head h2 { margin: 0; font-size: 20px; font-weight: 780; }
+    .panel-sub { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+    .field { margin-bottom: 14px; }
+    .field > label { display: block; color: var(--muted); font-size: 13px; font-weight: 680; margin-bottom: 6px; }
+    .field-hint { margin: 7px 0 0; color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .field input, .field select {
+      width: 100%; padding: 9px 11px; border-radius: 9px;
+      border: 1px solid var(--line); background: var(--bg); color: var(--text);
+      font-size: 15px; font-family: inherit;
+    }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-group-title { margin: 18px 0 10px; font-size: 13px; font-weight: 760; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+    #settingsUseLocation { width: 100%; margin: -4px 0 8px; }
+    .panel-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .btn {
+      flex: 1; padding: 11px; border-radius: 10px; cursor: pointer;
+      font-size: 15px; font-weight: 720; font-family: inherit; border: 1px solid var(--line);
+      background: var(--bg); color: var(--text); transition: opacity 200ms ease;
+    }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn:hover { opacity: 0.88; }
+
+    /* ===================== KIOSK MODE ===================== */
+    body.kiosk .device-grid,
+    body.kiosk .details,
+    body.kiosk .topbar-actions { display: none; }
+    body.kiosk .value { font-size: 84px; }
+    body.kiosk .comfort-title { font-size: 56px; }
+    body.kiosk .app { padding: 32px; }
+    @media (max-width: 720px) {
+      .insights-grid { grid-template-columns: 1fr; }
+      .field-row { grid-template-columns: 1fr; }
+      body.kiosk .value { font-size: 64px; }
+    }
+
     /* ===================== MOTION & ATMOSPHERE ===================== */
 
     /* Ambient drifting gradient background */
@@ -574,12 +834,22 @@
       .ambient::after { opacity: 0.16; }
     }
     @keyframes drift1 {
-      from { transform: translate3d(0, 0, 0) scale(1); }
-      to   { transform: translate3d(13vmax, 9vmax, 0) scale(1.16); }
+      from { transform: translate3d(0, 0, 0); }
+      to   { transform: translate3d(12vmax, 8vmax, 0); }
     }
     @keyframes drift2 {
-      from { transform: translate3d(0, 0, 0) scale(1.12); }
-      to   { transform: translate3d(-11vmax, -7vmax, 0) scale(0.94); }
+      from { transform: translate3d(0, 0, 0); }
+      to   { transform: translate3d(-10vmax, -6vmax, 0); }
+    }
+    /* Lighter ambient on phones so iOS doesn't re-rasterize a huge blur */
+    @media (max-width: 720px) {
+      .ambient::before,
+      .ambient::after {
+        width: 80vw;
+        height: 80vw;
+        filter: blur(48px);
+        opacity: 0.28;
+      }
     }
 
     /* Card depth + hover lift */
@@ -588,6 +858,8 @@
     .device-card,
     .compare-card,
     .history-card,
+    .weather-card,
+    .insights-card,
     .details {
       position: relative;
       transition: transform 360ms cubic-bezier(.2,.7,.2,1),
@@ -599,6 +871,8 @@
       .comfort-card:hover,
       .device-card:hover,
       .compare-card:hover,
+      .weather-card:hover,
+      .insights-card:hover,
       .history-card:hover {
         transform: translateY(-3px);
         border-color: color-mix(in srgb, var(--accent), var(--line) 45%);
@@ -674,14 +948,9 @@
     }
 
     /* Honour reduced-motion preference */
-    @media (prefers-reduced-motion: reduce) {
-      .ambient::before,
-      .ambient::after { animation: none; }
-      .dot.live { animation: none; }
-      .anim-ready .reveal { opacity: 1; transform: none; transition: none; }
-      .metric-card, .comfort-card, .device-card,
-      .compare-card, .history-card, .details { transition: none; }
-    }
+    /* Note: animations intentionally run regardless of the OS "Reduce Motion"
+       setting, because this dashboard is meant to feel alive on the owner's
+       phone. Motion is kept gentle (no flashing, no rapid spin). */
   </style>
 </head>
 <body>
@@ -695,6 +964,10 @@
         <div class="status">
           <span id="statusDot" class="dot" aria-hidden="true"></span>
           <span id="statusText">Chưa có dữ liệu</span>
+          <div class="topbar-actions">
+            <button id="kioskBtn" class="icon-btn" type="button" title="Chế độ toàn màn hình" aria-label="Chế độ toàn màn hình">⛶</button>
+            <button id="settingsBtn" class="icon-btn" type="button" title="Cài đặt" aria-label="Cài đặt">⚙</button>
+          </div>
         </div>
       </div>
 
@@ -810,6 +1083,94 @@
         </article>
       </div>
 
+      <section class="weather-card" aria-label="So sánh trong phòng và ngoài trời">
+        <div class="weather-head">
+          <div>
+            <p class="compare-label">Trong phòng vs Ngoài trời</p>
+            <p id="weatherMeta" class="compare-copy">Đang tải thời tiết ngoài trời…</p>
+          </div>
+          <div class="weather-cond" aria-hidden="true">
+            <span id="weatherIcon" class="weather-icon">··</span>
+            <span id="weatherCond" class="weather-cond-text">—</span>
+          </div>
+        </div>
+        <div id="aqiRow" style="margin:-4px 0 12px;">
+          <span id="aqiChip" class="aqi-chip"><span class="aqi-dot"></span><span id="aqiText">AQI --</span></span>
+        </div>
+        <div class="weather-table-wrap">
+          <table class="weather-table">
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <th scope="col">Trong phòng</th>
+                <th scope="col">Ngoài trời</th>
+                <th scope="col">Chênh lệch</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Nhiệt độ</th>
+                <td id="wIndoorTemp">--</td>
+                <td id="wOutdoorTemp">--</td>
+                <td id="wTempDelta" class="delta-cell">--</td>
+              </tr>
+              <tr>
+                <th scope="row">Độ ẩm</th>
+                <td id="wIndoorHum">--</td>
+                <td id="wOutdoorHum">--</td>
+                <td id="wHumDelta" class="delta-cell">--</td>
+              </tr>
+              <tr>
+                <th scope="row">Cảm giác</th>
+                <td id="wIndoorFeel">--</td>
+                <td id="wOutdoorFeel">--</td>
+                <td id="wFeelDelta" class="delta-cell">--</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p id="weatherSummary" class="compare-copy weather-summary">Đang đợi dữ liệu cảm biến và thời tiết.</p>
+        <div id="forecastStrip" class="forecast-strip" aria-label="Dự báo vài giờ tới"></div>
+        <div id="adviceBox" class="advice" style="display:none;">
+          <span id="adviceIcon" class="advice-icon">💡</span>
+          <span id="adviceText" class="advice-text"></span>
+        </div>
+        <p class="weather-attrib">Nguồn ngoài trời: Open-Meteo</p>
+      </section>
+
+      <section class="insights-card" aria-label="Phân tích phòng">
+        <div class="weather-head">
+          <div>
+            <p class="compare-label">Phân tích phòng</p>
+            <p class="compare-copy">Tính từ lịch sử cảm biến — không cần thiết bị thêm</p>
+          </div>
+        </div>
+        <div class="insights-grid">
+          <div class="insight">
+            <span class="insight-label">Điểm thoải mái</span>
+            <span id="comfortScore" class="insight-value">--</span>
+            <div class="score-bar" aria-hidden="true"><span id="comfortScoreBar"></span></div>
+            <p id="comfortScoreCopy" class="insight-copy">Đang tính…</p>
+          </div>
+          <div class="insight">
+            <span class="insight-label">Bất thường</span>
+            <span id="anomalyValue" class="insight-value">--</span>
+            <p id="anomalyCopy" class="insight-copy">So với cùng giờ 7 ngày qua</p>
+          </div>
+          <div class="insight">
+            <span class="insight-label">Nguy cơ nấm mốc</span>
+            <span id="moldValue" class="insight-value">--</span>
+            <p id="moldCopy" class="insight-copy">Dựa trên điểm sương &amp; độ ẩm</p>
+          </div>
+          <div class="insight">
+            <span class="insight-label">Điều hoà hôm nay</span>
+            <span id="acValue" class="insight-value">--</span>
+            <p id="acCopy" class="insight-copy">Ước tính giờ chạy &amp; tiền điện</p>
+          </div>
+        </div>
+        <p id="digestText" class="digest">Đang tổng hợp dữ liệu hôm nay…</p>
+      </section>
+
       <section class="compare-grid" aria-label="So sánh nhiệt độ">
         <article class="compare-card">
           <p class="compare-label">Hôm nay so với hôm qua</p>
@@ -870,15 +1231,125 @@
     </section>
   </main>
 
+  <div id="settingsOverlay" class="panel-overlay" role="dialog" aria-modal="true" aria-label="Cài đặt">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Cài đặt</h2>
+        <button id="settingsClose" class="icon-btn" type="button" aria-label="Đóng">✕</button>
+      </div>
+      <p class="panel-sub">Lưu trên trình duyệt này. Không cần sửa code.</p>
+
+      <p class="field-group-title">Vị trí phòng (thời tiết ngoài trời)</p>
+      <div class="field">
+        <label for="setLabel">Tên hiển thị</label>
+        <input id="setLabel" type="text" placeholder="Hà Nội">
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="setLat">Vĩ độ (lat)</label><input id="setLat" type="number" step="0.0001" inputmode="decimal"></div>
+        <div class="field"><label for="setLon">Kinh độ (lon)</label><input id="setLon" type="number" step="0.0001" inputmode="decimal"></div>
+      </div>
+      <button id="settingsUseLocation" class="btn" type="button">Dùng vị trí hiện tại</button>
+
+      <p class="field-group-title">Ngưỡng cảnh báo</p>
+      <div class="field-row">
+        <div class="field"><label for="setWarm">Hơi nóng từ (°C)</label><input id="setWarm" type="number" step="0.5" inputmode="decimal"></div>
+        <div class="field"><label for="setHot">Nóng từ (°C)</label><input id="setHot" type="number" step="0.5" inputmode="decimal"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="setCool">Lạnh dưới (°C)</label><input id="setCool" type="number" step="0.5" inputmode="decimal"></div>
+        <div class="field"><label for="setHumid">Ẩm cao từ (%)</label><input id="setHumid" type="number" step="1" inputmode="numeric"></div>
+      </div>
+
+      <p class="field-group-title">Điều hoà &amp; tiền điện</p>
+      <div class="field-row">
+        <div class="field"><label for="setAcTh">AC chạy khi dưới (°C)</label><input id="setAcTh" type="number" step="0.5" inputmode="decimal"></div>
+        <div class="field"><label for="setAcKw">Công suất (kW)</label><input id="setAcKw" type="number" step="0.1" inputmode="decimal"></div>
+      </div>
+      <div class="field">
+        <label for="setMonthlyKwh">Sản lượng tháng dự kiến (kWh)</label>
+        <input id="setMonthlyKwh" type="number" step="10" inputmode="numeric">
+        <p class="field-hint">Tiền điện dùng biểu giá sinh hoạt EVN bậc thang, VAT 8%. Giá không đổi theo ngày.</p>
+      </div>
+
+      <p class="field-group-title">Hiển thị</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="setTheme">Giao diện</label>
+          <select id="setTheme">
+            <option value="auto">Tự động (theo máy)</option>
+            <option value="light">Sáng</option>
+            <option value="dark">Tối</option>
+          </select>
+        </div>
+        <div class="field"><label for="setRefresh">Làm mới mỗi (giây)</label><input id="setRefresh" type="number" min="1" max="30" step="1" inputmode="numeric"></div>
+      </div>
+
+      <div class="panel-actions">
+        <button id="settingsReset" class="btn" type="button">Mặc định</button>
+        <button id="settingsSave" class="btn primary" type="button">Lưu</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = 'https://ucgbvsmxljilmgrdfazk.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_HRYudnWYxKH7VKEqJMGVXQ_FjR311MO';
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
-    const CLOUD_HISTORY_LIMIT = 20000;
     const MS_HOUR = 60 * 60 * 1000;
     const MS_DAY = 24 * MS_HOUR;
+    const EVN_TARIFF_EFFECTIVE = '10/05/2025';
+    const EVN_RESIDENTIAL_TARIFF = [
+      { upto: 50, price: 1984 },
+      { upto: 100, price: 2050 },
+      { upto: 200, price: 2380 },
+      { upto: 300, price: 2998 },
+      { upto: 400, price: 3350 },
+      { upto: Infinity, price: 3460 }
+    ];
+    const EVN_VAT_RATE = 0.08;
+
+    /* ===== Cài đặt người dùng (lưu localStorage) ===== */
+    const SETTINGS_KEY = 'autohome.settings.v1';
+    const DEFAULT_SETTINGS = {
+      locLabel: 'Hà Nội',
+      lat: 21.0285,
+      lon: 105.8542,
+      warmAbove: 28,   // °C -> "hơi nóng"
+      hotAbove: 30,    // °C -> "nóng"
+      coolBelow: 20,   // °C -> "hơi lạnh"
+      humidHigh: 75,   // % -> "ẩm cao"
+      acThreshold: 28, // °C, dưới mức này coi như AC đang chạy
+      acKw: 0.9,       // kW
+      monthlyKwh: 250, // kWh/tháng, dùng để ước tính bậc điện biên
+      theme: 'auto',   // auto | light | dark
+      refreshSec: 1
+    };
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        return raw ? Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw)) : Object.assign({}, DEFAULT_SETTINGS);
+      } catch (e) {
+        return Object.assign({}, DEFAULT_SETTINGS);
+      }
+    }
+    function saveSettings() {
+      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
+    }
+    let settings = loadSettings();
+
+    function applyTheme() {
+      const root = document.documentElement;
+      if (settings.theme === 'light' || settings.theme === 'dark') {
+        root.setAttribute('data-theme', settings.theme);
+      } else {
+        root.removeAttribute('data-theme');
+      }
+    }
+    applyTheme();
+
+    const OUTDOOR_REFRESH_MS = 10 * 60 * 1000; // thời tiết đổi chậm, 10 phút/lần là dư
     const params = new URLSearchParams(location.search);
 
     function isLocalDashboardHost(hostname) {
@@ -897,6 +1368,9 @@
       historyLoadedAt: 0,
       historyError: false,
       latestReadingForHistory: null,
+      outdoor: null,
+      outdoorAttemptedAt: 0,
+      outdoorLoadedAt: 0,
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
@@ -947,7 +1421,33 @@
       updatedAt: document.getElementById('updatedAt'),
       source: document.getElementById('source'),
       history: document.getElementById('history'),
-      appVersion: document.getElementById('appVersion')
+      appVersion: document.getElementById('appVersion'),
+      weatherMeta: document.getElementById('weatherMeta'),
+      weatherIcon: document.getElementById('weatherIcon'),
+      weatherCond: document.getElementById('weatherCond'),
+      wIndoorTemp: document.getElementById('wIndoorTemp'),
+      wOutdoorTemp: document.getElementById('wOutdoorTemp'),
+      wTempDelta: document.getElementById('wTempDelta'),
+      wIndoorHum: document.getElementById('wIndoorHum'),
+      wOutdoorHum: document.getElementById('wOutdoorHum'),
+      wHumDelta: document.getElementById('wHumDelta'),
+      wIndoorFeel: document.getElementById('wIndoorFeel'),
+      wOutdoorFeel: document.getElementById('wOutdoorFeel'),
+      wFeelDelta: document.getElementById('wFeelDelta'),
+      weatherSummary: document.getElementById('weatherSummary'),
+      aqiChip: document.getElementById('aqiChip'),
+      forecastStrip: document.getElementById('forecastStrip'),
+      adviceBox: document.getElementById('adviceBox'),
+      comfortScore: document.getElementById('comfortScore'),
+      comfortScoreBar: document.getElementById('comfortScoreBar'),
+      comfortScoreCopy: document.getElementById('comfortScoreCopy'),
+      anomalyValue: document.getElementById('anomalyValue'),
+      anomalyCopy: document.getElementById('anomalyCopy'),
+      moldValue: document.getElementById('moldValue'),
+      moldCopy: document.getElementById('moldCopy'),
+      acValue: document.getElementById('acValue'),
+      acCopy: document.getElementById('acCopy'),
+      digestText: document.getElementById('digestText')
     };
 
     function ensureDemoHistory() {
@@ -1109,7 +1609,7 @@
 
     async function fetchCloudHistory() {
       const startIso = startOfPreviousMonth(new Date()).toISOString();
-      const endpoint = `${SUPABASE_URL}/rest/v1/room_readings?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&recorded_at=gte.${encodeURIComponent(startIso)}&select=recorded_at,temperature_c,humidity,chip_temperature_c,sensor_online&order=recorded_at.asc&limit=${CLOUD_HISTORY_LIMIT}`;
+      const endpoint = `${SUPABASE_URL}/rest/v1/room_readings?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&recorded_at=gte.${encodeURIComponent(startIso)}&select=recorded_at,temperature_c,humidity,chip_temperature_c,sensor_online&order=recorded_at.asc&limit=10000`;
 
       state.historyAttemptedAt = Date.now();
 
@@ -1434,7 +1934,7 @@
     }
 
     function comfortState(temperature, humidity) {
-      if (temperature >= 30) {
+      if (temperature >= settings.hotAbove) {
         return {
           title: 'Nóng',
           tone: 'warm',
@@ -1442,7 +1942,7 @@
         };
       }
 
-      if (humidity >= 75) {
+      if (humidity >= settings.humidHigh) {
         return {
           title: 'Ẩm cao',
           tone: 'warm',
@@ -1450,11 +1950,19 @@
         };
       }
 
-      if (temperature >= 28) {
+      if (temperature >= settings.warmAbove) {
         return {
           title: 'Hơi nóng',
           tone: 'warm',
           copy: 'Nhiệt độ hơi cao, theo dõi thêm nếu phòng có người.'
+        };
+      }
+
+      if (temperature <= settings.coolBelow) {
+        return {
+          title: 'Hơi lạnh',
+          tone: 'cool',
+          copy: 'Nhiệt độ thấp, cân nhắc giảm điều hoà nếu thấy lạnh.'
         };
       }
 
@@ -1466,7 +1974,7 @@
         };
       }
 
-      if (temperature >= 24 && temperature <= 28 && humidity >= 45 && humidity <= 70) {
+      if (temperature >= 24 && temperature < settings.warmAbove && humidity >= 45 && humidity < settings.humidHigh) {
         return {
           title: 'Dễ chịu',
           tone: 'good',
@@ -1580,7 +2088,7 @@
       }
 
       if (!stats || !stats.pointCount) {
-        els.historySummary.textContent = 'Đang chờ Supabase snapshot mẫu lịch sử đầu tiên';
+        els.historySummary.textContent = 'Đang chờ ESP32 ghi mẫu lịch sử đầu tiên';
         return;
       }
 
@@ -1603,7 +2111,7 @@
 
       const liveSuffix = stats.pointCount > storedPointCount ? ' + hiện tại' : '';
       const lineSuffix = stats.pointCount < 2 ? ' · cần thêm mẫu để vẽ đường' : '';
-      els.historySummary.textContent = `${storedPointCount} mẫu history${liveSuffix} · mới nhất ${latest}${lineSuffix}`;
+      els.historySummary.textContent = `${storedPointCount} mẫu cloud${liveSuffix} · mới nhất ${latest}${lineSuffix}`;
     }
 
     function drawHistoryChart() {
@@ -1769,7 +2277,7 @@
 
       const daysStored = Number(historyStats?.daysStored || comparisonStats.daysStored || 0);
       els.history.textContent = daysStored > 0
-        ? `${daysStored} ngày${historyStats ? ' history' : ''}`
+        ? `${daysStored} ngày${historyStats ? ' cloud' : ''}`
         : 'Đang tích lũy';
     }
 
@@ -1788,6 +2296,8 @@
         state.latestReadingForHistory = null;
       }
       const displayStats = reading.stats || buildHistoryStats();
+      renderOutdoorComparison(reading);
+      renderInsights(reading);
 
       const displayDate = reading.updatedAtIso ? new Date(reading.updatedAtIso) : new Date();
       els.updatedAt.textContent = new Intl.DateTimeFormat('vi-VN', {
@@ -1826,6 +2336,7 @@
     }
 
     async function tick() {
+      maybeFetchOutdoorWeather();
       await maybeFetchCloudHistory();
       render(await fetchReading());
     }
@@ -1844,27 +2355,481 @@
       });
     });
 
-    /* ===================== MOTION CONTROL (added) ===================== */
-    const prefersReducedMotion =
-      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    /* ===================== OUTDOOR WEATHER (Open-Meteo) ===================== */
 
-    // Animated count-up for the big hero numbers
+    // WMO weather code -> {icon, text} tiếng Việt
+    function weatherCodeInfo(code) {
+      const map = {
+        0:  ['☀️', 'Trời quang'],
+        1:  ['🌤️', 'Phần lớn quang'],
+        2:  ['⛅', 'Có mây rải rác'],
+        3:  ['☁️', 'Nhiều mây'],
+        45: ['🌫️', 'Sương mù'],
+        48: ['🌫️', 'Sương mù đóng băng'],
+        51: ['🌦️', 'Mưa phùn nhẹ'],
+        53: ['🌦️', 'Mưa phùn'],
+        55: ['🌧️', 'Mưa phùn dày'],
+        56: ['🌧️', 'Mưa phùn đóng băng'],
+        57: ['🌧️', 'Mưa phùn đóng băng'],
+        61: ['🌦️', 'Mưa nhẹ'],
+        63: ['🌧️', 'Mưa vừa'],
+        65: ['🌧️', 'Mưa to'],
+        66: ['🌧️', 'Mưa đóng băng'],
+        67: ['🌧️', 'Mưa đóng băng'],
+        71: ['🌨️', 'Tuyết nhẹ'],
+        73: ['🌨️', 'Tuyết vừa'],
+        75: ['❄️', 'Tuyết dày'],
+        77: ['❄️', 'Hạt tuyết'],
+        80: ['🌦️', 'Mưa rào nhẹ'],
+        81: ['🌧️', 'Mưa rào'],
+        82: ['⛈️', 'Mưa rào lớn'],
+        85: ['🌨️', 'Mưa tuyết rào'],
+        86: ['🌨️', 'Mưa tuyết rào'],
+        95: ['⛈️', 'Dông'],
+        96: ['⛈️', 'Dông kèm mưa đá'],
+        99: ['⛈️', 'Dông kèm mưa đá']
+      };
+      return map[code] || ['🌡️', 'Ngoài trời'];
+    }
+
+    // Heat index (cảm giác như) từ nhiệt + ẩm, dùng cho cột trong phòng
+    function heatIndexC(tempC, humidity) {
+      const t = finiteNumber(tempC);
+      const rh = finiteNumber(humidity);
+      if (t === null || rh === null) return null;
+      if (t < 27) return t; // dưới 27°C heat index ~ nhiệt thực
+      const tF = t * 9 / 5 + 32;
+      const hi = -42.379 + 2.04901523 * tF + 10.14333127 * rh
+        - 0.22475541 * tF * rh - 0.00683783 * tF * tF
+        - 0.05481717 * rh * rh + 0.00122874 * tF * tF * rh
+        + 0.00085282 * tF * rh * rh - 0.00000199 * tF * tF * rh * rh;
+      return (hi - 32) * 5 / 9;
+    }
+
+    async function fetchOutdoorWeather() {
+      const lat = settings.lat;
+      const lon = settings.lon;
+      const fUrl = 'https://api.open-meteo.com/v1/forecast'
+        + '?latitude=' + lat + '&longitude=' + lon
+        + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code'
+        + '&hourly=temperature_2m,weather_code&forecast_days=2&timezone=auto';
+      const aqUrl = 'https://air-quality-api.open-meteo.com/v1/air-quality'
+        + '?latitude=' + lat + '&longitude=' + lon
+        + '&current=us_aqi,pm2_5&timezone=auto';
+      try {
+        const [fResp, aqResp] = await Promise.all([
+          fetch(fUrl, { cache: 'no-store' }),
+          fetch(aqUrl, { cache: 'no-store' }).catch(() => null)
+        ]);
+        if (!fResp.ok) throw new Error('weather http ' + fResp.status);
+        const data = await fResp.json();
+        const cur = data && data.current;
+        if (!cur) throw new Error('no current');
+
+        // hourly forecast: lấy từ giờ hiện tại trở đi, 6 mốc
+        let hourly = [];
+        if (data.hourly && Array.isArray(data.hourly.time)) {
+          const nowMs = Date.now();
+          const times = data.hourly.time;
+          const temps = data.hourly.temperature_2m || [];
+          const codes = data.hourly.weather_code || [];
+          for (let i = 0; i < times.length && hourly.length < 6; i++) {
+            const tMs = Date.parse(times[i]);
+            if (Number.isFinite(tMs) && tMs >= nowMs - 30 * 60 * 1000) {
+              hourly.push({ ms: tMs, temp: finiteNumber(temps[i]), code: Number(codes[i]) });
+            }
+          }
+        }
+
+        let aqi = null, pm25 = null;
+        if (aqResp && aqResp.ok) {
+          try {
+            const aqData = await aqResp.json();
+            if (aqData && aqData.current) {
+              aqi = finiteNumber(aqData.current.us_aqi);
+              pm25 = finiteNumber(aqData.current.pm2_5);
+            }
+          } catch (e) { /* bỏ qua AQI nếu lỗi */ }
+        }
+
+        state.outdoor = {
+          temperatureC: finiteNumber(cur.temperature_2m),
+          humidity: finiteNumber(cur.relative_humidity_2m),
+          feelsLikeC: finiteNumber(cur.apparent_temperature),
+          weatherCode: Number(cur.weather_code),
+          time: cur.time || null,
+          hourly: hourly,
+          aqi: aqi,
+          pm25: pm25
+        };
+        state.outdoorLoadedAt = Date.now();
+      } catch (error) {
+        if (!state.outdoor) state.outdoor = { error: true };
+      }
+    }
+
+    async function maybeFetchOutdoorWeather(force = false) {
+      const now = Date.now();
+      if (!force && state.outdoorAttemptedAt && now - state.outdoorAttemptedAt < OUTDOOR_REFRESH_MS) return;
+      state.outdoorAttemptedAt = now;
+      await fetchOutdoorWeather();
+    }
+
+    // US AQI -> nhãn + class màu
+    function aqiInfo(aqi) {
+      if (aqi === null || aqi === undefined) return { label: 'AQI --', cls: '' };
+      if (aqi <= 50)  return { label: 'AQI ' + Math.round(aqi) + ' · Tốt', cls: 'aqi-good' };
+      if (aqi <= 100) return { label: 'AQI ' + Math.round(aqi) + ' · Trung bình', cls: 'aqi-mod' };
+      if (aqi <= 150) return { label: 'AQI ' + Math.round(aqi) + ' · Kém (nhạy cảm)', cls: 'aqi-usg' };
+      if (aqi <= 200) return { label: 'AQI ' + Math.round(aqi) + ' · Xấu', cls: 'aqi-bad' };
+      return { label: 'AQI ' + Math.round(aqi) + ' · Rất xấu', cls: 'aqi-vbad' };
+    }
+
+    function setDeltaCell(el, indoor, outdoor, unit, opts) {
+      opts = opts || {};
+      if (indoor === null || outdoor === null) {
+        el.textContent = '--';
+        el.className = 'delta-cell';
+        return null;
+      }
+      const diff = indoor - outdoor; // trong phòng so với ngoài trời
+      const rounded = Math.round(diff * 10) / 10;
+      const sign = rounded > 0 ? '+' : '';
+      el.textContent = sign + (unit === '%' ? Math.round(diff) : rounded.toFixed(1)) + unit;
+      // với nhiệt độ: trong phòng thấp hơn (diff<0) = mát hơn -> màu "cool"
+      if (Math.abs(rounded) < (opts.flatBelow || 0.1)) el.className = 'delta-cell flat';
+      else if (diff < 0) el.className = 'delta-cell down';
+      else el.className = 'delta-cell up';
+      return diff;
+    }
+
+    function renderOutdoorComparison(reading) {
+      const o = state.outdoor;
+      const indoorT = finiteNumber(reading.temperatureC);
+      const indoorH = finiteNumber(reading.humidity);
+      const indoorFeel = heatIndexC(indoorT, indoorH);
+
+      // Header thời tiết
+      if (!o || o.error) {
+        els.weatherMeta.textContent = o && o.error
+          ? 'Không lấy được thời tiết (thử lại sau)'
+          : 'Đang tải thời tiết ngoài trời…';
+        els.weatherIcon.textContent = '··';
+        els.weatherCond.textContent = '—';
+      } else {
+        const [icon, text] = weatherCodeInfo(o.weatherCode);
+        els.weatherIcon.textContent = icon;
+        els.weatherCond.textContent = text;
+        let when = '';
+        if (o.time) {
+          const d = new Date(o.time);
+          if (!Number.isNaN(d.getTime())) {
+            when = ' · ' + new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' }).format(d);
+          }
+        }
+        els.weatherMeta.textContent = settings.locLabel + ' · cập nhật' + (when || ' vừa xong');
+      }
+
+      // AQI chip
+      const aqi = o && !o.error ? o.aqi : null;
+      const ai = aqiInfo(aqi);
+      els.aqiChip.className = 'aqi-chip ' + ai.cls;
+      document.getElementById('aqiText').textContent = ai.label
+        + (o && !o.error && o.pm25 !== null && o.pm25 !== undefined ? ' · PM2.5 ' + Math.round(o.pm25) : '');
+
+      const outT = o && !o.error ? o.temperatureC : null;
+      const outH = o && !o.error ? o.humidity : null;
+      const outFeel = o && !o.error ? o.feelsLikeC : null;
+
+      els.wIndoorTemp.textContent = indoorT === null ? '--' : indoorT.toFixed(1) + '°C';
+      els.wOutdoorTemp.textContent = outT === null ? '--' : outT.toFixed(1) + '°C';
+      els.wIndoorHum.textContent = indoorH === null ? '--' : Math.round(indoorH) + '%';
+      els.wOutdoorHum.textContent = outH === null ? '--' : Math.round(outH) + '%';
+      els.wIndoorFeel.textContent = indoorFeel === null ? '--' : indoorFeel.toFixed(1) + '°C';
+      els.wOutdoorFeel.textContent = outFeel === null ? '--' : outFeel.toFixed(1) + '°C';
+
+      const tDiff = setDeltaCell(els.wTempDelta, indoorT, outT, '°C', { flatBelow: 0.3 });
+      const hDiff = setDeltaCell(els.wHumDelta, indoorH, outH, '%', { flatBelow: 1 });
+      setDeltaCell(els.wFeelDelta, indoorFeel, outFeel, '°C', { flatBelow: 0.3 });
+
+      // Dự báo (chỉ cần dữ liệu ngoài trời) + gợi ý mở cửa luôn chạy
+      renderForecast(o);
+      renderOpenWindowAdvice(indoorT, indoorH, o);
+
+      // Câu tóm tắt
+      if (tDiff === null) {
+        els.weatherSummary.textContent = (indoorT === null)
+          ? 'Đang đợi dữ liệu cảm biến trong phòng.'
+          : 'Đang đợi dữ liệu thời tiết ngoài trời.';
+        return;
+      }
+      const parts = [];
+      const tAbs = Math.abs(Math.round(tDiff * 10) / 10).toFixed(1);
+      if (Math.abs(tDiff) < 0.3) {
+        parts.push('nhiệt độ ngang ngoài trời');
+      } else {
+        parts.push((tDiff < 0 ? 'mát hơn ngoài trời ' : 'nóng hơn ngoài trời ') + tAbs + '°C');
+      }
+      if (hDiff !== null) {
+        const hAbs = Math.abs(Math.round(hDiff));
+        if (hAbs < 1) parts.push('độ ẩm tương đương');
+        else parts.push(hDiff < 0 ? ('khô hơn ' + hAbs + '%') : ('ẩm hơn ' + hAbs + '%'));
+      }
+      els.weatherSummary.textContent = 'Trong phòng đang ' + parts.join(', ') + '.';
+    }
+
+    function renderForecast(o) {
+      const strip = els.forecastStrip || document.getElementById('forecastStrip');
+      if (!strip) return;
+      if (!o || o.error || !Array.isArray(o.hourly) || o.hourly.length === 0) {
+        strip.innerHTML = '';
+        return;
+      }
+      const fmt = new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      strip.innerHTML = o.hourly.map((h, i) => {
+        const [ico] = weatherCodeInfo(h.code);
+        const label = i === 0 ? 'Giờ này' : fmt.format(new Date(h.ms));
+        const temp = h.temp === null ? '--' : Math.round(h.temp) + '°';
+        return '<div class="forecast-cell"><span class="forecast-hour">' + label
+          + '</span><span class="forecast-ico">' + ico
+          + '</span><span class="forecast-temp">' + temp + '</span></div>';
+      }).join('');
+    }
+
+    function renderOpenWindowAdvice(indoorT, indoorH, o) {
+      const box = els.adviceBox || document.getElementById('adviceBox');
+      const icon = document.getElementById('adviceIcon');
+      const text = document.getElementById('adviceText');
+      if (!box) return;
+      if (indoorT === null || !o || o.error || o.temperatureC === null) {
+        box.style.display = 'none';
+        return;
+      }
+      const outT = o.temperatureC;
+      const outH = o.humidity;
+      const aqi = o.aqi;
+      const cooler = outT <= indoorT - 1.5;          // ngoài mát hơn rõ rệt
+      const notHumid = (outH === null || indoorH === null) ? true : outH <= indoorH + 8;
+      const airOk = (aqi === null || aqi === undefined) ? true : aqi <= 100;
+
+      box.style.display = 'flex';
+      if (cooler && notHumid && airOk) {
+        box.className = 'advice open';
+        icon.textContent = '🪟';
+        text.innerHTML = '<b>Nên mở cửa cho thoáng.</b> Ngoài trời đang mát hơn'
+          + (notHumid ? ', không ẩm hơn nhiều' : '')
+          + (airOk ? ' và không khí ổn' : '') + ' — tận dụng gió tự nhiên, đỡ tốn điện.';
+      } else if (!airOk) {
+        box.className = 'advice close';
+        icon.textContent = '😷';
+        text.innerHTML = '<b>Nên đóng cửa.</b> Không khí ngoài đang kém (AQI ' + Math.round(aqi) + ') — giữ cửa kín, dùng máy lọc nếu có.';
+      } else if (!cooler) {
+        box.className = 'advice close';
+        icon.textContent = '🔥';
+        text.innerHTML = '<b>Nên đóng cửa, bật điều hoà/quạt.</b> Ngoài trời không mát hơn trong phòng.';
+      } else {
+        box.className = 'advice close';
+        icon.textContent = '💧';
+        text.innerHTML = '<b>Cân nhắc.</b> Ngoài mát hơn nhưng ẩm cao — mở cửa có thể làm phòng bí hơn.';
+      }
+    }
+
+    /* ===================== PHÂN TÍCH PHÒNG (insights) ===================== */
+
+    function dewPointC(tempC, humidity) {
+      const t = finiteNumber(tempC), rh = finiteNumber(humidity);
+      if (t === null || rh === null || rh <= 0) return null;
+      const a = 17.625, b = 243.04;
+      const alpha = Math.log(rh / 100) + (a * t) / (b + t);
+      return (b * alpha) / (a - alpha);
+    }
+
+    function computeComfortScore(t, h) {
+      if (t === null || h === null) return null;
+      // điểm 100 ở 25°C / 55%; trừ dần khi lệch
+      const tPenalty = Math.min(60, Math.abs(t - 25) * 7);
+      const hPenalty = Math.min(40, Math.abs(h - 55) * 0.8);
+      return Math.max(0, Math.round(100 - tPenalty - hPenalty));
+    }
+
+    function evnResidentialCost(kwh) {
+      let remaining = Math.max(0, finiteNumber(kwh) || 0);
+      let previousLimit = 0;
+      let cost = 0;
+
+      for (const tier of EVN_RESIDENTIAL_TARIFF) {
+        const span = tier.upto === Infinity ? remaining : Math.max(0, tier.upto - previousLimit);
+        const used = Math.min(remaining, span);
+        cost += used * tier.price;
+        remaining -= used;
+        previousLimit = tier.upto;
+        if (remaining <= 0) break;
+      }
+
+      return cost * (1 + EVN_VAT_RATE);
+    }
+
+    function evnMarginalCost(baseKwh, addedKwh) {
+      const base = Math.max(0, finiteNumber(baseKwh) || 0);
+      const added = Math.max(0, finiteNumber(addedKwh) || 0);
+      return evnResidentialCost(base + added) - evnResidentialCost(base);
+    }
+
+    function evnMarginalPrice(baseKwh) {
+      const sampleKwh = 1;
+      return evnMarginalCost(baseKwh, sampleKwh) / sampleKwh;
+    }
+
+    function todayPoints() {
+      const pts = (typeof validHistoryPoints === 'function') ? validHistoryPoints() : (state.historyPoints || []);
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const s = startOfToday.getTime();
+      return pts.filter(p => Number.isFinite(p.recordedAtMs) && p.recordedAtMs >= s);
+    }
+
+    function renderInsights(reading) {
+      const t = finiteNumber(reading.temperatureC);
+      const h = finiteNumber(reading.humidity);
+
+      // 1) Điểm thoải mái
+      const score = computeComfortScore(t, h);
+      if (score === null) {
+        els.comfortScore.textContent = '--';
+        els.comfortScore.className = 'insight-value';
+        els.comfortScoreBar.style.width = '0%';
+        els.comfortScoreCopy.textContent = 'Chưa có dữ liệu phòng.';
+      } else {
+        els.comfortScore.textContent = score + '/100';
+        els.comfortScore.className = 'insight-value ' + (score >= 75 ? 'good' : score >= 50 ? 'warm' : 'bad');
+        els.comfortScoreBar.style.width = score + '%';
+        els.comfortScoreCopy.textContent = score >= 75 ? 'Phòng đang dễ chịu.' : score >= 50 ? 'Tạm ổn, có thể tinh chỉnh.' : 'Hơi khó chịu so với vùng lý tưởng.';
+      }
+
+      // 2) Bất thường (z-score so cùng giờ 7 ngày)
+      const pts = (typeof validHistoryPoints === 'function') ? validHistoryPoints() : (state.historyPoints || []);
+      if (t === null || pts.length < 10) {
+        els.anomalyValue.textContent = '--';
+        els.anomalyValue.className = 'insight-value';
+        els.anomalyCopy.textContent = 'Cần thêm lịch sử để so sánh.';
+      } else {
+        const nowH = new Date().getHours();
+        const sevenDaysAgo = Date.now() - 7 * MS_DAY;
+        const sameHour = pts.filter(p => p.recordedAtMs >= sevenDaysAgo
+          && new Date(p.recordedAtMs).getHours() === nowH
+          && Number.isFinite(p.temperatureC));
+        if (sameHour.length < 5) {
+          els.anomalyValue.textContent = 'Bình thường';
+          els.anomalyValue.className = 'insight-value good';
+          els.anomalyCopy.textContent = 'Chưa đủ mẫu cùng giờ để kết luận.';
+        } else {
+          const temps = sameHour.map(p => p.temperatureC);
+          const mean = temps.reduce((a, b) => a + b, 0) / temps.length;
+          const sd = Math.sqrt(temps.reduce((a, b) => a + (b - mean) * (b - mean), 0) / temps.length) || 0.0001;
+          const z = (t - mean) / sd;
+          if (Math.abs(z) >= 2) {
+            els.anomalyValue.textContent = 'Bất thường';
+            els.anomalyValue.className = 'insight-value bad';
+            els.anomalyCopy.textContent = (z > 0 ? 'Nóng hơn' : 'Mát hơn') + ' hẳn so với cùng giờ mọi ngày (~' + mean.toFixed(1) + '°C).';
+          } else {
+            els.anomalyValue.textContent = 'Bình thường';
+            els.anomalyValue.className = 'insight-value good';
+            els.anomalyCopy.textContent = 'Khớp với cùng giờ 7 ngày qua (~' + mean.toFixed(1) + '°C).';
+          }
+        }
+      }
+
+      // 3) Nguy cơ nấm mốc (dew point + ẩm cao)
+      const dp = dewPointC(t, h);
+      if (dp === null) {
+        els.moldValue.textContent = '--';
+        els.moldValue.className = 'insight-value';
+        els.moldCopy.textContent = 'Chưa có dữ liệu phòng.';
+      } else {
+        let level, cls, copy;
+        if (h >= 80) { level = 'Cao'; cls = 'bad'; copy = 'Ẩm rất cao, bề mặt mát dễ đọng nước. Nên hút ẩm/thông gió.'; }
+        else if (h >= 70) { level = 'Trung bình'; cls = 'warm'; copy = 'Ẩm hơi cao, theo dõi góc khuất, tủ kín.'; }
+        else { level = 'Thấp'; cls = 'good'; copy = 'Ẩm trong vùng an toàn.'; }
+        els.moldValue.textContent = level;
+        els.moldValue.className = 'insight-value ' + cls;
+        els.moldCopy.textContent = 'Điểm sương ~' + dp.toFixed(1) + '°C. ' + copy;
+      }
+
+      // 4) Điều hoà hôm nay (ước tính)
+      const tp = todayPoints();
+      if (tp.length < 2) {
+        els.acValue.textContent = '--';
+        els.acValue.className = 'insight-value';
+        els.acCopy.textContent = 'Chưa đủ dữ liệu hôm nay.';
+      } else {
+        // ước tính: tỉ lệ mẫu có nhiệt < ngưỡng AC, quy ra số giờ đã trôi qua trong ngày
+        const below = tp.filter(p => Number.isFinite(p.temperatureC) && p.temperatureC < settings.acThreshold).length;
+        const ratio = below / tp.length;
+        const hoursElapsed = (Date.now() - new Date().setHours(0, 0, 0, 0)) / MS_HOUR;
+        const acHours = ratio * hoursElapsed;
+        const acKwh = acHours * settings.acKw;
+        const baseKwh = Math.max(0, finiteNumber(settings.monthlyKwh) || DEFAULT_SETTINGS.monthlyKwh);
+        const cost = evnMarginalCost(baseKwh, acKwh);
+        const marginalPrice = evnMarginalPrice(baseKwh);
+        els.acValue.textContent = acHours.toFixed(1) + ' giờ';
+        els.acValue.className = 'insight-value cool';
+        els.acCopy.textContent = '≈ ' + Math.round(cost).toLocaleString('vi-VN') + 'đ · '
+          + acKwh.toFixed(1) + ' kWh · giá biên ~'
+          + Math.round(marginalPrice).toLocaleString('vi-VN')
+          + 'đ/kWh theo EVN ' + EVN_TARIFF_EFFECTIVE + '.';
+      }
+
+      // 5) Digest hôm nay
+      renderDigest(tp);
+    }
+
+    function renderDigest(tp) {
+      if (!tp || tp.length < 2) {
+        els.digestText.textContent = 'Đang tổng hợp dữ liệu hôm nay…';
+        return;
+      }
+      const temps = tp.filter(p => Number.isFinite(p.temperatureC));
+      if (temps.length < 2) { els.digestText.textContent = 'Đang tổng hợp dữ liệu hôm nay…'; return; }
+      let max = temps[0], min = temps[0];
+      temps.forEach(p => { if (p.temperatureC > max.temperatureC) max = p; if (p.temperatureC < min.temperatureC) min = p; });
+      const hums = tp.map(p => p.humidity).filter(Number.isFinite);
+      const fmt = new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      let s = 'Hôm nay: cao nhất ' + max.temperatureC.toFixed(1) + '°C lúc ' + fmt.format(new Date(max.recordedAtMs))
+        + ', thấp nhất ' + min.temperatureC.toFixed(1) + '°C lúc ' + fmt.format(new Date(min.recordedAtMs)) + '.';
+      if (hums.length) {
+        s += ' Độ ẩm ' + Math.round(Math.min.apply(null, hums)) + '–' + Math.round(Math.max.apply(null, hums)) + '%.';
+      }
+      els.digestText.textContent = s;
+    }
+
+    /* ===================== MOTION CONTROL (added) ===================== */
+
+    // Animated count-up for the big hero numbers.
+    // - First appearance: dramatic count from 0 (the "wow" on load)
+    // - Small live changes: snap instantly so it feels responsive, not laggy
+    // - Bigger jumps: a quick ease
     function animateValue(el, target, decimals) {
       if (!el || !Number.isFinite(target)) return;
       const prev = el.dataset.val;
-      const from = (prev !== undefined && prev !== '') ? parseFloat(prev) : 0;
+      const hasPrev = prev !== undefined && prev !== '';
+      const from = hasPrev ? parseFloat(prev) : 0;
       el.dataset.val = String(target);
 
-      const minStep = decimals === 0 ? 1 : 0.05;
-      if (prefersReducedMotion || Math.abs(target - from) < minStep) {
+      const delta = Math.abs(target - from);
+      // thresholds below which we just set the number with no animation
+      const snapStep = decimals === 0 ? 1.5 : 0.25;
+
+      if (hasPrev && delta < snapStep) {
         el.textContent = target.toFixed(decimals);
         return;
       }
 
-      el.classList.add('bump');
-      setTimeout(() => el.classList.remove('bump'), 240);
+      // first load counts from 0 (longer), live jumps are quick
+      const duration = hasPrev ? 360 : 750;
 
-      const duration = 650;
+      el.classList.add('bump');
+      setTimeout(() => el.classList.remove('bump'), 220);
+
       const start = performance.now();
       function frame(now) {
         const t = Math.min(1, (now - start) / duration);
@@ -1884,12 +2849,12 @@
         amb.setAttribute('aria-hidden', 'true');
         document.body.prepend(amb);
       }
-      if (prefersReducedMotion || !('IntersectionObserver' in window)) return;
+      if (!('IntersectionObserver' in window)) return;
 
       document.documentElement.classList.add('anim-ready');
 
       const blocks = Array.from(document.querySelectorAll(
-        '.topbar, .device-grid, .comfort-card, .grid, .compare-grid, .history-card, .details'
+        '.topbar, .device-grid, .comfort-card, .grid, .weather-card, .insights-card, .compare-grid, .history-card, .details'
       ));
       blocks.forEach((el, i) => {
         el.classList.add('reveal');
@@ -1910,8 +2875,134 @@
       setTimeout(() => blocks.forEach((el) => el.classList.add('in')), 1400);
     })();
 
+    /* ===================== SETTINGS PANEL ===================== */
+    const settingsFields = {
+      setLabel: 'locLabel', setLat: 'lat', setLon: 'lon',
+      setWarm: 'warmAbove', setHot: 'hotAbove', setCool: 'coolBelow', setHumid: 'humidHigh',
+      setAcTh: 'acThreshold', setAcKw: 'acKw', setMonthlyKwh: 'monthlyKwh',
+      setTheme: 'theme', setRefresh: 'refreshSec'
+    };
+
+    function fillSettingsForm() {
+      Object.keys(settingsFields).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = settings[settingsFields[id]];
+      });
+      const locationBtn = document.getElementById('settingsUseLocation');
+      if (locationBtn) locationBtn.textContent = 'Dùng vị trí hiện tại';
+    }
+
+    function openSettings() {
+      fillSettingsForm();
+      document.getElementById('settingsOverlay').classList.add('open');
+    }
+    function closeSettings() {
+      document.getElementById('settingsOverlay').classList.remove('open');
+    }
+
+    function applySettingsFromForm() {
+      const next = Object.assign({}, settings);
+      Object.keys(settingsFields).forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const key = settingsFields[id];
+        if (key === 'locLabel' || key === 'theme') {
+          next[key] = el.value;
+        } else {
+          const num = parseFloat(el.value);
+          if (Number.isFinite(num)) next[key] = num;
+        }
+      });
+      // refresh hợp lệ 1-30s
+      next.refreshSec = Math.min(30, Math.max(1, Math.round(next.refreshSec || 1)));
+      next.monthlyKwh = Math.max(0, Math.round(next.monthlyKwh || DEFAULT_SETTINGS.monthlyKwh));
+      settings = next;
+      saveSettings();
+      applyTheme();
+      restartTimer();
+      // ép cập nhật thời tiết theo toạ độ mới
+      state.outdoorAttemptedAt = 0;
+      maybeFetchOutdoorWeather(true);
+    }
+
+    function useCurrentLocationForSettings() {
+      const btn = document.getElementById('settingsUseLocation');
+      if (!navigator.geolocation) {
+        if (btn) btn.textContent = 'Trình duyệt không hỗ trợ GPS';
+        return;
+      }
+
+      if (btn) btn.textContent = 'Đang lấy vị trí…';
+      navigator.geolocation.getCurrentPosition((position) => {
+        const lat = Number(position.coords.latitude);
+        const lon = Number(position.coords.longitude);
+        const latEl = document.getElementById('setLat');
+        const lonEl = document.getElementById('setLon');
+        const labelEl = document.getElementById('setLabel');
+
+        if (latEl) latEl.value = lat.toFixed(5);
+        if (lonEl) lonEl.value = lon.toFixed(5);
+        if (labelEl && (!labelEl.value || labelEl.value === settings.locLabel)) labelEl.value = 'Vị trí hiện tại';
+        if (btn) btn.textContent = 'Đã lấy vị trí';
+      }, () => {
+        if (btn) btn.textContent = 'Không lấy được vị trí';
+      }, {
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 30 * 60 * 1000
+      });
+    }
+
+    let pollTimer = null;
+    function restartTimer() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(tick, Math.max(1, settings.refreshSec) * 1000);
+    }
+
+    document.getElementById('settingsBtn').addEventListener('click', openSettings);
+    document.getElementById('settingsClose').addEventListener('click', closeSettings);
+    document.getElementById('settingsUseLocation').addEventListener('click', useCurrentLocationForSettings);
+    document.getElementById('settingsOverlay').addEventListener('click', (e) => {
+      if (e.target.id === 'settingsOverlay') closeSettings();
+    });
+    document.getElementById('settingsSave').addEventListener('click', () => {
+      applySettingsFromForm();
+      closeSettings();
+    });
+    document.getElementById('settingsReset').addEventListener('click', () => {
+      settings = Object.assign({}, DEFAULT_SETTINGS);
+      saveSettings();
+      fillSettingsForm();
+      applyTheme();
+      restartTimer();
+      state.outdoorAttemptedAt = 0;
+      maybeFetchOutdoorWeather(true);
+    });
+
+    /* ===================== KIOSK MODE ===================== */
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+      } catch (e) { /* không hỗ trợ thì thôi */ }
+    }
+    function releaseWakeLock() {
+      try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) {}
+    }
+    function setKiosk(on) {
+      document.body.classList.toggle('kiosk', on);
+      if (on) requestWakeLock(); else releaseWakeLock();
+    }
+    document.getElementById('kioskBtn').addEventListener('click', () => {
+      setKiosk(!document.body.classList.contains('kiosk'));
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && document.body.classList.contains('kiosk')) requestWakeLock();
+    });
+    if (params.get('kiosk') === '1') setKiosk(true);
+
     tick();
-    setInterval(tick, 5000);
+    restartTimer();
   </script>
 </body>
 </html>
