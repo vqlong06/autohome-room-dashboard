@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cảm biến phòng AutoHome</title>
+  <title>Cảm biến phòng của Long</title>
   <meta name="theme-color" content="#0b1420">
-  <meta name="application-name" content="AutoHome">
-  <meta name="apple-mobile-web-app-title" content="AutoHome">
+  <meta name="application-name" content="Phòng của Long">
+  <meta name="apple-mobile-web-app-title" content="Phòng của Long">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260528">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260528">
   <style>
@@ -122,6 +122,7 @@
     .device-card,
     .compare-card,
     .history-card,
+    .today-card,
     .weather-card,
     .insights-card,
     .details {
@@ -306,6 +307,44 @@
       background: color-mix(in srgb, var(--panel), var(--bg) 35%);
     }
 
+    .today-card {
+      margin-bottom: 12px;
+      padding: 18px 20px;
+    }
+
+    .today-grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .today-stat {
+      min-height: 78px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 35%);
+    }
+
+    .today-value {
+      display: block;
+      font-size: 24px;
+      line-height: 1.08;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .today-sub {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
     .meter {
       height: 7px;
       width: 100%;
@@ -451,6 +490,31 @@
       height: 130px;
     }
 
+    .history-chart-wrap {
+      position: relative;
+      touch-action: pan-y;
+    }
+
+    .history-tooltip {
+      position: absolute;
+      z-index: 2;
+      min-width: 132px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), #000 5%);
+      color: var(--text);
+      box-shadow: 0 14px 32px var(--shadow);
+      font-size: 12px;
+      line-height: 1.35;
+      pointer-events: none;
+      transform: translate(-50%, calc(-100% - 10px));
+    }
+
+    .history-tooltip[hidden] {
+      display: none;
+    }
+
     .details {
       margin-top: 12px;
       padding: 16px 18px;
@@ -505,6 +569,7 @@
       .grid,
       .device-grid,
       .compare-grid,
+      .today-grid,
       .details {
         grid-template-columns: 1fr;
       }
@@ -858,6 +923,7 @@
     .device-card,
     .compare-card,
     .history-card,
+    .today-card,
     .weather-card,
     .insights-card,
     .details {
@@ -871,6 +937,7 @@
       .comfort-card:hover,
       .device-card:hover,
       .compare-card:hover,
+      .today-card:hover,
       .weather-card:hover,
       .insights-card:hover,
       .history-card:hover {
@@ -958,14 +1025,13 @@
     <section class="dashboard" aria-label="Bảng điều khiển cảm biến phòng">
       <div class="topbar">
         <div>
-          <h1>Phòng AutoHome</h1>
+          <h1>Phòng của Long</h1>
           <p class="subtitle">Nhiệt độ và độ ẩm theo thời gian thực</p>
         </div>
         <div class="status">
           <span id="statusDot" class="dot" aria-hidden="true"></span>
           <span id="statusText">Chưa có dữ liệu</span>
           <div class="topbar-actions">
-            <button id="kioskBtn" class="icon-btn" type="button" title="Chế độ toàn màn hình" aria-label="Chế độ toàn màn hình">⛶</button>
             <button id="settingsBtn" class="icon-btn" type="button" title="Cài đặt" aria-label="Cài đặt">⚙</button>
           </div>
         </div>
@@ -1021,6 +1087,37 @@
           <div class="pill">
             <span class="pill-label">Ẩm 1 giờ</span>
             <span id="comfortHumidityTrend" class="pill-value">--</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="today-card" aria-label="Tổng quan hôm nay">
+        <div class="history-head">
+          <div>
+            <p class="compare-label">Tổng quan hôm nay</p>
+            <p id="todaySummary" class="compare-copy">Đang tích lũy dữ liệu trong ngày</p>
+          </div>
+        </div>
+        <div class="today-grid">
+          <div class="today-stat">
+            <span class="stat-label">Nhiệt trung bình</span>
+            <span id="todayAvgTemp" class="today-value">--.-°C</span>
+            <span id="todaySampleCount" class="today-sub">-- mẫu</span>
+          </div>
+          <div class="today-stat">
+            <span class="stat-label">Nóng nhất</span>
+            <span id="todayPeakTemp" class="today-value">--.-°C</span>
+            <span id="todayPeakTempTime" class="today-sub">--:--</span>
+          </div>
+          <div class="today-stat">
+            <span class="stat-label">Dải độ ẩm</span>
+            <span id="todayHumidityRange" class="today-value">--%</span>
+            <span id="todayPeakHumidity" class="today-sub">cao nhất --%</span>
+          </div>
+          <div class="today-stat">
+            <span class="stat-label">Thoải mái TB</span>
+            <span id="todayComfortAvg" class="today-value">--/100</span>
+            <span id="todayComfortCopy" class="today-sub">Đang tính</span>
           </div>
         </div>
       </section>
@@ -1191,6 +1288,27 @@
         </article>
       </section>
 
+      <section class="insights-card ac-month-card" aria-label="Điện điều hoà theo tháng">
+        <div class="weather-head">
+          <div>
+            <p class="compare-label">Điện điều hoà — cộng dồn theo tháng</p>
+            <p id="acMonthDelta" class="compare-copy">Đang tích luỹ…</p>
+          </div>
+        </div>
+        <div class="insights-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+          <div class="insight">
+            <span class="insight-label">Tháng này</span>
+            <span id="acMonthThis" class="insight-value cool">--</span>
+            <p id="acMonthThisSub" class="insight-copy">Đang tích luỹ dữ liệu</p>
+          </div>
+          <div class="insight">
+            <span class="insight-label">Tháng trước</span>
+            <span id="acMonthLast" class="insight-value">--</span>
+            <p id="acMonthLastSub" class="insight-copy">Chưa có dữ liệu tháng trước</p>
+          </div>
+        </div>
+      </section>
+
       <section class="history-card" aria-label="Lịch sử nhiệt độ và độ ẩm">
         <div class="history-head">
           <div>
@@ -1198,12 +1316,16 @@
             <p id="historySummary" class="compare-copy">Đang tải dữ liệu</p>
           </div>
           <div class="range-tabs" aria-label="Chọn khoảng lịch sử">
+            <button class="range-tab" type="button" data-range="six">6h</button>
             <button class="range-tab active" type="button" data-range="day">24h</button>
             <button class="range-tab" type="button" data-range="week">7 ngày</button>
             <button class="range-tab" type="button" data-range="month">30 ngày</button>
           </div>
         </div>
-        <canvas id="historyChart" width="860" height="130"></canvas>
+        <div id="historyChartWrap" class="history-chart-wrap">
+          <canvas id="historyChart" width="860" height="130"></canvas>
+          <div id="historyTooltip" class="history-tooltip" hidden></div>
+        </div>
         <div class="history-legend" aria-hidden="true">
           <span class="legend-item"><span class="legend-line warm"></span>Nhiệt độ</span>
           <span class="legend-item"><span class="legend-line"></span>Độ ẩm</span>
@@ -1261,9 +1383,10 @@
       </div>
 
       <p class="field-group-title">Điều hoà &amp; tiền điện</p>
+      <p class="field-hint" style="margin:-4px 0 10px;">Việc nhận biết AC bật/tắt giờ tự suy từ chênh lệch nhiệt &amp; ẩm trong phòng so với ngoài trời — không cần nhập ngưỡng.</p>
       <div class="field-row">
-        <div class="field"><label for="setAcTh">AC chạy khi dưới (°C)</label><input id="setAcTh" type="number" step="0.5" inputmode="decimal"></div>
-        <div class="field"><label for="setAcKw">Công suất (kW)</label><input id="setAcKw" type="number" step="0.1" inputmode="decimal"></div>
+        <div class="field"><label for="setAcKw">Công suất AC (kW)</label><input id="setAcKw" type="number" step="0.1" inputmode="decimal"></div>
+        <div class="field"></div>
       </div>
       <div class="field">
         <label for="setMonthlyKwh">Sản lượng tháng dự kiến (kWh)</label>
@@ -1320,8 +1443,7 @@
       hotAbove: 30,    // °C -> "nóng"
       coolBelow: 20,   // °C -> "hơi lạnh"
       humidHigh: 75,   // % -> "ẩm cao"
-      acThreshold: 28, // °C, dưới mức này coi như AC đang chạy
-      acKw: 0.9,       // kW
+      acKw: 0.9,       // kW (công suất AC, cho ước tính kWh/tiền điện)
       monthlyKwh: 250, // kWh/tháng, dùng để ước tính bậc điện biên
       theme: 'auto',   // auto | light | dark
       refreshSec: 1
@@ -1367,10 +1489,14 @@
       historyAttemptedAt: 0,
       historyLoadedAt: 0,
       historyError: false,
+      historyHoverPoint: null,
+      historyChartModel: null,
       latestReadingForHistory: null,
       outdoor: null,
       outdoorAttemptedAt: 0,
       outdoorLoadedAt: 0,
+      acMonthly: null,
+      acMonthlyAt: 0,
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
@@ -1415,8 +1541,19 @@
       weekSummary: document.getElementById('weekSummary'),
       monthDelta: document.getElementById('monthDelta'),
       monthSummary: document.getElementById('monthSummary'),
+      todaySummary: document.getElementById('todaySummary'),
+      todayAvgTemp: document.getElementById('todayAvgTemp'),
+      todaySampleCount: document.getElementById('todaySampleCount'),
+      todayPeakTemp: document.getElementById('todayPeakTemp'),
+      todayPeakTempTime: document.getElementById('todayPeakTempTime'),
+      todayHumidityRange: document.getElementById('todayHumidityRange'),
+      todayPeakHumidity: document.getElementById('todayPeakHumidity'),
+      todayComfortAvg: document.getElementById('todayComfortAvg'),
+      todayComfortCopy: document.getElementById('todayComfortCopy'),
       historySummary: document.getElementById('historySummary'),
       historyChart: document.getElementById('historyChart'),
+      historyChartWrap: document.getElementById('historyChartWrap'),
+      historyTooltip: document.getElementById('historyTooltip'),
       rangeTabs: Array.from(document.querySelectorAll('[data-range]')),
       updatedAt: document.getElementById('updatedAt'),
       source: document.getElementById('source'),
@@ -1447,7 +1584,12 @@
       moldCopy: document.getElementById('moldCopy'),
       acValue: document.getElementById('acValue'),
       acCopy: document.getElementById('acCopy'),
-      digestText: document.getElementById('digestText')
+      digestText: document.getElementById('digestText'),
+      acMonthThis: document.getElementById('acMonthThis'),
+      acMonthThisSub: document.getElementById('acMonthThisSub'),
+      acMonthLast: document.getElementById('acMonthLast'),
+      acMonthLastSub: document.getElementById('acMonthLastSub'),
+      acMonthDelta: document.getElementById('acMonthDelta')
     };
 
     function ensureDemoHistory() {
@@ -2039,23 +2181,36 @@
 
     function selectedHistoryStartMs() {
       const now = Date.now();
+      if (state.historyRange === 'six') return now - 6 * MS_HOUR;
       if (state.historyRange === 'month') return now - 30 * MS_DAY;
       if (state.historyRange === 'week') return now - 7 * MS_DAY;
       return now - MS_DAY;
     }
 
-    function drawHistoryLine(ctx, points, key, color, width, height, pad) {
+    function historyValueScale(points, key) {
       const values = points
         .map(point => finiteNumber(point[key]))
         .filter(value => value !== null);
-      if (points.length < 2 || values.length < 2) return;
+      if (values.length === 0) return null;
 
       const min = Math.min(...values);
       const max = Math.max(...values);
       const span = Math.max(key === 'humidity' ? 8 : 1.2, max - min);
-      const startMs = points[0].recordedAtMs;
-      const endMs = points[points.length - 1].recordedAtMs;
-      const rangeMs = Math.max(1, endMs - startMs);
+      return { min, span };
+    }
+
+    function historyPointX(point, model) {
+      return ((point.recordedAtMs - model.startMs) / model.rangeMs) * (model.width - model.pad * 2) + model.pad;
+    }
+
+    function historyPointY(point, key, scale, model) {
+      const value = finiteNumber(point[key]);
+      if (value === null || !scale) return null;
+      return model.height - model.pad - ((value - scale.min) / scale.span) * (model.height - model.pad * 2);
+    }
+
+    function drawHistoryLine(ctx, model, key, color, scale) {
+      if (model.points.length < 2 || !scale) return;
 
       ctx.lineWidth = 2.4 * (window.devicePixelRatio || 1);
       ctx.lineJoin = 'round';
@@ -2064,12 +2219,10 @@
       ctx.beginPath();
 
       let started = false;
-      points.forEach(point => {
-        const value = finiteNumber(point[key]);
-        if (value === null) return;
-
-        const x = ((point.recordedAtMs - startMs) / rangeMs) * (width - pad * 2) + pad;
-        const y = height - pad - ((value - min) / span) * (height - pad * 2);
+      model.points.forEach(point => {
+        const y = historyPointY(point, key, scale, model);
+        if (y === null) return;
+        const x = historyPointX(point, model);
         if (!started) {
           ctx.moveTo(x, y);
           started = true;
@@ -2079,6 +2232,36 @@
       });
 
       ctx.stroke();
+    }
+
+    function drawHistoryMarker(ctx, model) {
+      const point = state.historyHoverPoint;
+      if (!point || !model || !model.points.includes(point)) return;
+
+      const ratio = window.devicePixelRatio || 1;
+      const x = historyPointX(point, model);
+      ctx.strokeStyle = colorMixLine();
+      ctx.lineWidth = 1 * ratio;
+      ctx.beginPath();
+      ctx.moveTo(x, model.pad);
+      ctx.lineTo(x, model.height - model.pad);
+      ctx.stroke();
+
+      [
+        ['temperatureC', model.tempScale, getComputedStyle(document.documentElement).getPropertyValue('--warm').trim()],
+        ['humidity', model.humidityScale, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()]
+      ].forEach(([key, scale, color]) => {
+        const y = historyPointY(point, key, scale, model);
+        if (y === null) return;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 4.5 * ratio, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function colorMixLine() {
+      return getComputedStyle(document.documentElement).getPropertyValue('--line').trim() || '#667085';
     }
 
     function updateHistorySummary(stats) {
@@ -2121,19 +2304,86 @@
       const points = validHistoryPoints().filter(point => point.recordedAtMs >= selectedHistoryStartMs());
 
       ctx.clearRect(0, 0, width, height);
-      if (points.length === 0) return;
+      if (points.length === 0) {
+        state.historyChartModel = null;
+        hideHistoryTooltip();
+        return;
+      }
 
       const pad = 12 * (window.devicePixelRatio || 1);
+      const startMs = points.length === 1 ? points[0].recordedAtMs - 1 : points[0].recordedAtMs;
+      const endMs = points.length === 1 ? points[0].recordedAtMs + 1 : points[points.length - 1].recordedAtMs;
+      const model = {
+        points,
+        width,
+        height,
+        pad,
+        startMs,
+        endMs,
+        rangeMs: Math.max(1, endMs - startMs),
+        tempScale: historyValueScale(points, 'temperatureC'),
+        humidityScale: historyValueScale(points, 'humidity')
+      };
+      state.historyChartModel = model;
+
       if (points.length === 1) {
         ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--warm').trim();
         ctx.beginPath();
         ctx.arc(width / 2, height / 2, 5 * (window.devicePixelRatio || 1), 0, Math.PI * 2);
         ctx.fill();
+        drawHistoryMarker(ctx, model);
         return;
       }
 
-      drawHistoryLine(ctx, points, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim(), width, height, pad);
-      drawHistoryLine(ctx, points, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), width, height, pad);
+      drawHistoryLine(ctx, model, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim(), model.tempScale);
+      drawHistoryLine(ctx, model, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), model.humidityScale);
+      drawHistoryMarker(ctx, model);
+    }
+
+    function hideHistoryTooltip() {
+      state.historyHoverPoint = null;
+      if (els.historyTooltip) els.historyTooltip.hidden = true;
+    }
+
+    function formatHistoryTooltipTime(ms) {
+      return new Intl.DateTimeFormat('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit'
+      }).format(new Date(ms));
+    }
+
+    function updateHistoryTooltip(point, clientX, clientY) {
+      if (!els.historyTooltip || !els.historyChartWrap) return;
+      const wrapRect = els.historyChartWrap.getBoundingClientRect();
+      const left = clamp(clientX - wrapRect.left, 72, Math.max(72, wrapRect.width - 72));
+      const top = clamp(clientY - wrapRect.top, 44, Math.max(44, wrapRect.height - 8));
+      els.historyTooltip.style.left = `${left}px`;
+      els.historyTooltip.style.top = `${top}px`;
+      els.historyTooltip.innerHTML = `<strong>${formatHistoryTooltipTime(point.recordedAtMs)}</strong><br>`
+        + `Nhiệt ${formatTemperature(point.temperatureC)}<br>`
+        + `Ẩm ${formatHumidity(point.humidity)}`;
+      els.historyTooltip.hidden = false;
+    }
+
+    function updateHistoryPointer(event) {
+      const model = state.historyChartModel;
+      if (!model || !model.points.length) return;
+      const rect = els.historyChart.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / Math.max(1, rect.width)) * model.width;
+      let nearest = model.points[0];
+      let bestDelta = Math.abs(historyPointX(nearest, model) - x);
+      model.points.forEach(point => {
+        const delta = Math.abs(historyPointX(point, model) - x);
+        if (delta < bestDelta) {
+          nearest = point;
+          bestDelta = delta;
+        }
+      });
+      state.historyHoverPoint = nearest;
+      updateHistoryTooltip(nearest, event.clientX, event.clientY);
+      drawHistoryChart();
     }
 
     function updateDeviceStatus(reading) {
@@ -2217,6 +2467,85 @@
       els.humidityTrend1h.textContent = formatHumidityDelta(stats?.humidityTrend1h);
     }
 
+    function averagePointValue(points, key) {
+      const values = points
+        .map(point => finiteNumber(point[key]))
+        .filter(value => value !== null);
+      if (values.length === 0) return null;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function extremePoint(points, key, direction) {
+      let selected = null;
+      points.forEach(point => {
+        const value = finiteNumber(point[key]);
+        if (value === null) return;
+        if (!selected) {
+          selected = point;
+          return;
+        }
+        const selectedValue = finiteNumber(selected[key]);
+        if (direction === 'max' ? value > selectedValue : value < selectedValue) {
+          selected = point;
+        }
+      });
+      return selected;
+    }
+
+    function formatClock(ms) {
+      if (!Number.isFinite(ms)) return '--:--';
+      return new Intl.DateTimeFormat('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(ms));
+    }
+
+    function updateTodayDashboard(reading = {}) {
+      const points = todayPoints();
+      if (points.length === 0) {
+        els.todaySummary.textContent = Boolean(reading.deviceOnline)
+          ? 'Đang chờ mẫu đầu tiên của hôm nay'
+          : 'ESP32 offline, chưa có dữ liệu hôm nay';
+        els.todayAvgTemp.textContent = '--.-°C';
+        els.todaySampleCount.textContent = '-- mẫu';
+        els.todayPeakTemp.textContent = '--.-°C';
+        els.todayPeakTempTime.textContent = '--:--';
+        els.todayHumidityRange.textContent = '--%';
+        els.todayPeakHumidity.textContent = 'cao nhất --%';
+        els.todayComfortAvg.textContent = '--/100';
+        els.todayComfortCopy.textContent = 'Đang tính';
+        return;
+      }
+
+      const avgTemp = averagePointValue(points, 'temperatureC');
+      const minHumidity = extremePoint(points, 'humidity', 'min');
+      const maxHumidity = extremePoint(points, 'humidity', 'max');
+      const peakTemp = extremePoint(points, 'temperatureC', 'max');
+      const comfortScores = points
+        .map(point => computeComfortScore(finiteNumber(point.temperatureC), finiteNumber(point.humidity)))
+        .filter(score => score !== null);
+      const avgComfort = comfortScores.length
+        ? Math.round(comfortScores.reduce((sum, score) => sum + score, 0) / comfortScores.length)
+        : null;
+      const latest = points[points.length - 1];
+
+      els.todaySummary.textContent = `${points.length} mẫu hôm nay · mới nhất ${formatClock(latest.recordedAtMs)}`;
+      els.todayAvgTemp.textContent = formatTemperature(avgTemp);
+      els.todaySampleCount.textContent = `${points.length} mẫu`;
+      els.todayPeakTemp.textContent = formatTemperature(peakTemp?.temperatureC);
+      els.todayPeakTempTime.textContent = peakTemp ? `lúc ${formatClock(peakTemp.recordedAtMs)}` : '--:--';
+      els.todayHumidityRange.textContent = minHumidity && maxHumidity
+        ? `${Math.round(minHumidity.humidity)}–${Math.round(maxHumidity.humidity)}%`
+        : '--%';
+      els.todayPeakHumidity.textContent = maxHumidity
+        ? `cao nhất lúc ${formatClock(maxHumidity.recordedAtMs)}`
+        : 'cao nhất --%';
+      els.todayComfortAvg.textContent = avgComfort === null ? '--/100' : `${avgComfort}/100`;
+      els.todayComfortCopy.textContent = avgComfort === null
+        ? 'Đang tính'
+        : (avgComfort >= 75 ? 'Ổn định' : avgComfort >= 55 ? 'Tạm ổn' : 'Cần chú ý');
+    }
+
     function updateComparison(deltaEl, summaryEl, current, previous, currentLabel, previousLabel) {
       if (current === null || previous === null) {
         deltaEl.textContent = '--';
@@ -2244,6 +2573,7 @@
 
       updateHistorySummary(historyStats);
       drawHistoryChart();
+      updateTodayDashboard(reading);
 
       if (!comparisonStats) {
         resetComparison(els.dayDelta, els.daySummary, 'Chưa có dữ liệu cảm biến');
@@ -2298,6 +2628,7 @@
       const displayStats = reading.stats || buildHistoryStats();
       renderOutdoorComparison(reading);
       renderInsights(reading);
+      renderAcMonthly();
 
       const displayDate = reading.updatedAtIso ? new Date(reading.updatedAtIso) : new Date();
       els.updatedAt.textContent = new Intl.DateTimeFormat('vi-VN', {
@@ -2338,6 +2669,10 @@
     async function tick() {
       maybeFetchOutdoorWeather();
       await maybeFetchCloudHistory();
+      if (!state.acMonthlyAt || Date.now() - state.acMonthlyAt > 60000) {
+        state.acMonthlyAt = Date.now();
+        computeAcMonthly();
+      }
       render(await fetchReading());
     }
 
@@ -2350,9 +2685,17 @@
     els.rangeTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         state.historyRange = tab.dataset.range || 'day';
+        hideHistoryTooltip();
         els.rangeTabs.forEach(item => item.classList.toggle('active', item === tab));
         drawHistoryChart();
       });
+    });
+
+    els.historyChart.addEventListener('pointermove', updateHistoryPointer);
+    els.historyChart.addEventListener('pointerdown', updateHistoryPointer);
+    els.historyChart.addEventListener('pointerleave', () => {
+      hideHistoryTooltip();
+      drawHistoryChart();
     });
 
     /* ===================== OUTDOOR WEATHER (Open-Meteo) ===================== */
@@ -2409,10 +2752,15 @@
     async function fetchOutdoorWeather() {
       const lat = settings.lat;
       const lon = settings.lon;
+      // lùi đủ xa để phủ từ đầu THÁNG TRƯỚC (phục vụ cộng dồn tiền điện theo tháng)
+      const _now = new Date();
+      const _lastMonthStart = new Date(_now.getFullYear(), _now.getMonth() - 1, 1).getTime();
+      const pastDays = Math.min(92, Math.max(1, Math.ceil((Date.now() - _lastMonthStart) / MS_DAY) + 1));
       const fUrl = 'https://api.open-meteo.com/v1/forecast'
         + '?latitude=' + lat + '&longitude=' + lon
         + '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code'
-        + '&hourly=temperature_2m,weather_code&forecast_days=2&timezone=auto';
+        + '&hourly=temperature_2m,relative_humidity_2m,weather_code'
+        + '&past_days=' + pastDays + '&forecast_days=2&timezone=auto';
       const aqUrl = 'https://air-quality-api.open-meteo.com/v1/air-quality'
         + '?latitude=' + lat + '&longitude=' + lon
         + '&current=us_aqi,pm2_5&timezone=auto';
@@ -2426,16 +2774,20 @@
         const cur = data && data.current;
         if (!cur) throw new Error('no current');
 
-        // hourly forecast: lấy từ giờ hiện tại trở đi, 6 mốc
+        // hourly: dải dự báo (từ giờ hiện tại) + bảng tra theo giờ cho cả ngày (để nhận AC)
         let hourly = [];
+        let hourlyAll = [];
         if (data.hourly && Array.isArray(data.hourly.time)) {
           const nowMs = Date.now();
           const times = data.hourly.time;
           const temps = data.hourly.temperature_2m || [];
+          const hums = data.hourly.relative_humidity_2m || [];
           const codes = data.hourly.weather_code || [];
-          for (let i = 0; i < times.length && hourly.length < 6; i++) {
+          for (let i = 0; i < times.length; i++) {
             const tMs = Date.parse(times[i]);
-            if (Number.isFinite(tMs) && tMs >= nowMs - 30 * 60 * 1000) {
+            if (!Number.isFinite(tMs)) continue;
+            hourlyAll.push({ ms: tMs, temp: finiteNumber(temps[i]), humidity: finiteNumber(hums[i]), code: Number(codes[i]) });
+            if (hourly.length < 6 && tMs >= nowMs - 30 * 60 * 1000) {
               hourly.push({ ms: tMs, temp: finiteNumber(temps[i]), code: Number(codes[i]) });
             }
           }
@@ -2459,6 +2811,7 @@
           weatherCode: Number(cur.weather_code),
           time: cur.time || null,
           hourly: hourly,
+          hourlyAll: hourlyAll,
           aqi: aqi,
           pm25: pm25
         };
@@ -2680,6 +3033,81 @@
       return evnMarginalCost(baseKwh, sampleKwh) / sampleKwh;
     }
 
+    /* ===== Cộng dồn điện điều hoà theo tháng (tự suy trong/ngoài) ===== */
+    const AC_TEMP_DELTA = 2;  // °C: ngoài - trong
+    const AC_HUM_DELTA = 12;  // %: ngoài - trong
+
+    function outdoorHourMap() {
+      const out = (state.outdoor && !state.outdoor.error && Array.isArray(state.outdoor.hourlyAll))
+        ? state.outdoor.hourlyAll : null;
+      if (!out || out.length === 0) return null;
+      const m = new Map();
+      out.forEach(h => m.set(Math.floor(h.ms / MS_HOUR), h));
+      return m;
+    }
+
+    function acSampleIsOn(p, byHour) {
+      if (!Number.isFinite(p.temperatureC) || !Number.isFinite(p.humidity)) return null;
+      const k = Math.floor(p.recordedAtMs / MS_HOUR);
+      const o = byHour.get(k) || byHour.get(k - 1) || byHour.get(k + 1);
+      if (!o || o.temp === null || o.humidity === null) return null; // không khớp được giờ -> bỏ
+      return (o.temp - p.temperatureC) >= AC_TEMP_DELTA && (o.humidity - p.humidity) >= AC_HUM_DELTA;
+    }
+
+    function acRange(points, byHour, startMs, endMs, rangeHours, baseKwh, kw) {
+      let usable = 0, on = 0;
+      for (const p of points) {
+        if (p.recordedAtMs < startMs || p.recordedAtMs >= endMs) continue;
+        const r = acSampleIsOn(p, byHour);
+        if (r === null) continue;
+        usable++;
+        if (r) on++;
+      }
+      if (usable < 2) return null;
+      const hours = (on / usable) * rangeHours;
+      const kwh = hours * kw;
+      return { hours, kwh, cost: evnMarginalCost(baseKwh, kwh) };
+    }
+
+    function computeAcMonthly() {
+      const byHour = outdoorHourMap();
+      const pts = validStoredHistoryPoints();
+      if (!byHour || !pts || pts.length < 2) { state.acMonthly = null; return; }
+      const now = new Date();
+      const thisStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const lastStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+      const nowMs = Date.now();
+      const baseKwh = Math.max(0, finiteNumber(settings.monthlyKwh) || DEFAULT_SETTINGS.monthlyKwh);
+      const kw = Math.max(0, finiteNumber(settings.acKw) || DEFAULT_SETTINGS.acKw);
+      state.acMonthly = {
+        thisMonth: acRange(pts, byHour, thisStart, nowMs, (nowMs - thisStart) / MS_HOUR, baseKwh, kw),
+        lastMonth: acRange(pts, byHour, lastStart, thisStart, (thisStart - lastStart) / MS_HOUR, baseKwh, kw)
+      };
+    }
+
+    function renderAcMonthly() {
+      const money = (c) => Math.round(c).toLocaleString('vi-VN') + 'đ';
+      const sub = (x) => x ? (x.hours.toFixed(1) + ' giờ · ' + x.kwh.toFixed(1) + ' kWh') : '';
+      const m = state.acMonthly;
+      const tm = m && m.thisMonth, lm = m && m.lastMonth;
+
+      els.acMonthThis.textContent = tm ? money(tm.cost) : '--';
+      els.acMonthThisSub.textContent = tm ? sub(tm) : 'Đang tích luỹ dữ liệu';
+      els.acMonthLast.textContent = lm ? money(lm.cost) : '--';
+      els.acMonthLastSub.textContent = lm ? sub(lm) : 'Chưa có dữ liệu tháng trước';
+
+      if (tm && lm) {
+        const d = tm.cost - lm.cost;
+        const dh = tm.hours - lm.hours;
+        els.acMonthDelta.textContent = 'Tháng này ' + (d >= 0 ? 'nhiều hơn ' : 'ít hơn ')
+          + money(Math.abs(d)) + ' (' + (dh >= 0 ? '+' : '') + dh.toFixed(1) + ' giờ) so với tháng trước.';
+      } else if (tm) {
+        els.acMonthDelta.textContent = 'Cộng dồn từ đầu tháng. Qua hết tháng sẽ có số để so sánh.';
+      } else {
+        els.acMonthDelta.textContent = 'Đang đợi đủ dữ liệu lịch sử + thời tiết.';
+      }
+    }
+
     function todayPoints() {
       const pts = (typeof validHistoryPoints === 'function') ? validHistoryPoints() : (state.historyPoints || []);
       const startOfToday = new Date();
@@ -2755,28 +3183,66 @@
         els.moldCopy.textContent = 'Điểm sương ~' + dp.toFixed(1) + '°C. ' + copy;
       }
 
-      // 4) Điều hoà hôm nay (ước tính)
+      // 4) Điều hoà hôm nay — TỰ ĐỘNG nhận diện bằng cách so trong phòng với ngoài trời
       const tp = todayPoints();
-      if (tp.length < 2) {
+      const outAll = (state.outdoor && !state.outdoor.error && Array.isArray(state.outdoor.hourlyAll))
+        ? state.outdoor.hourlyAll : null;
+
+      if (tp.length < 2 || !outAll || outAll.length === 0) {
         els.acValue.textContent = '--';
         els.acValue.className = 'insight-value';
-        els.acCopy.textContent = 'Chưa đủ dữ liệu hôm nay.';
+        els.acCopy.textContent = !outAll
+          ? 'Đang đợi dữ liệu thời tiết ngoài trời.'
+          : 'Chưa đủ dữ liệu hôm nay.';
       } else {
-        // ước tính: tỉ lệ mẫu có nhiệt < ngưỡng AC, quy ra số giờ đã trôi qua trong ngày
-        const below = tp.filter(p => Number.isFinite(p.temperatureC) && p.temperatureC < settings.acThreshold).length;
-        const ratio = below / tp.length;
-        const hoursElapsed = (Date.now() - new Date().setHours(0, 0, 0, 0)) / MS_HOUR;
-        const acHours = ratio * hoursElapsed;
-        const acKwh = acHours * settings.acKw;
-        const baseKwh = Math.max(0, finiteNumber(settings.monthlyKwh) || DEFAULT_SETTINGS.monthlyKwh);
-        const cost = evnMarginalCost(baseKwh, acKwh);
-        const marginalPrice = evnMarginalPrice(baseKwh);
-        els.acValue.textContent = acHours.toFixed(1) + ' giờ';
-        els.acValue.className = 'insight-value cool';
-        els.acCopy.textContent = '≈ ' + Math.round(cost).toLocaleString('vi-VN') + 'đ · '
-          + acKwh.toFixed(1) + ' kWh · giá biên ~'
-          + Math.round(marginalPrice).toLocaleString('vi-VN')
-          + 'đ/kWh theo EVN ' + EVN_TARIFF_EFFECTIVE + '.';
+        // Tra nhiệt/ẩm ngoài trời theo từng giờ (làm tròn về đầu giờ)
+        const outByHour = new Map();
+        outAll.forEach(h => outByHour.set(Math.floor(h.ms / MS_HOUR), h));
+        const nearestOutdoor = (ms) => {
+          const k = Math.floor(ms / MS_HOUR);
+          return outByHour.get(k) || outByHour.get(k - 1) || outByHour.get(k + 1) || null;
+        };
+
+        // Quy tắc: AC đang chạy khi phòng vừa MÁT HƠN vừa KHÔ HƠN ngoài trời rõ rệt.
+        // (Làm mát thụ động như quạt/bóng râm hạ nhiệt nhưng KHÔNG hạ ẩm — chỉ máy lạnh
+        //  mới kéo ẩm trong phòng xuống thấp hơn hẳn ngoài trời.)
+        const TEMP_DELTA = 2;   // °C: ngoài - trong
+        const HUM_DELTA = 12;   // %: ngoài - trong
+        const isAcSample = (p) => {
+          if (!Number.isFinite(p.temperatureC) || !Number.isFinite(p.humidity)) return false;
+          const o = nearestOutdoor(p.recordedAtMs);
+          if (!o || o.temp === null || o.humidity === null) return false;
+          return (o.temp - p.temperatureC) >= TEMP_DELTA && (o.humidity - p.humidity) >= HUM_DELTA;
+        };
+
+        const usable = tp.filter(p => nearestOutdoor(p.recordedAtMs));
+        if (usable.length < 2) {
+          els.acValue.textContent = '--';
+          els.acValue.className = 'insight-value';
+          els.acCopy.textContent = 'Chưa khớp được mốc thời tiết để suy luận.';
+        } else {
+          const acCount = usable.filter(isAcSample).length;
+          const ratio = acCount / usable.length;
+          const hoursElapsed = (Date.now() - new Date().setHours(0, 0, 0, 0)) / MS_HOUR;
+          const acHours = ratio * hoursElapsed;
+          const acKwh = acHours * settings.acKw;
+          const baseKwh = Math.max(0, finiteNumber(settings.monthlyKwh) || DEFAULT_SETTINGS.monthlyKwh);
+          const cost = evnMarginalCost(baseKwh, acKwh);
+
+          // Trạng thái hiện tại: dựa trên mẫu mới nhất so với ngoài trời ngay lúc này
+          const latest = usable[usable.length - 1];
+          const oNow = (state.outdoor.temperatureC !== null) ? state.outdoor : nearestOutdoor(latest.recordedAtMs);
+          const acNow = latest && oNow && oNow.temperatureC !== undefined
+            ? ((oNow.temperatureC ?? oNow.temp) - latest.temperatureC) >= TEMP_DELTA
+              && ((oNow.humidity) - latest.humidity) >= HUM_DELTA
+            : isAcSample(latest);
+
+          els.acValue.textContent = acHours.toFixed(1) + ' giờ';
+          els.acValue.className = 'insight-value ' + (acNow ? 'cool' : 'good');
+          els.acCopy.textContent = (acNow ? 'Có vẻ đang BẬT. ' : 'Có vẻ đang tắt. ')
+            + '≈ ' + Math.round(cost).toLocaleString('vi-VN') + 'đ · ' + acKwh.toFixed(1)
+            + ' kWh hôm nay (tự suy từ chênh lệch trong/ngoài, EVN ' + EVN_TARIFF_EFFECTIVE + ').';
+        }
       }
 
       // 5) Digest hôm nay
@@ -2854,7 +3320,7 @@
       document.documentElement.classList.add('anim-ready');
 
       const blocks = Array.from(document.querySelectorAll(
-        '.topbar, .device-grid, .comfort-card, .grid, .weather-card, .insights-card, .compare-grid, .history-card, .details'
+        '.topbar, .device-grid, .comfort-card, .today-card, .grid, .weather-card, .insights-card, .compare-grid, .history-card, .details'
       ));
       blocks.forEach((el, i) => {
         el.classList.add('reveal');
@@ -2879,7 +3345,7 @@
     const settingsFields = {
       setLabel: 'locLabel', setLat: 'lat', setLon: 'lon',
       setWarm: 'warmAbove', setHot: 'hotAbove', setCool: 'coolBelow', setHumid: 'humidHigh',
-      setAcTh: 'acThreshold', setAcKw: 'acKw', setMonthlyKwh: 'monthlyKwh',
+      setAcKw: 'acKw', setMonthlyKwh: 'monthlyKwh',
       setTheme: 'theme', setRefresh: 'refreshSec'
     };
 
@@ -2978,28 +3444,6 @@
       state.outdoorAttemptedAt = 0;
       maybeFetchOutdoorWeather(true);
     });
-
-    /* ===================== KIOSK MODE ===================== */
-    let wakeLock = null;
-    async function requestWakeLock() {
-      try {
-        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
-      } catch (e) { /* không hỗ trợ thì thôi */ }
-    }
-    function releaseWakeLock() {
-      try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) {}
-    }
-    function setKiosk(on) {
-      document.body.classList.toggle('kiosk', on);
-      if (on) requestWakeLock(); else releaseWakeLock();
-    }
-    document.getElementById('kioskBtn').addEventListener('click', () => {
-      setKiosk(!document.body.classList.contains('kiosk'));
-    });
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && document.body.classList.contains('kiosk')) requestWakeLock();
-    });
-    if (params.get('kiosk') === '1') setKiosk(true);
 
     tick();
     restartTimer();
