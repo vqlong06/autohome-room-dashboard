@@ -1347,8 +1347,10 @@
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
-    const CLOUD_HISTORY_PAGE_SIZE = 1000;
-    const CLOUD_HISTORY_MAX_ROWS = 10000;
+    const HISTORY_PAGE_SIZE = 1000;     // Supabase REST thường giới hạn 1000 dòng mỗi request
+    const HISTORY_INITIAL_LIMIT = 10000; // số mẫu mới nhất tải ở lần đầu (~34 ngày @5 phút)
+    const HISTORY_INCREMENTAL_LIMIT = 8000; // mẫu mới mỗi lần poll (đủ để bắt kịp sau khi treo tab)
+    const HISTORY_MAX_POINTS = 15000;    // trần bộ nhớ: giữ tối đa ngần này mẫu gần nhất
     const MS_HOUR = 60 * 60 * 1000;
     const MS_DAY = 24 * MS_HOUR;
     const EVN_TARIFF_EFFECTIVE = '10/05/2025';
@@ -1669,41 +1671,72 @@
       }
     }
 
-    async function fetchCloudHistory() {
-      const startIso = startOfPreviousMonth(new Date()).toISOString();
+    function mapHistoryRows(rows) {
+      return (Array.isArray(rows) ? rows : [])
+        .map(row => ({
+          recordedAtMs: Date.parse(row.recorded_at),
+          temperatureC: finiteNumber(row.temperature_c),
+          humidity: finiteNumber(row.humidity),
+          chipTemperatureC: finiteNumber(row.chip_temperature_c),
+          sensorOnline: Boolean(row.sensor_online)
+        }))
+        .filter(point => Number.isFinite(point.recordedAtMs));
+    }
 
+    async function fetchHistoryRows(url) {
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+        }
+      });
+      if (!response.ok) throw new Error('History endpoint unavailable');
+      return mapHistoryRows(await response.json());
+    }
+
+    async function fetchHistoryRowsPaged(baseUrl, maxRows) {
+      const rows = [];
+      for (let offset = 0; offset < maxRows; offset += HISTORY_PAGE_SIZE) {
+        const limit = Math.min(HISTORY_PAGE_SIZE, maxRows - offset);
+        const page = await fetchHistoryRows(`${baseUrl}&limit=${limit}&offset=${offset}`);
+        if (page.length === 0) break;
+        rows.push(...page);
+        if (page.length < limit) break;
+      }
+      return rows;
+    }
+
+    async function fetchCloudHistory() {
+      const base = `${SUPABASE_URL}/rest/v1/room_readings?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}`
+        + `&select=recorded_at,temperature_c,humidity,chip_temperature_c,sensor_online`;
       state.historyAttemptedAt = Date.now();
 
       try {
-        const rows = [];
-        for (let offset = 0; offset < CLOUD_HISTORY_MAX_ROWS; offset += CLOUD_HISTORY_PAGE_SIZE) {
-          const limit = Math.min(CLOUD_HISTORY_PAGE_SIZE, CLOUD_HISTORY_MAX_ROWS - offset);
-          const endpoint = `${SUPABASE_URL}/rest/v1/room_readings?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&recorded_at=gte.${encodeURIComponent(startIso)}&select=recorded_at,temperature_c,humidity,chip_temperature_c,sensor_online&order=recorded_at.desc&limit=${limit}&offset=${offset}`;
-          const response = await fetch(endpoint, {
-            cache: 'no-store',
-            headers: {
-              apikey: SUPABASE_PUBLISHABLE_KEY,
-              Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+        const have = state.historyPoints.length > 0;
+        if (have) {
+          // Tăng trưởng: chỉ kéo mẫu MỚI HƠN mẫu mới nhất đang có -> payload nhỏ.
+          const newestMs = state.historyPoints[state.historyPoints.length - 1].recordedAtMs;
+          const sinceIso = new Date(newestMs).toISOString();
+          const url = `${base}&recorded_at=gt.${encodeURIComponent(sinceIso)}&order=recorded_at.asc`;
+          const fresh = (await fetchHistoryRowsPaged(url, HISTORY_INCREMENTAL_LIMIT))
+            .filter(p => p.recordedAtMs > newestMs);
+          if (fresh.length) {
+            state.historyPoints = state.historyPoints.concat(fresh);
+            if (state.historyPoints.length > HISTORY_MAX_POINTS) {
+              state.historyPoints = state.historyPoints.slice(-HISTORY_MAX_POINTS);
             }
-          });
-          if (!response.ok) throw new Error('History endpoint unavailable');
-          const page = await response.json();
-          if (!Array.isArray(page) || page.length === 0) break;
-          rows.push(...page);
-          if (page.length < limit) break;
+          }
+        } else {
+          // Lần đầu: lấy N mẫu MỚI NHẤT (desc) rồi đảo về tăng dần.
+          // -> luôn có dữ liệu gần đây nhất, không bao giờ bị cắt như order=asc&limit cũ.
+          const startIso = startOfPreviousMonth(new Date()).toISOString();
+          const url = `${base}&recorded_at=gte.${encodeURIComponent(startIso)}`
+            + `&order=recorded_at.desc`;
+          const rows = await fetchHistoryRowsPaged(url, HISTORY_INITIAL_LIMIT);
+          rows.sort((a, b) => a.recordedAtMs - b.recordedAtMs);
+          state.historyPoints = rows;
         }
-
-        state.historyPoints = rows
-          ? rows.map(row => ({
-            recordedAtMs: Date.parse(row.recorded_at),
-            temperatureC: finiteNumber(row.temperature_c),
-            humidity: finiteNumber(row.humidity),
-            chipTemperatureC: finiteNumber(row.chip_temperature_c),
-            sensorOnline: Boolean(row.sensor_online)
-          }))
-            .filter(point => Number.isFinite(point.recordedAtMs))
-            .sort((a, b) => a.recordedAtMs - b.recordedAtMs)
-          : [];
         state.historyLoadedAt = Date.now();
         state.historyError = false;
       } catch (error) {
@@ -2918,8 +2951,20 @@
     }
 
     /* ===== Cộng dồn điện điều hoà theo tháng (tự suy trong/ngoài) ===== */
-    const AC_TEMP_DELTA = 2;  // °C: ngoài - trong
-    const AC_HUM_DELTA = 12;  // %: ngoài - trong
+    // Nhận biết AC bật dựa trên 2 dấu hiệu vật lý của máy lạnh: làm MÁT và HÚT ẨM.
+    const AC_TEMP_TOL = 1;    // °C: phòng không nóng hơn ngoài trời quá 1°C (cho phép ngày mát/mưa)
+    const AC_HUM_DELTA = 10;  // %: phòng khô hơn ngoài trời rõ rệt (ngoài - trong)
+    const AC_HUM_ABS = 55;    // %: ẩm phòng thấp tuyệt đối -> đã bị hút ẩm (đặc trưng máy lạnh ở khí hậu nồm)
+
+    // Quy tắc: coi là AC đang chạy khi phòng KHÔNG nóng hơn ngoài trời
+    // VÀ đã được hút ẩm — hoặc khô hơn ngoài trời ≥10%, hoặc ẩm phòng tự nó đã thấp (≤55%).
+    // (Quạt/bóng râm có thể hạ nhiệt nhưng KHÔNG hạ ẩm, nên độ ẩm là dấu hiệu chính.)
+    function isAcOn(roomTemp, roomHum, outTemp, outHum) {
+      if (![roomTemp, roomHum, outTemp, outHum].every(Number.isFinite)) return false;
+      const notWarmer = roomTemp <= outTemp + AC_TEMP_TOL;
+      const dehumidified = (outHum - roomHum) >= AC_HUM_DELTA || roomHum <= AC_HUM_ABS;
+      return notWarmer && dehumidified;
+    }
 
     function outdoorHourMap() {
       const out = (state.outdoor && !state.outdoor.error && Array.isArray(state.outdoor.hourlyAll))
@@ -2935,7 +2980,7 @@
       const k = Math.floor(p.recordedAtMs / MS_HOUR);
       const o = byHour.get(k) || byHour.get(k - 1) || byHour.get(k + 1);
       if (!o || o.temp === null || o.humidity === null) return null; // không khớp được giờ -> bỏ
-      return (o.temp - p.temperatureC) >= AC_TEMP_DELTA && (o.humidity - p.humidity) >= AC_HUM_DELTA;
+      return isAcOn(p.temperatureC, p.humidity, o.temp, o.humidity);
     }
 
     function acRange(points, byHour, startMs, endMs, baseKwh, kw) {
@@ -3101,8 +3146,7 @@
           if (latest) {
             const o = state.outdoor;
             if (o && !o.error && o.temperatureC !== null && o.humidity !== null) {
-              acNow = (o.temperatureC - latest.temperatureC) >= AC_TEMP_DELTA
-                && (o.humidity - latest.humidity) >= AC_HUM_DELTA;
+              acNow = isAcOn(latest.temperatureC, latest.humidity, o.temperatureC, o.humidity);
             } else {
               acNow = acSampleIsOn(latest, byHour) === true;
             }
