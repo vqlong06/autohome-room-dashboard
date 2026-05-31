@@ -1347,6 +1347,8 @@
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
+    const CLOUD_HISTORY_PAGE_SIZE = 1000;
+    const CLOUD_HISTORY_MAX_ROWS = 10000;
     const MS_HOUR = 60 * 60 * 1000;
     const MS_DAY = 24 * MS_HOUR;
     const EVN_TARIFF_EFFECTIVE = '10/05/2025';
@@ -1669,27 +1671,38 @@
 
     async function fetchCloudHistory() {
       const startIso = startOfPreviousMonth(new Date()).toISOString();
-      const endpoint = `${SUPABASE_URL}/rest/v1/room_readings?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&recorded_at=gte.${encodeURIComponent(startIso)}&select=recorded_at,temperature_c,humidity,chip_temperature_c,sensor_online&order=recorded_at.asc&limit=10000`;
 
       state.historyAttemptedAt = Date.now();
 
       try {
-        const response = await fetch(endpoint, {
-          cache: 'no-store',
-          headers: {
-            apikey: SUPABASE_PUBLISHABLE_KEY
-          }
-        });
-        if (!response.ok) throw new Error('History endpoint unavailable');
-        const rows = await response.json();
-        state.historyPoints = Array.isArray(rows)
+        const rows = [];
+        for (let offset = 0; offset < CLOUD_HISTORY_MAX_ROWS; offset += CLOUD_HISTORY_PAGE_SIZE) {
+          const limit = Math.min(CLOUD_HISTORY_PAGE_SIZE, CLOUD_HISTORY_MAX_ROWS - offset);
+          const endpoint = `${SUPABASE_URL}/rest/v1/room_readings?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&recorded_at=gte.${encodeURIComponent(startIso)}&select=recorded_at,temperature_c,humidity,chip_temperature_c,sensor_online&order=recorded_at.desc&limit=${limit}&offset=${offset}`;
+          const response = await fetch(endpoint, {
+            cache: 'no-store',
+            headers: {
+              apikey: SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
+            }
+          });
+          if (!response.ok) throw new Error('History endpoint unavailable');
+          const page = await response.json();
+          if (!Array.isArray(page) || page.length === 0) break;
+          rows.push(...page);
+          if (page.length < limit) break;
+        }
+
+        state.historyPoints = rows
           ? rows.map(row => ({
             recordedAtMs: Date.parse(row.recorded_at),
             temperatureC: finiteNumber(row.temperature_c),
             humidity: finiteNumber(row.humidity),
             chipTemperatureC: finiteNumber(row.chip_temperature_c),
             sensorOnline: Boolean(row.sensor_online)
-          })).filter(point => Number.isFinite(point.recordedAtMs))
+          }))
+            .filter(point => Number.isFinite(point.recordedAtMs))
+            .sort((a, b) => a.recordedAtMs - b.recordedAtMs)
           : [];
         state.historyLoadedAt = Date.now();
         state.historyError = false;
@@ -2097,12 +2110,19 @@
       ctx.stroke();
     }
 
-    function selectedHistoryStartMs() {
-      const now = Date.now();
+    function selectedHistoryStartMs(now = Date.now()) {
       if (state.historyRange === 'six') return now - 6 * MS_HOUR;
       if (state.historyRange === 'month') return now - 30 * MS_DAY;
       if (state.historyRange === 'week') return now - 7 * MS_DAY;
       return now - MS_DAY;
+    }
+
+    // Nếu 2 mẫu liên tiếp cách nhau quá lâu -> coi là mất dữ liệu, NGẮT nét (không kẻ thẳng bắc cầu).
+    function historyGapBreakMs() {
+      if (state.historyRange === 'six') return 20 * 60 * 1000;
+      if (state.historyRange === 'week') return 90 * 60 * 1000;
+      if (state.historyRange === 'month') return 4 * MS_HOUR;
+      return 30 * 60 * 1000; // day
     }
 
     function historyValueScale(points, key) {
@@ -2128,28 +2148,47 @@
     }
 
     function drawHistoryLine(ctx, model, key, color, scale) {
-      if (model.points.length < 2 || !scale) return;
+      if (model.points.length < 1 || !scale) return;
+      const ratio = window.devicePixelRatio || 1;
+      const gapBreak = historyGapBreakMs();
 
-      ctx.lineWidth = 2.4 * (window.devicePixelRatio || 1);
+      // Lọc các điểm có giá trị hợp lệ, kèm toạ độ + mốc thời gian
+      const pts = [];
+      model.points.forEach(point => {
+        const y = historyPointY(point, key, scale, model);
+        if (y === null) return;
+        pts.push({ x: historyPointX(point, model), y, ms: point.recordedAtMs });
+      });
+      if (pts.length === 0) return;
+
+      ctx.lineWidth = 2.4 * ratio;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.strokeStyle = color;
       ctx.beginPath();
-
       let started = false;
-      model.points.forEach(point => {
-        const y = historyPointY(point, key, scale, model);
-        if (y === null) return;
-        const x = historyPointX(point, model);
-        if (!started) {
-          ctx.moveTo(x, y);
+      for (let i = 0; i < pts.length; i++) {
+        const isGap = i > 0 && (pts[i].ms - pts[i - 1].ms) > gapBreak;
+        if (!started || isGap) {       // ngắt nét qua khoảng trống dữ liệu
+          ctx.moveTo(pts[i].x, pts[i].y);
           started = true;
         } else {
-          ctx.lineTo(x, y);
+          ctx.lineTo(pts[i].x, pts[i].y);
         }
-      });
-
+      }
       ctx.stroke();
+
+      // Điểm đơn lẻ (bị gap cô lập 2 bên) -> vẽ chấm để vẫn nhìn thấy (vd điểm hiện tại)
+      ctx.fillStyle = color;
+      for (let i = 0; i < pts.length; i++) {
+        const gapBefore = i === 0 || (pts[i].ms - pts[i - 1].ms) > gapBreak;
+        const gapAfter = i === pts.length - 1 || (pts[i + 1].ms - pts[i].ms) > gapBreak;
+        if (gapBefore && gapAfter) {
+          ctx.beginPath();
+          ctx.arc(pts[i].x, pts[i].y, 2.6 * ratio, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     }
 
     function drawHistoryMarker(ctx, model) {
@@ -2182,6 +2221,13 @@
       return getComputedStyle(document.documentElement).getPropertyValue('--line').trim() || '#667085';
     }
 
+    function historyRangeLabel() {
+      if (state.historyRange === 'six') return '6h';
+      if (state.historyRange === 'week') return '7 ngày';
+      if (state.historyRange === 'month') return '30 ngày';
+      return '24h';
+    }
+
     function updateHistorySummary(stats) {
       if (state.historyError && (!stats || !stats.pointCount)) {
         els.historySummary.textContent = 'Chưa đọc được bảng lịch sử trên Supabase';
@@ -2211,15 +2257,25 @@
       }
 
       const liveSuffix = stats.pointCount > storedPointCount ? ' + hiện tại' : '';
-      const lineSuffix = stats.pointCount < 2 ? ' · cần thêm mẫu để vẽ đường' : '';
-      els.historySummary.textContent = `${storedPointCount} mẫu cloud${liveSuffix} · mới nhất ${latest}${lineSuffix}`;
+      const endMs = Date.now();
+      const startMs = selectedHistoryStartMs(endMs);
+      const rangeCount = validHistoryPoints()
+        .filter(point => point.recordedAtMs >= startMs && point.recordedAtMs <= endMs)
+        .length;
+      const rangeSuffix = rangeCount > 0
+        ? ` · ${rangeCount} trong ${historyRangeLabel()}`
+        : ` · chưa có mẫu trong ${historyRangeLabel()}`;
+      const lineSuffix = rangeCount > 0 && rangeCount < 2 ? ' · cần thêm mẫu để vẽ đường' : '';
+      els.historySummary.textContent = `${storedPointCount} mẫu cloud${liveSuffix}${rangeSuffix} · mới nhất ${latest}${lineSuffix}`;
     }
 
     function drawHistoryChart() {
       const canvas = els.historyChart;
       const ctx = canvas.getContext('2d');
       const { width, height } = resizeCanvas(canvas);
-      const points = validHistoryPoints().filter(point => point.recordedAtMs >= selectedHistoryStartMs());
+      const endMs = Date.now();
+      const startMs = selectedHistoryStartMs(endMs);
+      const points = validHistoryPoints().filter(point => point.recordedAtMs >= startMs && point.recordedAtMs <= endMs);
 
       ctx.clearRect(0, 0, width, height);
       if (points.length === 0) {
@@ -2229,8 +2285,6 @@
       }
 
       const pad = 12 * (window.devicePixelRatio || 1);
-      const startMs = points.length === 1 ? points[0].recordedAtMs - 1 : points[0].recordedAtMs;
-      const endMs = points.length === 1 ? points[0].recordedAtMs + 1 : points[points.length - 1].recordedAtMs;
       const model = {
         points,
         width,
@@ -2243,15 +2297,6 @@
         humidityScale: historyValueScale(points, 'humidity')
       };
       state.historyChartModel = model;
-
-      if (points.length === 1) {
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--warm').trim();
-        ctx.beginPath();
-        ctx.arc(width / 2, height / 2, 5 * (window.devicePixelRatio || 1), 0, Math.PI * 2);
-        ctx.fill();
-        drawHistoryMarker(ctx, model);
-        return;
-      }
 
       drawHistoryLine(ctx, model, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim(), model.tempScale);
       drawHistoryLine(ctx, model, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), model.humidityScale);
@@ -2525,6 +2570,7 @@
         state.historyRange = tab.dataset.range || 'day';
         hideHistoryTooltip();
         els.rangeTabs.forEach(item => item.classList.toggle('active', item === tab));
+        updateHistorySummary(buildHistoryStats());
         drawHistoryChart();
       });
     });
