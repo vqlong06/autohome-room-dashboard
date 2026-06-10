@@ -13,31 +13,40 @@
   <meta name="apple-mobile-web-app-title" content="Phòng của Long">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260528">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260528">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: light dark;
-      --bg: #f6f7f9;
+      --bg: #f4f6f9;
+      --bg-2: #ffffff;
       --panel: #ffffff;
       --text: #171a21;
       --muted: #667085;
-      --line: #d9dee7;
+      --line: #dee3ec;
+      --card-edge: rgba(255, 255, 255, 0.9);
       --accent: #0f8b8d;
       --warm: #c26a2d;
       --cool: #2d7fb8;
-      --shadow: rgba(16, 24, 40, 0.08);
+      --chip: #6d5ef0;
+      --shadow: rgba(16, 24, 40, 0.10);
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #111318;
-        --panel: #181b22;
-        --text: #f1f4f8;
-        --muted: #a6afbd;
-        --line: #303641;
-        --accent: #39b8b5;
-        --warm: #dc8b49;
-        --cool: #62a8dc;
-        --shadow: rgba(0, 0, 0, 0.25);
+        --bg: #0b0e15;
+        --bg-2: #121826;
+        --panel: #161b26;
+        --text: #eef2f8;
+        --muted: #9aa4b4;
+        --line: #262d3b;
+        --card-edge: rgba(255, 255, 255, 0.06);
+        --accent: #3ad1c9;
+        --warm: #e89456;
+        --cool: #6cb2e8;
+        --chip: #a394ff;
+        --shadow: rgba(0, 0, 0, 0.45);
       }
     }
 
@@ -658,14 +667,16 @@
 
     /* ===================== THEME OVERRIDE (manual) ===================== */
     html[data-theme="dark"] {
-      --bg: #111318; --panel: #181b22; --text: #f1f4f8; --muted: #a6afbd;
-      --line: #303641; --accent: #39b8b5; --warm: #dc8b49; --cool: #62a8dc;
-      --shadow: rgba(0, 0, 0, 0.25);
+      --bg: #0b0e15; --bg-2: #121826; --panel: #161b26; --text: #eef2f8; --muted: #9aa4b4;
+      --line: #262d3b; --card-edge: rgba(255, 255, 255, 0.06);
+      --accent: #3ad1c9; --warm: #e89456; --cool: #6cb2e8; --chip: #a394ff;
+      --shadow: rgba(0, 0, 0, 0.45);
     }
     html[data-theme="light"] {
-      --bg: #f6f7f9; --panel: #ffffff; --text: #171a21; --muted: #667085;
-      --line: #d9dee7; --accent: #0f8b8d; --warm: #c26a2d; --cool: #2d7fb8;
-      --shadow: rgba(16, 24, 40, 0.08);
+      --bg: #f4f6f9; --bg-2: #ffffff; --panel: #ffffff; --text: #171a21; --muted: #667085;
+      --line: #dee3ec; --card-edge: rgba(255, 255, 255, 0.9);
+      --accent: #0f8b8d; --warm: #c26a2d; --cool: #2d7fb8; --chip: #6d5ef0;
+      --shadow: rgba(16, 24, 40, 0.10);
     }
 
     /* ===================== AQI / FORECAST / ADVICE ===================== */
@@ -980,6 +991,70 @@
     /* Note: animations intentionally run regardless of the OS "Reduce Motion"
        setting, because this dashboard is meant to feel alive on the owner's
        phone. Motion is kept gentle (no flashing, no rapid spin). */
+    /* ===================== PREMIUM POLISH ===================== */
+    :root {
+      --font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    body {
+      font-family: var(--font-body);
+      background:
+        radial-gradient(1100px 560px at 50% -8%, var(--bg-2), transparent 62%),
+        var(--bg);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    /* Số đo = nhân vật chính: font hiển thị, chữ số đều cột, siết tracking */
+    h1, .value, .device-value, .delta, .insight-value, .forecast-temp {
+      font-family: var(--font-display);
+      letter-spacing: -0.018em;
+    }
+    .value, .device-value, .delta, .insight-value, .forecast-temp,
+    .metric-value, .compare-value { font-variant-numeric: tabular-nums; }
+    h1 { letter-spacing: -0.028em; }
+    /* Nhãn dữ liệu ngắn = phong cách bảng điều khiển: mono, viết hoa, giãn chữ */
+    .metric-label, .detail-label, .insight-label, .field-group-title {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.085em;
+      font-weight: 600;
+    }
+    /* Viền sáng mảnh ở mép trên thẻ -> chiều sâu "kính" cao cấp */
+    .metric-card, .history-card, .compare-card, .insights-card, .weather-card,
+    .comfort-card, .details, .ac-month-card, .chip-card {
+      border-top: 1px solid var(--card-edge);
+    }
+    /* Chú thích đường biểu đồ chip */
+    .legend-line.chip { background: var(--chip); }
+    .device-value.chip-accent { color: var(--chip); }
+
+    /* ===== Sức khoẻ dữ liệu ===== */
+    .data-alert {
+      margin: 14px 0 0;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid color-mix(in srgb, #e5484d, transparent 55%);
+      background: color-mix(in srgb, #e5484d, var(--panel) 88%);
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+    .data-health { display: flex; align-items: center; gap: 7px; margin-top: 2px; }
+    .health-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted); flex: 0 0 auto;
+    }
+    .health-dot.ok { background: var(--accent); }
+    .health-dot.warn { background: var(--warm); }
+    .health-dot.bad { background: #e5484d; box-shadow: 0 0 0 4px color-mix(in srgb, #e5484d, transparent 82%); }
+
+    /* PWA standalone: tránh nội dung chui dưới thanh trạng thái iPhone */
+    @media (display-mode: standalone) {
+      body { padding-top: env(safe-area-inset-top); }
+    }
   </style>
 </head>
 <body>
@@ -998,6 +1073,8 @@
           </div>
         </div>
       </div>
+
+      <div id="dataAlert" class="data-alert" role="alert" hidden></div>
 
       <section class="device-grid" aria-label="Trạng thái thiết bị">
         <article class="device-card">
@@ -1205,6 +1282,11 @@
           <span id="dayDelta" class="delta">--</span>
           <p id="daySummary" class="compare-copy">Đang tích lũy dữ liệu</p>
         </article>
+        <article class="compare-card">
+          <p class="compare-label">Giờ này so với hôm qua</p>
+          <span id="nowYdayDelta" class="delta">--</span>
+          <p id="nowYdaySummary" class="compare-copy">Đang tích lũy dữ liệu</p>
+        </article>
 
         <article class="compare-card">
           <p class="compare-label">Tuần này so với tuần trước</p>
@@ -1245,6 +1327,7 @@
           <div>
             <p class="compare-label">Lịch sử</p>
             <p id="historySummary" class="compare-copy">Đang tải dữ liệu</p>
+            <p id="dataHealth" class="compare-copy data-health" hidden><span id="dataHealthDot" class="health-dot"></span><span id="dataHealthText"></span></p>
           </div>
           <div class="range-tabs" aria-label="Chọn khoảng lịch sử">
             <button class="range-tab" type="button" data-range="six">6h</button>
@@ -1260,6 +1343,21 @@
         <div class="history-legend" aria-hidden="true">
           <span class="legend-item"><span class="legend-line warm"></span>Nhiệt độ</span>
           <span class="legend-item"><span class="legend-line"></span>Độ ẩm</span>
+        </div>
+      </section>
+
+      <section class="history-card chip-card" aria-label="Lịch sử nhiệt độ chip ESP">
+        <div class="history-head">
+          <div>
+            <p class="compare-label">Nhiệt độ chip ESP</p>
+            <p id="chipSummary" class="compare-copy">Đang tải dữ liệu</p>
+          </div>
+        </div>
+        <div class="history-chart-wrap">
+          <canvas id="chipChart" width="860" height="110"></canvas>
+        </div>
+        <div class="history-legend" aria-hidden="true">
+          <span class="legend-item"><span class="legend-line chip"></span>Nhiệt độ chip · theo cùng khoảng thời gian ở trên</span>
         </div>
       </section>
 
@@ -1432,6 +1530,7 @@
       outdoorLoadedAt: 0,
       acMonthly: null,
       acMonthlyAt: 0,
+      yesterdayPoint: null,
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
@@ -1470,8 +1569,16 @@
       humidityMeter: document.getElementById('humidityMeter'),
       tempChart: document.getElementById('tempChart'),
       humidityChart: document.getElementById('humidityChart'),
+      chipChart: document.getElementById('chipChart'),
+      chipSummary: document.getElementById('chipSummary'),
       dayDelta: document.getElementById('dayDelta'),
       daySummary: document.getElementById('daySummary'),
+      nowYdayDelta: document.getElementById('nowYdayDelta'),
+      nowYdaySummary: document.getElementById('nowYdaySummary'),
+      dataAlert: document.getElementById('dataAlert'),
+      dataHealth: document.getElementById('dataHealth'),
+      dataHealthDot: document.getElementById('dataHealthDot'),
+      dataHealthText: document.getElementById('dataHealthText'),
       weekDelta: document.getElementById('weekDelta'),
       weekSummary: document.getElementById('weekSummary'),
       monthDelta: document.getElementById('monthDelta'),
@@ -2318,6 +2425,7 @@
       if (points.length === 0) {
         state.historyChartModel = null;
         hideHistoryTooltip();
+        drawChipChart();
         return;
       }
 
@@ -2338,6 +2446,36 @@
       drawHistoryLine(ctx, model, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim(), model.tempScale);
       drawHistoryLine(ctx, model, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), model.humidityScale);
       drawHistoryMarker(ctx, model);
+      drawChipChart();
+    }
+
+    function drawChipChart() {
+      const canvas = els.chipChart;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const { width, height } = resizeCanvas(canvas);
+      ctx.clearRect(0, 0, width, height);
+
+      const endMs = Date.now();
+      const startMs = selectedHistoryStartMs(endMs);
+      const points = validHistoryPoints().filter(p =>
+        p.recordedAtMs >= startMs && p.recordedAtMs <= endMs && finiteNumber(p.chipTemperatureC) !== null);
+
+      if (els.chipSummary) {
+        els.chipSummary.textContent = points.length
+          ? `${points.length} mẫu · ${historyRangeLabel()}`
+          : `Chưa có mẫu chip trong ${historyRangeLabel()}`;
+      }
+      if (points.length === 0) return;
+
+      const pad = 12 * (window.devicePixelRatio || 1);
+      const model = {
+        points, width, height, pad, startMs, endMs,
+        rangeMs: Math.max(1, endMs - startMs)
+      };
+      const scale = historyValueScale(points, 'chipTemperatureC');
+      const color = getComputedStyle(document.documentElement).getPropertyValue('--chip').trim() || '#a394ff';
+      drawHistoryLine(ctx, model, 'chipTemperatureC', color, scale);
     }
 
     function hideHistoryTooltip() {
@@ -2549,6 +2687,8 @@
       renderOutdoorComparison(reading);
       renderInsights(reading);
       renderAcMonthly();
+      renderNowVsYesterday(reading);
+      renderDataHealth();
 
       const displayDate = reading.updatedAtIso ? new Date(reading.updatedAtIso) : new Date();
       els.updatedAt.textContent = new Intl.DateTimeFormat('vi-VN', {
@@ -2592,6 +2732,7 @@
       if (!state.acMonthlyAt || Date.now() - state.acMonthlyAt > 60000) {
         state.acMonthlyAt = Date.now();
         computeAcMonthly();
+        computeYesterdayPoint();
       }
       render(await fetchReading());
     }
@@ -3009,6 +3150,76 @@
       const hours = onMs / MS_HOUR;
       const kwh = hours * kw;
       return { hours, kwh, cost: evnMarginalCost(baseKwh, kwh), coveredHours: coveredMs / MS_HOUR };
+    }
+
+    /* ===== Giờ này so với hôm qua (điểm cùng giờ, ±30 phút) ===== */
+    function computeYesterdayPoint() {
+      const target = Date.now() - MS_DAY;
+      const TOL = 30 * 60 * 1000;
+      let best = null, bestDist = Infinity;
+      for (const p of validStoredHistoryPoints()) {
+        const d = Math.abs(p.recordedAtMs - target);
+        if (d <= TOL && d < bestDist) { best = p; bestDist = d; }
+        if (p.recordedAtMs > target + TOL) break; // mảng đã sort tăng dần
+      }
+      state.yesterdayPoint = best;
+    }
+
+    function renderNowVsYesterday(reading) {
+      if (!els.nowYdayDelta) return;
+      const y = state.yesterdayPoint;
+      const t = reading ? finiteNumber(reading.temperatureC) : null;
+      const h = reading ? finiteNumber(reading.humidity) : null;
+      if (!y || t === null) {
+        resetComparison(els.nowYdayDelta, els.nowYdaySummary, 'Cần mẫu cùng giờ hôm qua');
+        return;
+      }
+      const delta = t - y.temperatureC;
+      els.nowYdayDelta.textContent = formatDelta(delta);
+      els.nowYdayDelta.className = `delta ${comparisonClass(delta)}`;
+      let txt = `Hôm qua ${formatTemperature(y.temperatureC)} · ${Math.round(y.humidity)}%`;
+      if (h !== null) {
+        const dh = Math.round(h - y.humidity);
+        txt += ` — ẩm ${dh >= 0 ? '+' : ''}${dh}%`;
+      }
+      els.nowYdaySummary.textContent = txt;
+    }
+
+    /* ===== Độ phủ dữ liệu + sức khoẻ pipeline (cron 5 phút) ===== */
+    function renderDataHealth() {
+      if (!els.dataHealth) return;
+      const raw = state.historyPoints;
+      const timeFmt = (ms) => new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
+
+      if (!Array.isArray(raw) || raw.length === 0) {
+        els.dataHealth.hidden = false;
+        els.dataHealthDot.className = 'health-dot' + (state.historyError ? ' bad' : '');
+        els.dataHealthText.textContent = state.historyError
+          ? 'Không đọc được lịch sử từ Supabase'
+          : 'Chưa có mẫu lịch sử';
+        els.dataAlert.hidden = !state.historyError;
+        if (state.historyError) els.dataAlert.textContent = '⚠ Không đọc được bảng lịch sử trên Supabase — kiểm tra mạng hoặc project Supabase (free tier có thể bị tạm dừng).';
+        return;
+      }
+
+      const lastMs = raw[raw.length - 1].recordedAtMs;
+      const ageMin = (Date.now() - lastMs) / 60000;
+      const sod = new Date(); sod.setHours(0, 0, 0, 0);
+      const dayStart = sod.getTime();
+      let count = 0;
+      for (let i = raw.length - 1; i >= 0 && raw[i].recordedAtMs >= dayStart; i--) count++;
+      const expected = Math.floor((Date.now() - dayStart) / (5 * 60 * 1000));
+      const pctTxt = expected > 0 ? Math.min(100, Math.round((count / expected) * 100)) + '%' : '--';
+
+      els.dataHealth.hidden = false;
+      els.dataHealthText.textContent = `Độ phủ hôm nay ${pctTxt} (${count}/${Math.max(expected, count)} mẫu) · ghi lần cuối ${timeFmt(lastMs)}`;
+      els.dataHealthDot.className = 'health-dot ' + (ageMin <= 7 ? 'ok' : ageMin <= 20 ? 'warn' : 'bad');
+
+      const stale = ageMin > 20;
+      els.dataAlert.hidden = !stale;
+      if (stale) {
+        els.dataAlert.textContent = `⚠ Không có dữ liệu mới từ ${timeFmt(lastMs)} (${Math.round(ageMin)} phút trước). Kiểm tra cron Supabase hoặc ESP32.`;
+      }
     }
 
     function computeAcMonthly() {
