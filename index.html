@@ -2,13 +2,9 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cảm biến phòng của Long</title>
-  <meta name="theme-color" content="#0b0e15">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="./manifest.webmanifest?v=20260610">
+  <meta name="theme-color" content="#0b1420">
   <meta name="application-name" content="Phòng của Long">
   <meta name="apple-mobile-web-app-title" content="Phòng của Long">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260528">
@@ -1030,30 +1026,270 @@
     .legend-line.chip { background: var(--chip); }
     .device-value.chip-accent { color: var(--chip); }
 
-    /* ===== Sức khoẻ dữ liệu ===== */
-    .data-alert {
-      margin: 14px 0 0;
-      padding: 12px 16px;
-      border-radius: 14px;
-      border: 1px solid color-mix(in srgb, #e5484d, transparent 55%);
-      background: color-mix(in srgb, #e5484d, var(--panel) 88%);
+    /* ===================== ROOM PULSE + STORY LAYERS ===================== */
+    .pulse-card,
+    .timeline-card,
+    .sleep-card,
+    .ac-session-card {
+      margin-top: 12px;
+      padding: 20px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-top: 1px solid var(--card-edge);
+      border-radius: 8px;
+      box-shadow: 0 18px 40px var(--shadow);
+      position: relative;
+      overflow: hidden;
+      transition: transform 360ms cubic-bezier(.2,.7,.2,1),
+                  box-shadow 360ms ease,
+                  border-color 360ms ease;
+    }
+
+    .pulse-card {
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
+      gap: 18px;
+      align-items: center;
+      background:
+        radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--accent), transparent 72%), transparent 38%),
+        radial-gradient(circle at 86% 18%, color-mix(in srgb, var(--warm), transparent 82%), transparent 34%),
+        var(--panel);
+    }
+
+    .pulse-card.warm {
+      background:
+        radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--warm), transparent 68%), transparent 38%),
+        var(--panel);
+    }
+
+    .pulse-card.cool {
+      background:
+        radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--cool), transparent 70%), transparent 38%),
+        var(--panel);
+    }
+
+    .pulse-kicker,
+    .story-kicker {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .pulse-title {
+      margin: 0;
       color: var(--text);
+      font-family: var(--font-display);
+      font-size: clamp(38px, 7vw, 72px);
+      line-height: 0.96;
+      letter-spacing: -0.02em;
+    }
+
+    .pulse-copy {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.45;
+      max-width: 620px;
+    }
+
+    .pulse-orb {
+      justify-self: center;
+      width: min(250px, 62vw);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        conic-gradient(from -90deg, var(--accent) var(--pulse-deg, 0deg), color-mix(in srgb, var(--line), transparent 12%) 0),
+        radial-gradient(circle, var(--panel) 0 58%, transparent 59%);
+      box-shadow: inset 0 0 0 1px var(--line), 0 24px 70px var(--shadow);
+    }
+
+    .pulse-score {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 72%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--panel), var(--bg) 26%);
+      border: 1px solid var(--line);
+    }
+
+    .pulse-score strong {
+      font-family: var(--font-display);
+      font-size: clamp(42px, 8vw, 72px);
+      line-height: 0.95;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pulse-score span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .pulse-facts {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .pulse-fact,
+    .story-stat,
+    .session-stat {
+      min-height: 76px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 35%);
+    }
+
+    .pulse-fact span,
+    .story-stat span,
+    .session-stat span {
+      display: block;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .pulse-fact strong,
+    .story-stat strong,
+    .session-stat strong {
+      display: block;
+      margin-top: 7px;
+      font-family: var(--font-display);
+      font-size: 24px;
+      line-height: 1.05;
+      font-variant-numeric: tabular-nums;
+      overflow-wrap: anywhere;
+    }
+
+    .story-grid,
+    .session-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .story-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .story-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+    }
+
+    .story-copy {
+      margin: 8px 0 0;
+      color: var(--muted);
       font-size: 14px;
-      font-weight: 600;
       line-height: 1.45;
     }
-    .data-health { display: flex; align-items: center; gap: 7px; margin-top: 2px; }
-    .health-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--muted); flex: 0 0 auto;
-    }
-    .health-dot.ok { background: var(--accent); }
-    .health-dot.warn { background: var(--warm); }
-    .health-dot.bad { background: #e5484d; box-shadow: 0 0 0 4px color-mix(in srgb, #e5484d, transparent 82%); }
 
-    /* PWA standalone: tránh nội dung chui dưới thanh trạng thái iPhone */
-    @media (display-mode: standalone) {
-      body { padding-top: env(safe-area-inset-top); }
+    .timeline-list,
+    .session-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .timeline-item,
+    .session-item {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 34%);
+    }
+
+    .timeline-time,
+    .session-time {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timeline-main,
+    .session-main {
+      margin: 0;
+      color: var(--text);
+      font-weight: 740;
+      line-height: 1.35;
+    }
+
+    .timeline-sub,
+    .session-sub {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .session-list:empty::before,
+    .timeline-list:empty::before {
+      content: "Đang tích lũy dữ liệu";
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .pulse-card:hover,
+      .timeline-card:hover,
+      .sleep-card:hover,
+      .ac-session-card:hover {
+        transform: translateY(-3px);
+        border-color: color-mix(in srgb, var(--accent), var(--line) 45%);
+        box-shadow: 0 28px 64px var(--shadow);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .pulse-card {
+        grid-template-columns: 1fr;
+      }
+      .pulse-orb {
+        width: min(210px, 64vw);
+      }
+      .pulse-facts,
+      .story-grid,
+      .session-grid {
+        grid-template-columns: 1fr;
+      }
+      .story-head {
+        flex-direction: column;
+      }
+      .timeline-item,
+      .session-item {
+        grid-template-columns: 64px minmax(0, 1fr);
+      }
     }
   </style>
 </head>
@@ -1073,8 +1309,6 @@
           </div>
         </div>
       </div>
-
-      <div id="dataAlert" class="data-alert" role="alert" hidden></div>
 
       <section class="device-grid" aria-label="Trạng thái thiết bị">
         <article class="device-card">
@@ -1102,6 +1336,38 @@
           <span id="lastSeen" class="device-value">--</span>
           <p id="uptime" class="device-copy">--</p>
         </article>
+      </section>
+
+      <section id="pulseCard" class="pulse-card" aria-label="Nhịp phòng">
+        <div>
+          <p class="pulse-kicker">Room Pulse</p>
+          <h2 id="pulseTitle" class="pulse-title">Đang đo</h2>
+          <p id="pulseCopy" class="pulse-copy">Đang gom dữ liệu để đọc trạng thái phòng theo cách dễ hiểu hơn.</p>
+        </div>
+        <div id="pulseRing" class="pulse-orb" style="--pulse-deg: 0deg;">
+          <div class="pulse-score">
+            <strong id="pulseScore">--</strong>
+            <span>độ ổn</span>
+          </div>
+        </div>
+        <div class="pulse-facts">
+          <div class="pulse-fact">
+            <span>Nhiệt</span>
+            <strong id="pulseTemp">--.-°C</strong>
+          </div>
+          <div class="pulse-fact">
+            <span>Ẩm</span>
+            <strong id="pulseHumidity">--%</strong>
+          </div>
+          <div class="pulse-fact">
+            <span>1 giờ</span>
+            <strong id="pulseTrend">--</strong>
+          </div>
+          <div class="pulse-fact">
+            <span>Dữ liệu</span>
+            <strong id="pulseFreshness">--</strong>
+          </div>
+        </div>
       </section>
 
       <section class="comfort-card" aria-label="Trạng thái phòng">
@@ -1276,16 +1542,58 @@
         <p id="digestText" class="digest">Đang tổng hợp dữ liệu hôm nay…</p>
       </section>
 
+      <section class="sleep-card" aria-label="Báo cáo ban đêm">
+        <div class="story-head">
+          <div>
+            <p class="story-kicker">Night Report</p>
+            <h2 id="sleepTitle" class="story-title">Đêm qua</h2>
+            <p id="sleepSummary" class="story-copy">Đang đợi dữ liệu từ khung 22:00-07:00.</p>
+          </div>
+        </div>
+        <div class="story-grid">
+          <div class="story-stat">
+            <span>Điểm ngủ</span>
+            <strong id="sleepScore">--/100</strong>
+          </div>
+          <div class="story-stat">
+            <span>Nhiệt TB</span>
+            <strong id="sleepTempAvg">--.-°C</strong>
+          </div>
+          <div class="story-stat">
+            <span>Ẩm cao</span>
+            <strong id="sleepHumidityHigh">--</strong>
+          </div>
+          <div class="story-stat">
+            <span>Giai đoạn</span>
+            <strong id="sleepWindow">22:00-07:00</strong>
+          </div>
+          <div class="story-stat">
+            <span>Tệ nhất</span>
+            <strong id="sleepWorst">--</strong>
+          </div>
+          <div class="story-stat">
+            <span>Mẫu</span>
+            <strong id="sleepSamples">--</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="timeline-card" aria-label="Timeline hôm nay">
+        <div class="story-head">
+          <div>
+            <p class="story-kicker">Timeline</p>
+            <h2 class="story-title">Hôm nay phòng kể gì</h2>
+            <p id="timelineSummary" class="story-copy">Đang chờ đủ mốc trong ngày.</p>
+          </div>
+        </div>
+        <div id="timelineList" class="timeline-list"></div>
+      </section>
+
       <section class="compare-grid" aria-label="So sánh nhiệt độ">
         <article class="compare-card">
           <p class="compare-label">Hôm nay so với hôm qua</p>
           <span id="dayDelta" class="delta">--</span>
           <p id="daySummary" class="compare-copy">Đang tích lũy dữ liệu</p>
-        </article>
-        <article class="compare-card">
-          <p class="compare-label">Giờ này so với hôm qua</p>
-          <span id="nowYdayDelta" class="delta">--</span>
-          <p id="nowYdaySummary" class="compare-copy">Đang tích lũy dữ liệu</p>
         </article>
 
         <article class="compare-card">
@@ -1322,12 +1630,36 @@
         </div>
       </section>
 
+      <section class="ac-session-card" aria-label="Phiên điều hoà hôm nay">
+        <div class="story-head">
+          <div>
+            <p class="story-kicker">AC Sessions</p>
+            <h2 class="story-title">Phiên điều hoà hôm nay</h2>
+            <p id="acSessionSummary" class="story-copy">Đang suy luận theo chênh lệch trong phòng và ngoài trời.</p>
+          </div>
+        </div>
+        <div class="session-grid">
+          <div class="session-stat">
+            <span>Tổng phiên</span>
+            <strong id="acSessionCount">--</strong>
+          </div>
+          <div class="session-stat">
+            <span>Tổng thời gian</span>
+            <strong id="acSessionTotal">--</strong>
+          </div>
+          <div class="session-stat">
+            <span>Phiên dài nhất</span>
+            <strong id="acSessionLongest">--</strong>
+          </div>
+        </div>
+        <div id="acSessionList" class="session-list"></div>
+      </section>
+
       <section class="history-card" aria-label="Lịch sử nhiệt độ và độ ẩm">
         <div class="history-head">
           <div>
             <p class="compare-label">Lịch sử</p>
             <p id="historySummary" class="compare-copy">Đang tải dữ liệu</p>
-            <p id="dataHealth" class="compare-copy data-health" hidden><span id="dataHealthDot" class="health-dot"></span><span id="dataHealthText"></span></p>
           </div>
           <div class="range-tabs" aria-label="Chọn khoảng lịch sử">
             <button class="range-tab" type="button" data-range="six">6h</button>
@@ -1353,8 +1685,9 @@
             <p id="chipSummary" class="compare-copy">Đang tải dữ liệu</p>
           </div>
         </div>
-        <div class="history-chart-wrap">
+        <div class="history-chart-wrap" id="chipChartWrap">
           <canvas id="chipChart" width="860" height="110"></canvas>
+          <div id="chipTooltip" class="history-tooltip" hidden></div>
         </div>
         <div class="history-legend" aria-hidden="true">
           <span class="legend-item"><span class="legend-line chip"></span>Nhiệt độ chip · theo cùng khoảng thời gian ở trên</span>
@@ -1524,13 +1857,14 @@
       historyError: false,
       historyHoverPoint: null,
       historyChartModel: null,
+      chipHoverPoint: null,
+      chipChartModel: null,
       latestReadingForHistory: null,
       outdoor: null,
       outdoorAttemptedAt: 0,
       outdoorLoadedAt: 0,
       acMonthly: null,
       acMonthlyAt: 0,
-      yesterdayPoint: null,
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
@@ -1551,6 +1885,15 @@
       wifiDetail: document.getElementById('wifiDetail'),
       lastSeen: document.getElementById('lastSeen'),
       uptime: document.getElementById('uptime'),
+      pulseCard: document.getElementById('pulseCard'),
+      pulseTitle: document.getElementById('pulseTitle'),
+      pulseCopy: document.getElementById('pulseCopy'),
+      pulseRing: document.getElementById('pulseRing'),
+      pulseScore: document.getElementById('pulseScore'),
+      pulseTemp: document.getElementById('pulseTemp'),
+      pulseHumidity: document.getElementById('pulseHumidity'),
+      pulseTrend: document.getElementById('pulseTrend'),
+      pulseFreshness: document.getElementById('pulseFreshness'),
       comfortTitle: document.getElementById('comfortTitle'),
       comfortCopy: document.getElementById('comfortCopy'),
       comfortTemp: document.getElementById('comfortTemp'),
@@ -1571,14 +1914,10 @@
       humidityChart: document.getElementById('humidityChart'),
       chipChart: document.getElementById('chipChart'),
       chipSummary: document.getElementById('chipSummary'),
+      chipChartWrap: document.getElementById('chipChartWrap'),
+      chipTooltip: document.getElementById('chipTooltip'),
       dayDelta: document.getElementById('dayDelta'),
       daySummary: document.getElementById('daySummary'),
-      nowYdayDelta: document.getElementById('nowYdayDelta'),
-      nowYdaySummary: document.getElementById('nowYdaySummary'),
-      dataAlert: document.getElementById('dataAlert'),
-      dataHealth: document.getElementById('dataHealth'),
-      dataHealthDot: document.getElementById('dataHealthDot'),
-      dataHealthText: document.getElementById('dataHealthText'),
       weekDelta: document.getElementById('weekDelta'),
       weekSummary: document.getElementById('weekSummary'),
       monthDelta: document.getElementById('monthDelta'),
@@ -1618,11 +1957,26 @@
       acValue: document.getElementById('acValue'),
       acCopy: document.getElementById('acCopy'),
       digestText: document.getElementById('digestText'),
+      sleepTitle: document.getElementById('sleepTitle'),
+      sleepSummary: document.getElementById('sleepSummary'),
+      sleepScore: document.getElementById('sleepScore'),
+      sleepTempAvg: document.getElementById('sleepTempAvg'),
+      sleepHumidityHigh: document.getElementById('sleepHumidityHigh'),
+      sleepWindow: document.getElementById('sleepWindow'),
+      sleepWorst: document.getElementById('sleepWorst'),
+      sleepSamples: document.getElementById('sleepSamples'),
+      timelineSummary: document.getElementById('timelineSummary'),
+      timelineList: document.getElementById('timelineList'),
       acMonthThis: document.getElementById('acMonthThis'),
       acMonthThisSub: document.getElementById('acMonthThisSub'),
       acMonthLast: document.getElementById('acMonthLast'),
       acMonthLastSub: document.getElementById('acMonthLastSub'),
-      acMonthDelta: document.getElementById('acMonthDelta')
+      acMonthDelta: document.getElementById('acMonthDelta'),
+      acSessionSummary: document.getElementById('acSessionSummary'),
+      acSessionCount: document.getElementById('acSessionCount'),
+      acSessionTotal: document.getElementById('acSessionTotal'),
+      acSessionLongest: document.getElementById('acSessionLongest'),
+      acSessionList: document.getElementById('acSessionList')
     };
 
     function ensureDemoHistory() {
@@ -2128,6 +2482,47 @@
       return `${value} dBm · yếu`;
     }
 
+    function formatClockShort(ms) {
+      if (!Number.isFinite(ms)) return '--:--';
+      return new Intl.DateTimeFormat('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(ms));
+    }
+
+    function formatDurationShort(ms) {
+      const value = Number(ms);
+      if (!Number.isFinite(value) || value <= 0) return '0 phút';
+      const totalMinutes = Math.round(value / 60000);
+      if (totalMinutes < 60) return `${totalMinutes} phút`;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return minutes ? `${hours} giờ ${minutes} phút` : `${hours} giờ`;
+    }
+
+    function averageFinite(points, key) {
+      const values = points.map(point => finiteNumber(point[key])).filter(value => value !== null);
+      if (!values.length) return null;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function extremaPoint(points, key, direction) {
+      let selected = null;
+      points.forEach(point => {
+        const value = finiteNumber(point[key]);
+        if (value === null) return;
+        if (!selected) {
+          selected = point;
+          return;
+        }
+        const selectedValue = finiteNumber(selected[key]);
+        if (direction === 'max' ? value > selectedValue : value < selectedValue) {
+          selected = point;
+        }
+      });
+      return selected;
+    }
+
     function chipTemperatureClass(value) {
       const temperature = finiteNumber(value);
       if (temperature === null) return 'device-value';
@@ -2296,7 +2691,7 @@
       const ratio = window.devicePixelRatio || 1;
       const gapBreak = historyGapBreakMs();
 
-      // Lọc các điểm có giá trị hợp lệ, kèm toạ độ + mốc thời gian
+      // Lọc điểm có giá trị hợp lệ
       const pts = [];
       model.points.forEach(point => {
         const y = historyPointY(point, key, scale, model);
@@ -2305,34 +2700,74 @@
       });
       if (pts.length === 0) return;
 
+      // --- Tách thành các đoạn liên tục (không có gap) ---
+      const segments = [];
+      let seg = [pts[0]];
+      for (let i = 1; i < pts.length; i++) {
+        if ((pts[i].ms - pts[i - 1].ms) > gapBreak) {
+          segments.push(seg);
+          seg = [];
+        }
+        seg.push(pts[i]);
+      }
+      segments.push(seg);
+
+      // --- Helper: path bezier mượt cho một đoạn ---
+      function smoothPath(ctx, seg) {
+        if (seg.length === 0) return;
+        ctx.moveTo(seg[0].x, seg[0].y);
+        if (seg.length === 1) return;
+        for (let i = 0; i < seg.length - 1; i++) {
+          const x0 = i > 0 ? seg[i - 1].x : seg[i].x;
+          const x1 = seg[i].x, y1 = seg[i].y;
+          const x2 = seg[i + 1].x, y2 = seg[i + 1].y;
+          const x3 = i < seg.length - 2 ? seg[i + 2].x : x2;
+          // tension Catmull-Rom 0.4
+          const cpx1 = x1 + (x2 - x0) * 0.18;
+          const cpy1 = y1 + (seg[i + 1].y - (i > 0 ? seg[i - 1].y : y1)) * 0.18;
+          const cpx2 = x2 - (x3 - x1) * 0.18;
+          const cpy2 = y2 - (i < seg.length - 2 ? seg[i + 2].y - y1 : 0) * 0.18;
+          ctx.bezierCurveTo(cpx1, cpy1, cpx2, cpy2, x2, y2);
+        }
+      }
+
+      // --- Vẽ gradient fill dưới đường (mỗi đoạn) ---
+      segments.forEach(seg => {
+        if (seg.length < 2) return;
+        ctx.save();
+        const grad = ctx.createLinearGradient(0, model.pad, 0, model.height - model.pad);
+        grad.addColorStop(0, color + '30');   // ~19% opacity ở đỉnh
+        grad.addColorStop(1, color + '00');   // trong suốt ở đáy
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        smoothPath(ctx, seg);
+        // Đóng xuống đáy để tạo vùng tô
+        ctx.lineTo(seg[seg.length - 1].x, model.height - model.pad);
+        ctx.lineTo(seg[0].x, model.height - model.pad);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // --- Vẽ đường chính bezier ---
+      ctx.save();
       ctx.lineWidth = 2.4 * ratio;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.strokeStyle = color;
-      ctx.beginPath();
-      let started = false;
-      for (let i = 0; i < pts.length; i++) {
-        const isGap = i > 0 && (pts[i].ms - pts[i - 1].ms) > gapBreak;
-        if (!started || isGap) {       // ngắt nét qua khoảng trống dữ liệu
-          ctx.moveTo(pts[i].x, pts[i].y);
-          started = true;
-        } else {
-          ctx.lineTo(pts[i].x, pts[i].y);
-        }
-      }
-      ctx.stroke();
-
-      // Điểm đơn lẻ (bị gap cô lập 2 bên) -> vẽ chấm để vẫn nhìn thấy (vd điểm hiện tại)
-      ctx.fillStyle = color;
-      for (let i = 0; i < pts.length; i++) {
-        const gapBefore = i === 0 || (pts[i].ms - pts[i - 1].ms) > gapBreak;
-        const gapAfter = i === pts.length - 1 || (pts[i + 1].ms - pts[i].ms) > gapBreak;
-        if (gapBefore && gapAfter) {
-          ctx.beginPath();
-          ctx.arc(pts[i].x, pts[i].y, 2.6 * ratio, 0, Math.PI * 2);
+      segments.forEach(seg => {
+        if (seg.length < 1) return;
+        ctx.beginPath();
+        smoothPath(ctx, seg);
+        if (seg.length === 1) {
+          ctx.arc(seg[0].x, seg[0].y, 2.6 * ratio, 0, Math.PI * 2);
+          ctx.fillStyle = color;
           ctx.fill();
+        } else {
+          ctx.stroke();
         }
-      }
+      });
+      ctx.restore();
     }
 
     function drawHistoryMarker(ctx, model) {
@@ -2358,6 +2793,65 @@
         ctx.beginPath();
         ctx.arc(x, y, 4.5 * ratio, 0, Math.PI * 2);
         ctx.fill();
+      });
+    }
+
+    function drawHistoryZones(ctx, model) {
+      if (!model || model.points.length < 2) return;
+      const top = model.pad;
+      const height = model.height - model.pad * 2;
+      for (let i = 0; i < model.points.length - 1; i++) {
+        const point = model.points[i];
+        const next = model.points[i + 1];
+        const dt = next.recordedAtMs - point.recordedAtMs;
+        if (dt <= 0 || dt > historyGapBreakMs()) continue;
+        const temp = finiteNumber(point.temperatureC);
+        const humidity = finiteNumber(point.humidity);
+        const x1 = historyPointX(point, model);
+        const x2 = historyPointX(next, model);
+        if (temp !== null && temp >= settings.hotAbove) {
+          ctx.fillStyle = 'rgba(232, 148, 86, 0.10)';
+          ctx.fillRect(x1, top, Math.max(1, x2 - x1), height);
+        } else if (humidity !== null && humidity >= settings.humidHigh) {
+          ctx.fillStyle = 'rgba(58, 209, 201, 0.08)';
+          ctx.fillRect(x1, top, Math.max(1, x2 - x1), height);
+        }
+      }
+    }
+
+    function drawHistoryExtrema(ctx, model) {
+      if (!model || model.points.length < 2 || !model.tempScale) return;
+      const candidates = model.points.filter(point => finiteNumber(point.temperatureC) !== null);
+      if (candidates.length < 2) return;
+      const min = extremaPoint(candidates, 'temperatureC', 'min');
+      const max = extremaPoint(candidates, 'temperatureC', 'max');
+      const ratio = window.devicePixelRatio || 1;
+      const warm = getComputedStyle(document.documentElement).getPropertyValue('--warm').trim();
+      const cool = getComputedStyle(document.documentElement).getPropertyValue('--cool').trim();
+
+      [
+        [max, warm, 'Max'],
+        [min, cool, 'Min']
+      ].forEach(([point, color, label]) => {
+        if (!point) return;
+        const x = historyPointX(point, model);
+        const y = historyPointY(point, 'temperatureC', model.tempScale, model);
+        if (y === null) return;
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--panel').trim();
+        ctx.lineWidth = 2 * ratio;
+        ctx.beginPath();
+        ctx.arc(x, y, 4.4 * ratio, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.font = `${11 * ratio}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim() || 'monospace'}`;
+        ctx.textAlign = x > model.width - 100 * ratio ? 'right' : 'left';
+        ctx.fillStyle = color;
+        const tx = x + (ctx.textAlign === 'right' ? -8 * ratio : 8 * ratio);
+        const ty = Math.max(model.pad + 12 * ratio, y - 8 * ratio);
+        ctx.fillText(`${label} ${Number(point.temperatureC).toFixed(1)}°`, tx, ty);
+        ctx.restore();
       });
     }
 
@@ -2443,8 +2937,10 @@
       };
       state.historyChartModel = model;
 
+      drawHistoryZones(ctx, model);
       drawHistoryLine(ctx, model, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim(), model.tempScale);
       drawHistoryLine(ctx, model, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), model.humidityScale);
+      drawHistoryExtrema(ctx, model);
       drawHistoryMarker(ctx, model);
       drawChipChart();
     }
@@ -2466,21 +2962,79 @@
           ? `${points.length} mẫu · ${historyRangeLabel()}`
           : `Chưa có mẫu chip trong ${historyRangeLabel()}`;
       }
-      if (points.length === 0) return;
+
+      if (points.length === 0) { state.chipChartModel = null; return; }
 
       const pad = 12 * (window.devicePixelRatio || 1);
       const model = {
         points, width, height, pad, startMs, endMs,
-        rangeMs: Math.max(1, endMs - startMs)
+        rangeMs: Math.max(1, endMs - startMs),
+        chipScale: historyValueScale(points, 'chipTemperatureC')
       };
-      const scale = historyValueScale(points, 'chipTemperatureC');
+      state.chipChartModel = model;
+
       const color = getComputedStyle(document.documentElement).getPropertyValue('--chip').trim() || '#a394ff';
-      drawHistoryLine(ctx, model, 'chipTemperatureC', color, scale);
+      drawHistoryLine(ctx, model, 'chipTemperatureC', color, model.chipScale);
+
+      // Vẽ marker nếu đang hover
+      const hp = state.chipHoverPoint;
+      if (hp && model.points.includes(hp)) {
+        const ratio = window.devicePixelRatio || 1;
+        const x = historyPointX(hp, model);
+        ctx.save();
+        ctx.strokeStyle = colorMixLine();
+        ctx.lineWidth = 1 * ratio;
+        ctx.beginPath();
+        ctx.moveTo(x, model.pad);
+        ctx.lineTo(x, model.height - model.pad);
+        ctx.stroke();
+        const y = historyPointY(hp, 'chipTemperatureC', model.chipScale, model);
+        if (y !== null) {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(x, y, 4.5 * ratio, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
     }
 
     function hideHistoryTooltip() {
       state.historyHoverPoint = null;
       if (els.historyTooltip) els.historyTooltip.hidden = true;
+    }
+
+    function hideChipTooltip() {
+      state.chipHoverPoint = null;
+      if (els.chipTooltip) els.chipTooltip.hidden = true;
+    }
+
+    function updateChipTooltip(point, clientX, clientY) {
+      if (!els.chipTooltip || !els.chipChartWrap) return;
+      const wrapRect = els.chipChartWrap.getBoundingClientRect();
+      const left = clamp(clientX - wrapRect.left, 72, Math.max(72, wrapRect.width - 72));
+      const top = clamp(clientY - wrapRect.top, 44, Math.max(44, wrapRect.height - 8));
+      els.chipTooltip.style.left = `${left}px`;
+      els.chipTooltip.style.top = `${top}px`;
+      els.chipTooltip.innerHTML = `<strong>${formatHistoryTooltipTime(point.recordedAtMs)}</strong><br>`
+        + `Chip ${formatTemperature(point.chipTemperatureC)}`;
+      els.chipTooltip.hidden = false;
+    }
+
+    function updateChipPointer(event) {
+      const model = state.chipChartModel;
+      if (!model || !model.points.length) return;
+      const rect = els.chipChart.getBoundingClientRect();
+      const x = ((event.clientX - rect.left) / Math.max(1, rect.width)) * model.width;
+      let nearest = model.points[0];
+      let bestDelta = Math.abs(historyPointX(nearest, model) - x);
+      model.points.forEach(point => {
+        const delta = Math.abs(historyPointX(point, model) - x);
+        if (delta < bestDelta) { nearest = point; bestDelta = delta; }
+      });
+      state.chipHoverPoint = nearest;
+      updateChipTooltip(nearest, event.clientX, event.clientY);
+      drawChipChart();
     }
 
     function formatHistoryTooltipTime(ms) {
@@ -2596,6 +3150,47 @@
       els.comfortHumidityTrend.textContent = formatHumidityDelta(stats?.humidityTrend1h);
     }
 
+    function renderRoomPulse(reading = {}, stats = null) {
+      if (!els.pulseCard) return;
+      const temperature = finiteNumber(reading.temperatureC);
+      const humidity = finiteNumber(reading.humidity);
+      const deviceOnline = Boolean(reading.deviceOnline);
+      const sensorOnline = Boolean(reading.sensorOnline);
+
+      if (!deviceOnline || !sensorOnline || temperature === null || humidity === null) {
+        els.pulseCard.className = 'pulse-card';
+        els.pulseRing.style.setProperty('--pulse-deg', '0deg');
+        els.pulseTitle.textContent = deviceOnline ? 'Chưa có dữ liệu' : 'Offline';
+        els.pulseCopy.textContent = deviceOnline
+          ? 'ESP32 vẫn sống, nhưng SHT30 chưa trả số đo hợp lệ.'
+          : 'Không có heartbeat mới từ ESP32. Web đang giữ trạng thái chờ.';
+        els.pulseScore.textContent = '--';
+        els.pulseTemp.textContent = '--.-°C';
+        els.pulseHumidity.textContent = '--%';
+        els.pulseTrend.textContent = '--';
+        els.pulseFreshness.textContent = reading.cloudMode ? formatCloudAge(reading) : '--';
+        return;
+      }
+
+      const score = computeComfortScore(temperature, humidity);
+      const roomState = comfortState(temperature, humidity);
+      const scoreValue = score === null ? 0 : score;
+      els.pulseCard.className = `pulse-card ${roomState.tone || ''}`.trim();
+      els.pulseRing.style.setProperty('--pulse-deg', `${Math.round(scoreValue * 3.6)}deg`);
+      els.pulseTitle.textContent = roomState.title;
+      els.pulseCopy.textContent = `${roomState.copy} ${score !== null ? `Độ ổn hiện tại ${score}/100.` : ''}`.trim();
+      els.pulseScore.textContent = score === null ? '--' : String(score);
+      els.pulseTemp.textContent = formatTemperature(temperature);
+      els.pulseHumidity.textContent = formatHumidity(humidity);
+
+      const tempTrend = finiteNumber(stats?.temperatureTrend1hC);
+      const humTrend = finiteNumber(stats?.humidityTrend1h);
+      els.pulseTrend.textContent = tempTrend === null && humTrend === null
+        ? '--'
+        : `${formatDelta(tempTrend)} · ${formatHumidityDelta(humTrend)}`;
+      els.pulseFreshness.textContent = reading.cloudMode ? formatCloudAge(reading) : 'Vừa xong';
+    }
+
     function updateMetricStats(stats) {
       els.tempMinToday.textContent = formatTemperature(stats?.todayMinC);
       els.tempMaxToday.textContent = formatTemperature(stats?.todayMaxC);
@@ -2684,11 +3279,13 @@
         state.latestReadingForHistory = null;
       }
       const displayStats = reading.stats || buildHistoryStats();
+      renderRoomPulse(reading, displayStats);
       renderOutdoorComparison(reading);
       renderInsights(reading);
       renderAcMonthly();
-      renderNowVsYesterday(reading);
-      renderDataHealth();
+      renderAcSessions();
+      renderSleepReport();
+      renderTimeline();
 
       const displayDate = reading.updatedAtIso ? new Date(reading.updatedAtIso) : new Date();
       els.updatedAt.textContent = new Intl.DateTimeFormat('vi-VN', {
@@ -2732,7 +3329,6 @@
       if (!state.acMonthlyAt || Date.now() - state.acMonthlyAt > 60000) {
         state.acMonthlyAt = Date.now();
         computeAcMonthly();
-        computeYesterdayPoint();
       }
       render(await fetchReading());
     }
@@ -2759,6 +3355,15 @@
       hideHistoryTooltip();
       drawHistoryChart();
     });
+
+    if (els.chipChart) {
+      els.chipChart.addEventListener('pointermove', updateChipPointer);
+      els.chipChart.addEventListener('pointerdown', updateChipPointer);
+      els.chipChart.addEventListener('pointerleave', () => {
+        hideChipTooltip();
+        drawChipChart();
+      });
+    }
 
     /* ===================== OUTDOOR WEATHER (Open-Meteo) ===================== */
 
@@ -3152,74 +3757,242 @@
       return { hours, kwh, cost: evnMarginalCost(baseKwh, kwh), coveredHours: coveredMs / MS_HOUR };
     }
 
-    /* ===== Giờ này so với hôm qua (điểm cùng giờ, ±30 phút) ===== */
-    function computeYesterdayPoint() {
-      const target = Date.now() - MS_DAY;
-      const TOL = 30 * 60 * 1000;
-      let best = null, bestDist = Infinity;
-      for (const p of validStoredHistoryPoints()) {
-        const d = Math.abs(p.recordedAtMs - target);
-        if (d <= TOL && d < bestDist) { best = p; bestDist = d; }
-        if (p.recordedAtMs > target + TOL) break; // mảng đã sort tăng dần
+    function currentNightWindow() {
+      const now = new Date();
+      const end = new Date(now);
+      const start = new Date(now);
+      if (now.getHours() >= 22) {
+        start.setHours(22, 0, 0, 0);
+        return { startMs: start.getTime(), endMs: now.getTime(), label: 'Đêm nay' };
       }
-      state.yesterdayPoint = best;
+      if (now.getHours() < 7) {
+        start.setDate(start.getDate() - 1);
+        start.setHours(22, 0, 0, 0);
+        return { startMs: start.getTime(), endMs: now.getTime(), label: 'Đêm nay' };
+      }
+      start.setDate(start.getDate() - 1);
+      start.setHours(22, 0, 0, 0);
+      end.setHours(7, 0, 0, 0);
+      return { startMs: start.getTime(), endMs: end.getTime(), label: 'Đêm qua' };
     }
 
-    function renderNowVsYesterday(reading) {
-      if (!els.nowYdayDelta) return;
-      const y = state.yesterdayPoint;
-      const t = reading ? finiteNumber(reading.temperatureC) : null;
-      const h = reading ? finiteNumber(reading.humidity) : null;
-      if (!y || t === null) {
-        resetComparison(els.nowYdayDelta, els.nowYdaySummary, 'Cần mẫu cùng giờ hôm qua');
-        return;
+    function durationAbove(points, startMs, endMs, key, threshold) {
+      const pts = points
+        .filter(point => Number.isFinite(point.recordedAtMs)
+          && point.recordedAtMs >= startMs
+          && point.recordedAtMs <= endMs)
+        .sort((a, b) => a.recordedAtMs - b.recordedAtMs);
+      let total = 0;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const value = finiteNumber(pts[i][key]);
+        const nextMs = pts[i + 1].recordedAtMs;
+        const dt = nextMs - pts[i].recordedAtMs;
+        if (value === null || dt <= 0 || dt > 20 * 60 * 1000) continue;
+        if (value >= threshold) total += Math.min(nextMs, endMs) - Math.max(pts[i].recordedAtMs, startMs);
       }
-      const delta = t - y.temperatureC;
-      els.nowYdayDelta.textContent = formatDelta(delta);
-      els.nowYdayDelta.className = `delta ${comparisonClass(delta)}`;
-      let txt = `Hôm qua ${formatTemperature(y.temperatureC)} · ${Math.round(y.humidity)}%`;
-      if (h !== null) {
-        const dh = Math.round(h - y.humidity);
-        txt += ` — ẩm ${dh >= 0 ? '+' : ''}${dh}%`;
-      }
-      els.nowYdaySummary.textContent = txt;
+      return Math.max(0, total);
     }
 
-    /* ===== Độ phủ dữ liệu + sức khoẻ pipeline (cron 5 phút) ===== */
-    function renderDataHealth() {
-      if (!els.dataHealth) return;
-      const raw = state.historyPoints;
-      const timeFmt = (ms) => new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
+    function renderSleepReport() {
+      if (!els.sleepScore) return;
+      const win = currentNightWindow();
+      const points = validHistoryPoints()
+        .filter(point => point.recordedAtMs >= win.startMs && point.recordedAtMs <= win.endMs);
+      els.sleepTitle.textContent = win.label;
+      els.sleepWindow.textContent = `${formatClockShort(win.startMs)}-${formatClockShort(win.endMs)}`;
 
-      if (!Array.isArray(raw) || raw.length === 0) {
-        els.dataHealth.hidden = false;
-        els.dataHealthDot.className = 'health-dot' + (state.historyError ? ' bad' : '');
-        els.dataHealthText.textContent = state.historyError
-          ? 'Không đọc được lịch sử từ Supabase'
-          : 'Chưa có mẫu lịch sử';
-        els.dataAlert.hidden = !state.historyError;
-        if (state.historyError) els.dataAlert.textContent = '⚠ Không đọc được bảng lịch sử trên Supabase — kiểm tra mạng hoặc project Supabase (free tier có thể bị tạm dừng).';
+      if (points.length < 2) {
+        els.sleepSummary.textContent = 'Chưa đủ dữ liệu trong khung ngủ để chấm điểm.';
+        els.sleepScore.textContent = '--/100';
+        els.sleepTempAvg.textContent = '--.-°C';
+        els.sleepHumidityHigh.textContent = '--';
+        els.sleepWorst.textContent = '--';
+        els.sleepSamples.textContent = `${points.length} mẫu`;
         return;
       }
 
-      const lastMs = raw[raw.length - 1].recordedAtMs;
-      const ageMin = (Date.now() - lastMs) / 60000;
-      const sod = new Date(); sod.setHours(0, 0, 0, 0);
-      const dayStart = sod.getTime();
-      let count = 0;
-      for (let i = raw.length - 1; i >= 0 && raw[i].recordedAtMs >= dayStart; i--) count++;
-      const expected = Math.floor((Date.now() - dayStart) / (5 * 60 * 1000));
-      const pctTxt = expected > 0 ? Math.min(100, Math.round((count / expected) * 100)) + '%' : '--';
+      const avgTemp = averageFinite(points, 'temperatureC');
+      const avgHumidity = averageFinite(points, 'humidity');
+      const scores = points
+        .map(point => computeComfortScore(finiteNumber(point.temperatureC), finiteNumber(point.humidity)))
+        .filter(score => score !== null);
+      const sleepScore = scores.length
+        ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+        : null;
+      const humidMs = durationAbove(points, win.startMs, win.endMs, 'humidity', Math.max(70, settings.humidHigh));
+      let worst = null;
+      let worstScore = Infinity;
+      points.forEach(point => {
+        const score = computeComfortScore(finiteNumber(point.temperatureC), finiteNumber(point.humidity));
+        if (score !== null && score < worstScore) {
+          worstScore = score;
+          worst = point;
+        }
+      });
 
-      els.dataHealth.hidden = false;
-      els.dataHealthText.textContent = `Độ phủ hôm nay ${pctTxt} (${count}/${Math.max(expected, count)} mẫu) · ghi lần cuối ${timeFmt(lastMs)}`;
-      els.dataHealthDot.className = 'health-dot ' + (ageMin <= 7 ? 'ok' : ageMin <= 20 ? 'warn' : 'bad');
+      els.sleepScore.textContent = sleepScore === null ? '--/100' : `${sleepScore}/100`;
+      els.sleepTempAvg.textContent = formatTemperature(avgTemp);
+      els.sleepHumidityHigh.textContent = humidMs > 0 ? formatDurationShort(humidMs) : '0 phút';
+      els.sleepWorst.textContent = worst
+        ? `${formatClockShort(worst.recordedAtMs)} · ${formatTemperature(worst.temperatureC)} · ${formatHumidity(worst.humidity)}`
+        : '--';
+      els.sleepSamples.textContent = `${points.length} mẫu`;
 
-      const stale = ageMin > 20;
-      els.dataAlert.hidden = !stale;
-      if (stale) {
-        els.dataAlert.textContent = `⚠ Không có dữ liệu mới từ ${timeFmt(lastMs)} (${Math.round(ageMin)} phút trước). Kiểm tra cron Supabase hoặc ESP32.`;
+      if (sleepScore === null) {
+        els.sleepSummary.textContent = 'Dữ liệu đêm có nhưng chưa đủ để chấm điểm.';
+      } else if (sleepScore >= 78 && humidMs < 30 * 60 * 1000) {
+        els.sleepSummary.textContent = `${win.label} khá ổn: nhiệt trung bình ${formatTemperature(avgTemp)}, ẩm trung bình ${formatHumidity(avgHumidity)}.`;
+      } else if (humidMs >= 2 * MS_HOUR) {
+        els.sleepSummary.textContent = `${win.label} bị ẩm lâu (${formatDurationShort(humidMs)}). Có thể cân nhắc hút ẩm hoặc hé thông gió trước khi ngủ.`;
+      } else {
+        els.sleepSummary.textContent = `${win.label} tạm ổn, nhưng vẫn có vài đoạn lệch khỏi vùng dễ chịu.`;
       }
+    }
+
+    function addTimelineItem(list, time, title, sub) {
+      const item = document.createElement('div');
+      item.className = 'timeline-item';
+      const timeEl = document.createElement('div');
+      timeEl.className = 'timeline-time';
+      timeEl.textContent = time;
+      const body = document.createElement('div');
+      const titleEl = document.createElement('p');
+      titleEl.className = 'timeline-main';
+      titleEl.textContent = title;
+      const subEl = document.createElement('p');
+      subEl.className = 'timeline-sub';
+      subEl.textContent = sub;
+      body.append(titleEl, subEl);
+      item.append(timeEl, body);
+      list.appendChild(item);
+    }
+
+    function renderTimeline() {
+      if (!els.timelineList) return;
+      const points = todayPoints();
+      els.timelineList.textContent = '';
+      if (points.length < 2) {
+        els.timelineSummary.textContent = 'Chưa đủ dữ liệu hôm nay để dựng timeline.';
+        return;
+      }
+
+      const maxTemp = extremaPoint(points, 'temperatureC', 'max');
+      const minTemp = extremaPoint(points, 'temperatureC', 'min');
+      const maxHumidity = extremaPoint(points, 'humidity', 'max');
+      const minHumidity = extremaPoint(points, 'humidity', 'min');
+      const humidStart = points.find(point => finiteNumber(point.humidity) !== null && point.humidity >= settings.humidHigh);
+      const hotStart = points.find(point => finiteNumber(point.temperatureC) !== null && point.temperatureC >= settings.hotAbove);
+      const latest = points[points.length - 1];
+      const events = [];
+
+      if (minTemp) events.push({ ms: minTemp.recordedAtMs, title: `Mát nhất ${formatTemperature(minTemp.temperatureC)}`, sub: `Độ ẩm lúc đó ${formatHumidity(minTemp.humidity)}` });
+      if (maxTemp) events.push({ ms: maxTemp.recordedAtMs, title: `Nóng nhất ${formatTemperature(maxTemp.temperatureC)}`, sub: `Độ ẩm lúc đó ${formatHumidity(maxTemp.humidity)}` });
+      if (minHumidity) events.push({ ms: minHumidity.recordedAtMs, title: `Khô nhất ${formatHumidity(minHumidity.humidity)}`, sub: `Nhiệt độ ${formatTemperature(minHumidity.temperatureC)}` });
+      if (maxHumidity) events.push({ ms: maxHumidity.recordedAtMs, title: `Ẩm nhất ${formatHumidity(maxHumidity.humidity)}`, sub: `Nhiệt độ ${formatTemperature(maxHumidity.temperatureC)}` });
+      if (humidStart) events.push({ ms: humidStart.recordedAtMs, title: `Bắt đầu chạm ngưỡng ẩm`, sub: `${formatHumidity(humidStart.humidity)} tại ngưỡng ${Math.round(settings.humidHigh)}%` });
+      if (hotStart) events.push({ ms: hotStart.recordedAtMs, title: `Bắt đầu nóng rõ`, sub: `${formatTemperature(hotStart.temperatureC)} tại ngưỡng ${formatTemperature(settings.hotAbove)}` });
+      if (latest) events.push({ ms: latest.recordedAtMs, title: 'Mẫu mới nhất', sub: `${formatTemperature(latest.temperatureC)} · ${formatHumidity(latest.humidity)}` });
+
+      const deduped = [];
+      const seen = new Set();
+      events.sort((a, b) => a.ms - b.ms).forEach(event => {
+        const key = `${Math.round(event.ms / 60000)}:${event.title}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        deduped.push(event);
+      });
+
+      els.timelineSummary.textContent = `${points.length} mẫu hôm nay · ${deduped.length} mốc đáng chú ý`;
+      deduped.slice(0, 7).forEach(event => addTimelineItem(
+        els.timelineList,
+        formatClockShort(event.ms),
+        event.title,
+        event.sub
+      ));
+    }
+
+    function computeAcSessions() {
+      const byHour = outdoorHourMap();
+      const points = todayPoints().sort((a, b) => a.recordedAtMs - b.recordedAtMs);
+      if (!byHour || points.length < 2) return null;
+
+      const sessions = [];
+      let current = null;
+      for (let i = 0; i < points.length - 1; i++) {
+        const point = points[i];
+        const next = points[i + 1];
+        const dt = next.recordedAtMs - point.recordedAtMs;
+        const on = acSampleIsOn(point, byHour);
+        if (dt <= 0 || dt > 15 * 60 * 1000 || on !== true) {
+          if (current) {
+            sessions.push(current);
+            current = null;
+          }
+          continue;
+        }
+        if (!current) {
+          current = { startMs: point.recordedAtMs, endMs: next.recordedAtMs, durationMs: 0 };
+        }
+        current.endMs = next.recordedAtMs;
+        current.durationMs += dt;
+      }
+      if (current) sessions.push(current);
+
+      const kw = Math.max(0, finiteNumber(settings.acKw) || DEFAULT_SETTINGS.acKw);
+      const baseKwh = Math.max(0, finiteNumber(settings.monthlyKwh) || DEFAULT_SETTINGS.monthlyKwh);
+      const useful = sessions.filter(session => session.durationMs >= 8 * 60 * 1000);
+      useful.forEach(session => {
+        session.hours = session.durationMs / MS_HOUR;
+        session.kwh = session.hours * kw;
+        session.cost = evnMarginalCost(baseKwh, session.kwh);
+      });
+      return useful;
+    }
+
+    function addSessionItem(list, session) {
+      const item = document.createElement('div');
+      item.className = 'session-item';
+      const timeEl = document.createElement('div');
+      timeEl.className = 'session-time';
+      timeEl.textContent = `${formatClockShort(session.startMs)}-${formatClockShort(session.endMs)}`;
+      const body = document.createElement('div');
+      const titleEl = document.createElement('p');
+      titleEl.className = 'session-main';
+      titleEl.textContent = `${formatDurationShort(session.durationMs)} · ${session.kwh.toFixed(1)} kWh`;
+      const subEl = document.createElement('p');
+      subEl.className = 'session-sub';
+      subEl.textContent = `Ước tính khoảng ${Math.round(session.cost).toLocaleString('vi-VN')}đ`;
+      body.append(titleEl, subEl);
+      item.append(timeEl, body);
+      list.appendChild(item);
+    }
+
+    function renderAcSessions() {
+      if (!els.acSessionList) return;
+      const sessions = computeAcSessions();
+      els.acSessionList.textContent = '';
+      if (sessions === null) {
+        els.acSessionSummary.textContent = 'Đang đợi dữ liệu thời tiết ngoài trời để tách phiên.';
+        els.acSessionCount.textContent = '--';
+        els.acSessionTotal.textContent = '--';
+        els.acSessionLongest.textContent = '--';
+        return;
+      }
+      if (sessions.length === 0) {
+        els.acSessionSummary.textContent = 'Hôm nay chưa thấy phiên điều hoà rõ ràng.';
+        els.acSessionCount.textContent = '0';
+        els.acSessionTotal.textContent = '0 phút';
+        els.acSessionLongest.textContent = '--';
+        return;
+      }
+      const totalMs = sessions.reduce((sum, session) => sum + session.durationMs, 0);
+      const totalKwh = sessions.reduce((sum, session) => sum + session.kwh, 0);
+      const longest = sessions.reduce((best, session) => session.durationMs > best.durationMs ? session : best, sessions[0]);
+      els.acSessionCount.textContent = String(sessions.length);
+      els.acSessionTotal.textContent = formatDurationShort(totalMs);
+      els.acSessionLongest.textContent = formatDurationShort(longest.durationMs);
+      els.acSessionSummary.textContent = `Tổng ${formatDurationShort(totalMs)} · khoảng ${totalKwh.toFixed(1)} kWh hôm nay.`;
+      sessions.slice(-5).forEach(session => addSessionItem(els.acSessionList, session));
     }
 
     function computeAcMonthly() {
@@ -3449,7 +4222,7 @@
       document.documentElement.classList.add('anim-ready');
 
       const blocks = Array.from(document.querySelectorAll(
-        '.topbar, .device-grid, .comfort-card, .grid, .weather-card, .insights-card, .compare-grid, .history-card, .details'
+        '.topbar, .device-grid, .pulse-card, .comfort-card, .grid, .weather-card, .insights-card, .sleep-card, .timeline-card, .compare-grid, .ac-session-card, .history-card, .details'
       ));
       blocks.forEach((el, i) => {
         el.classList.add('reveal');
