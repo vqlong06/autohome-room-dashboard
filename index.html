@@ -50,6 +50,12 @@
       box-sizing: border-box;
     }
 
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 18px;
+      overflow-x: hidden;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -57,18 +63,24 @@
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0;
+      overflow-x: hidden;
+      overscroll-behavior-y: contain;
     }
 
     .app {
       min-height: 100vh;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      padding: 24px;
+      padding: 28px 24px 44px;
+      position: relative;
+      z-index: 2;
     }
 
     .dashboard {
       width: min(960px, 100%);
+      perspective: 1400px;
+      transform-style: preserve-3d;
     }
 
     .topbar {
@@ -432,6 +444,7 @@
     .history-legend {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 14px;
       margin-top: 10px;
       color: var(--muted);
@@ -443,6 +456,32 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      min-height: 28px;
+      padding: 5px 8px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      cursor: default;
+      transition: transform 220ms cubic-bezier(.2,.7,.2,1),
+                  opacity 220ms ease,
+                  background 220ms ease,
+                  border-color 220ms ease;
+    }
+
+    button.legend-item {
+      cursor: pointer;
+    }
+
+    button.legend-item:hover {
+      transform: translateY(-1px);
+      border-color: var(--line);
+      background: color-mix(in srgb, var(--panel), var(--bg) 34%);
+    }
+
+    .legend-item.off {
+      opacity: 0.42;
     }
 
     .legend-line {
@@ -456,13 +495,64 @@
       background: var(--warm);
     }
 
+    .history-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chart-hint {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--panel), var(--bg) 38%);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .chart-reset {
+      appearance: none;
+      min-height: 26px;
+      padding: 4px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 38%);
+      color: var(--muted);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 760;
+      cursor: pointer;
+      transition: transform 220ms cubic-bezier(.2,.7,.2,1), color 220ms ease, border-color 220ms ease;
+    }
+
+    .chart-reset:hover {
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--accent), var(--line) 50%);
+    }
+
+    .chart-reset:active {
+      transform: scale(0.96);
+    }
+
     #historyChart {
       height: 130px;
     }
 
     .history-chart-wrap {
       position: relative;
-      touch-action: pan-y;
+      touch-action: none;
+      cursor: crosshair;
+      user-select: none;
+    }
+
+    .history-chart-wrap.dragging {
+      cursor: grabbing;
     }
 
     .history-tooltip {
@@ -594,8 +684,165 @@
       text-align: right;
     }
     .weather-icon {
-      font-size: 22px;
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
       line-height: 1;
+    }
+    .meteo-icon {
+      position: relative;
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      color: var(--accent);
+      transform: translateZ(0);
+      contain: layout paint;
+      will-change: transform;
+    }
+    .meteo-icon.small {
+      width: 24px;
+      height: 24px;
+    }
+    .meteo-sun .sun-core {
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      background: #ffd166;
+      box-shadow: 0 0 18px rgba(255, 209, 102, 0.6);
+      animation: weatherPulse 3.2s ease-in-out infinite;
+      will-change: transform;
+    }
+    .meteo-sun::before {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+      background:
+        conic-gradient(from 0deg, transparent 0 8%, rgba(255,209,102,.9) 8% 12%, transparent 12% 25%,
+          rgba(255,209,102,.9) 25% 29%, transparent 29% 42%, rgba(255,209,102,.9) 42% 46%, transparent 46% 59%,
+          rgba(255,209,102,.9) 59% 63%, transparent 63% 76%, rgba(255,209,102,.9) 76% 80%, transparent 80% 100%);
+      animation: weatherSpin 9s linear infinite;
+    }
+    .meteo-cloud .cloud-main,
+    .meteo-rain .cloud-main,
+    .meteo-storm .cloud-main,
+    .meteo-snow .cloud-main {
+      position: absolute;
+      left: 5px;
+      right: 3px;
+      top: 13px;
+      height: 11px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--cool), #fff 40%);
+      box-shadow: 0 6px 14px rgba(108, 178, 232, 0.18);
+      animation: cloudFloat 4.2s ease-in-out infinite;
+      will-change: transform;
+    }
+    .meteo-cloud .cloud-main::before,
+    .meteo-rain .cloud-main::before,
+    .meteo-storm .cloud-main::before,
+    .meteo-snow .cloud-main::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: -7px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: inherit;
+      box-shadow: 9px 2px 0 -1px color-mix(in srgb, var(--cool), #fff 38%);
+    }
+    .meteo-partly .sun-core {
+      inset: 5px auto auto 3px;
+      width: 16px;
+      height: 16px;
+    }
+    .meteo-partly .cloud-main {
+      top: 15px;
+      left: 8px;
+    }
+    .meteo-rain .drop {
+      position: absolute;
+      top: 24px;
+      width: 2px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      animation: rainDrop 1.15s linear infinite;
+      will-change: transform, opacity;
+    }
+    .meteo-rain .drop:nth-child(2) { left: 10px; animation-delay: -100ms; }
+    .meteo-rain .drop:nth-child(3) { left: 16px; animation-delay: -340ms; }
+    .meteo-rain .drop:nth-child(4) { left: 22px; animation-delay: -620ms; }
+    .meteo-storm .bolt {
+      position: absolute;
+      left: 14px;
+      top: 21px;
+      width: 8px;
+      height: 13px;
+      background: #ffd166;
+      clip-path: polygon(45% 0, 100% 0, 64% 44%, 100% 44%, 30% 100%, 48% 55%, 0 55%);
+      filter: drop-shadow(0 0 5px rgba(255, 209, 102, 0.55));
+      animation: boltFlash 1.8s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+    .meteo-fog .fog-line {
+      position: absolute;
+      left: 5px;
+      right: 5px;
+      height: 2px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--muted), transparent 12%);
+      animation: fogDrift 4.6s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+    .meteo-fog .fog-line:nth-child(1) { top: 10px; }
+    .meteo-fog .fog-line:nth-child(2) { top: 16px; animation-delay: -1.1s; }
+    .meteo-fog .fog-line:nth-child(3) { top: 22px; animation-delay: -2.2s; }
+    .meteo-snow .flake {
+      position: absolute;
+      top: 24px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #e7f4ff;
+      box-shadow: 0 0 6px rgba(231, 244, 255, 0.5);
+      animation: snowFall 2.2s ease-in-out infinite;
+      will-change: transform, opacity;
+    }
+    .meteo-snow .flake:nth-child(2) { left: 10px; animation-delay: -0.1s; }
+    .meteo-snow .flake:nth-child(3) { left: 18px; animation-delay: -0.7s; }
+    .meteo-snow .flake:nth-child(4) { left: 24px; animation-delay: -1.2s; }
+    @keyframes weatherSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes weatherPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+    @keyframes cloudFloat {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50% { transform: translate3d(2px, -1px, 0); }
+    }
+    @keyframes rainDrop {
+      0% { opacity: 0; transform: translateY(-3px); }
+      20% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(6px); }
+    }
+    @keyframes boltFlash {
+      0%, 72%, 100% { opacity: 0.42; transform: scale(0.96); }
+      76%, 84% { opacity: 1; transform: scale(1.08); }
+    }
+    @keyframes fogDrift {
+      0%, 100% { transform: translate3d(0, 0, 0); opacity: 1; }
+      50% { transform: translate3d(5px, 0, 0); opacity: 0.62; }
+    }
+    @keyframes snowFall {
+      0% { opacity: 0; transform: translateY(-3px) scale(0.8); }
+      30% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(6px) scale(1.05); }
     }
     .weather-table-wrap {
       width: 100%;
@@ -834,61 +1081,145 @@
 
     /* ===================== MOTION & ATMOSPHERE ===================== */
 
-    /* Ambient drifting gradient background */
-    .ambient {
+    .scroll-progress {
       position: fixed;
-      inset: 0;
-      z-index: -1;
-      overflow: hidden;
+      top: 0;
+      left: 0;
+      z-index: 50;
+      width: 100%;
+      height: 3px;
+      transform: scaleX(var(--scroll-progress, 0));
+      transform-origin: left center;
+      background: linear-gradient(90deg, var(--accent), var(--warm), var(--cool));
+      box-shadow: 0 0 24px color-mix(in srgb, var(--accent), transparent 42%);
       pointer-events: none;
     }
+
+    .ambient {
+      position: fixed;
+      inset: -12%;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        linear-gradient(115deg, transparent 0 26%, color-mix(in srgb, var(--scene-a, var(--accent)), transparent 82%) 38%, transparent 52% 100%),
+        linear-gradient(24deg, transparent 0 42%, color-mix(in srgb, var(--scene-b, var(--warm)), transparent 86%) 56%, transparent 70% 100%),
+        linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-2), transparent 30%));
+      opacity: 0.9;
+      transform: translate3d(0, calc(var(--scroll-ratio, 0) * -22px), 0);
+      transition: transform 140ms linear;
+      overflow: hidden;
+    }
+
+    .sakura-field {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+      opacity: 0.42;
+      transform: translate3d(0, calc(var(--scroll-ratio, 0) * -18px), 0);
+      transition: opacity 300ms ease, transform 160ms linear;
+    }
+
+    .sakura-petal {
+      position: absolute;
+      top: -12vh;
+      left: var(--x, 50%);
+      width: var(--size, 12px);
+      height: calc(var(--size, 12px) * 0.68);
+      border-radius: 82% 18% 72% 28% / 72% 28% 70% 30%;
+      background:
+        radial-gradient(circle at 28% 42%, rgba(255,255,255,.78), transparent 28%),
+        linear-gradient(135deg, rgba(255, 224, 232, 0.94), rgba(255, 145, 174, 0.74));
+      box-shadow: 0 8px 18px rgba(255, 128, 166, 0.16);
+      opacity: var(--alpha, 0.62);
+      transform: translate3d(0, -14vh, 0) rotate(var(--rot, 0deg));
+      animation: sakuraFall var(--dur, 16s) linear infinite;
+      animation-delay: var(--delay, 0s);
+      will-change: transform;
+    }
+
+    .sakura-petal::after {
+      content: "";
+      position: absolute;
+      width: 32%;
+      height: 34%;
+      right: 9%;
+      bottom: 7%;
+      border-radius: 50%;
+      background: color-mix(in srgb, #ff7fa8, transparent 48%);
+      opacity: 0.55;
+    }
+
+    @keyframes sakuraFall {
+      0% {
+        transform: translate3d(0, -14vh, 0) rotate(var(--rot, 0deg));
+      }
+      42% {
+        transform: translate3d(var(--drift, 28px), 46vh, 0) rotate(calc(var(--rot, 0deg) + 170deg));
+      }
+      100% {
+        transform: translate3d(var(--drift-end, -18px), 114vh, 0) rotate(calc(var(--rot, 0deg) + 420deg));
+      }
+    }
+
+    .is-scrolling .sakura-field {
+      opacity: 0.36;
+    }
+
     .ambient::before,
     .ambient::after {
       content: "";
       position: absolute;
-      width: 62vmax;
-      height: 62vmax;
-      border-radius: 50%;
-      filter: blur(72px);
-      opacity: 0.34;
+      inset: -8%;
+      opacity: 0.22;
       will-change: transform;
     }
+
     .ambient::before {
-      background: radial-gradient(circle at center, var(--accent), transparent 66%);
-      top: -22vmax;
-      left: -12vmax;
-      animation: drift1 26s ease-in-out infinite alternate;
+      background:
+        linear-gradient(120deg, transparent 0 18%, color-mix(in srgb, var(--accent), transparent 70%) 34%, transparent 48%),
+        linear-gradient(300deg, transparent 0 36%, color-mix(in srgb, var(--cool), transparent 78%) 54%, transparent 72%);
+      animation: meshSlideA 24s ease-in-out infinite alternate;
     }
+
     .ambient::after {
-      background: radial-gradient(circle at center, var(--warm), transparent 66%);
-      bottom: -26vmax;
-      right: -16vmax;
-      animation: drift2 33s ease-in-out infinite alternate;
+      background:
+        linear-gradient(40deg, transparent 0 32%, color-mix(in srgb, var(--warm), transparent 78%) 48%, transparent 66%),
+        linear-gradient(170deg, transparent 0 46%, color-mix(in srgb, var(--chip), transparent 82%) 62%, transparent 78%);
+      animation: meshSlideB 31s ease-in-out infinite alternate;
     }
+
     @media (prefers-color-scheme: light) {
-      .ambient::before,
-      .ambient::after { opacity: 0.16; }
-    }
-    @keyframes drift1 {
-      from { transform: translate3d(0, 0, 0); }
-      to   { transform: translate3d(12vmax, 8vmax, 0); }
-    }
-    @keyframes drift2 {
-      from { transform: translate3d(0, 0, 0); }
-      to   { transform: translate3d(-10vmax, -6vmax, 0); }
-    }
-    /* Lighter ambient on phones so iOS doesn't re-rasterize a huge blur */
-    @media (max-width: 720px) {
+      .ambient {
+        opacity: 0.72;
+      }
       .ambient::before,
       .ambient::after {
-        width: 80vw;
-        height: 80vw;
-        filter: blur(48px);
-        opacity: 0.28;
+        opacity: 0.2;
       }
     }
 
-    /* Card depth + hover lift */
+    @keyframes meshSlideA {
+      from { transform: translate3d(-4%, -2%, 0) rotate(-2deg); }
+      to   { transform: translate3d(5%, 4%, 0) rotate(3deg); }
+    }
+
+    @keyframes meshSlideB {
+      from { transform: translate3d(4%, 3%, 0) rotate(2deg); }
+      to   { transform: translate3d(-5%, -3%, 0) rotate(-3deg); }
+    }
+
+    @media (max-width: 720px) {
+      .ambient {
+        inset: -6%;
+      }
+      .ambient::before,
+      .ambient::after {
+        opacity: 0.16;
+      }
+    }
+
     .metric-card,
     .comfort-card,
     .device-card,
@@ -896,50 +1227,185 @@
     .history-card,
     .weather-card,
     .insights-card,
-    .details {
+    .details,
+    .ac-session-card {
       position: relative;
-      transition: transform 360ms cubic-bezier(.2,.7,.2,1),
-                  box-shadow 360ms ease,
-                  border-color 360ms ease;
+      transition:
+        transform 420ms cubic-bezier(.2,.7,.2,1),
+        box-shadow 420ms ease,
+        border-color 420ms ease,
+        background 420ms ease;
+      will-change: transform;
     }
+
+    .motion-panel {
+      isolation: isolate;
+      --scene-y: 8px;
+      --scene-scale: 0.988;
+      --scene-opacity: 0.88;
+      --scene-rotate: 0deg;
+      --tilt-x: 0deg;
+      --tilt-y: 0deg;
+      --panel-accent: var(--accent);
+      opacity: var(--scene-opacity);
+      transform:
+        translate3d(0, var(--scene-y), 0)
+        perspective(1000px)
+        rotateX(calc(var(--scene-rotate) + var(--tilt-x)))
+        rotateY(var(--tilt-y))
+        scale(var(--scene-scale));
+      transform-origin: center center;
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
+    }
+
+    .motion-panel::before {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      z-index: 0;
+      border-radius: 7px;
+      background:
+        radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%),
+          color-mix(in srgb, var(--panel-accent), transparent 84%),
+          transparent 58%),
+        linear-gradient(180deg, color-mix(in srgb, #fff, transparent 94%), transparent 36%),
+        linear-gradient(135deg, color-mix(in srgb, var(--panel-accent), transparent 94%), transparent 54%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 260ms ease;
+    }
+
+    .motion-panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      border-radius: 8px;
+      background: linear-gradient(115deg, transparent 0 36%, color-mix(in srgb, #fff, transparent 88%) 48%, transparent 62% 100%);
+      opacity: 0;
+      transform: translateX(-46%);
+      pointer-events: none;
+      transition: opacity 260ms ease, transform 780ms cubic-bezier(.2,.7,.2,1);
+    }
+
+    .motion-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .motion-panel.pointer-live::before,
+    .motion-panel:hover::before {
+      opacity: 1;
+    }
+
+    .motion-panel.scene-active {
+      border-color: color-mix(in srgb, var(--panel-accent), var(--line) 28%);
+      box-shadow:
+        0 24px 54px color-mix(in srgb, var(--shadow), #000 10%),
+        0 0 0 1px color-mix(in srgb, var(--panel-accent), transparent 78%);
+    }
+
+    .motion-panel.scene-active::before {
+      opacity: 0.96;
+    }
+
+    .motion-panel.scene-active::after {
+      opacity: 0.62;
+      transform: translateX(var(--scene-shine, 16%));
+    }
+
+    .motion-panel.scene-active .value,
+    .motion-panel.scene-active .delta,
+    .motion-panel.scene-active .insight-value,
+    .motion-panel.scene-active .device-value {
+      text-shadow: 0 10px 22px color-mix(in srgb, var(--panel-accent), transparent 82%);
+    }
+
     @media (hover: hover) and (pointer: fine) {
-      .metric-card:hover,
-      .comfort-card:hover,
-      .device-card:hover,
-      .compare-card:hover,
-      .weather-card:hover,
-      .insights-card:hover,
-      .history-card:hover {
-        transform: translateY(-3px);
-        border-color: color-mix(in srgb, var(--accent), var(--line) 45%);
-        box-shadow: 0 28px 64px var(--shadow);
+      .motion-panel:hover {
+        transform:
+          translate3d(0, calc(var(--scene-y, 0px) - 4px), 0)
+          perspective(1000px)
+          rotateX(calc(var(--scene-rotate) + var(--tilt-x, 0deg)))
+          rotateY(var(--tilt-y, 0deg))
+          scale(calc(var(--scene-scale, 1) + 0.006));
+        border-color: color-mix(in srgb, var(--panel-accent), var(--line) 44%);
+        box-shadow: 0 30px 70px var(--shadow);
+      }
+
+      .motion-panel:hover::after {
+        opacity: 1;
+        transform: translateX(46%);
       }
     }
 
-    /* Scroll-reveal (progressive enhancement: only hides when JS adds .anim-ready) */
+    .motion-panel.touch-pop {
+      transform:
+        translate3d(0, calc(var(--scene-y, 0px) - 2px), 0)
+        perspective(1000px)
+        rotateX(calc(var(--scene-rotate) + var(--tilt-x, 0deg)))
+        rotateY(var(--tilt-y, 0deg))
+        scale(calc(var(--scene-scale, 1) - 0.003));
+    }
+
+    .motion-panel.alert-warm,
+    .motion-panel.alert-humid {
+      animation: alertAura 2.7s ease-in-out infinite;
+    }
+
+    .motion-panel.alert-warm {
+      --panel-accent: var(--warm);
+      border-color: color-mix(in srgb, var(--warm), var(--line) 42%);
+    }
+
+    .motion-panel.alert-humid {
+      --panel-accent: var(--accent);
+      border-color: color-mix(in srgb, var(--accent), var(--line) 42%);
+    }
+
+    @keyframes alertAura {
+      0%, 100% {
+        box-shadow:
+          0 18px 40px var(--shadow),
+          0 0 0 0 color-mix(in srgb, var(--panel-accent), transparent 78%);
+      }
+      54% {
+        box-shadow:
+          0 24px 58px var(--shadow),
+          0 0 0 8px color-mix(in srgb, var(--panel-accent), transparent 92%);
+      }
+    }
+
     .anim-ready .reveal {
       opacity: 0;
-      transform: translateY(18px);
-      transition: opacity 640ms cubic-bezier(.2,.7,.2,1),
-                  transform 640ms cubic-bezier(.2,.7,.2,1);
+      filter: none;
+      transform: translate3d(0, var(--reveal-y, 24px), 0) scale(0.982);
+      transition:
+        opacity 760ms cubic-bezier(.2,.7,.2,1),
+        transform 760ms cubic-bezier(.2,.7,.2,1);
       transition-delay: var(--reveal-delay, 0ms);
-      will-change: opacity, transform;
+      will-change: opacity, transform, filter;
     }
+
     .anim-ready .reveal.in {
       opacity: 1;
       transform: none;
     }
 
-    /* Breathing live status dot */
+    .anim-ready .reveal.in:nth-child(odd) {
+      transition-duration: 840ms;
+    }
+
     .dot.live {
       animation: breathe 2.4s ease-in-out infinite;
     }
+
     @keyframes breathe {
       0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent), transparent 82%); }
       50%      { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent), transparent 90%); }
     }
 
-    /* Hero numbers: tabular figures, subtle gradient, update bump */
     .value,
     .delta,
     .comfort-title,
@@ -947,6 +1413,7 @@
     .pill-value {
       font-variant-numeric: tabular-nums;
     }
+
     @supports ((-webkit-background-clip: text) or (background-clip: text)) {
       .value {
         background: linear-gradient(180deg, var(--text), color-mix(in srgb, var(--text), var(--muted) 50%));
@@ -955,38 +1422,73 @@
         -webkit-text-fill-color: transparent;
       }
     }
+
     .value {
-      transition: transform 240ms cubic-bezier(.2,.7,.2,1);
-    }
-    .value.bump {
-      transform: scale(1.06);
-    }
-    .comfort-title {
-      transition: color 420ms ease;
+      transition: transform 260ms cubic-bezier(.2,.7,.2,1), filter 260ms ease;
     }
 
-    /* Richer meter fill */
+    .value.bump {
+      transform: scale(1.06);
+      filter: drop-shadow(0 10px 20px color-mix(in srgb, var(--accent), transparent 72%));
+    }
+
+    .comfort-title {
+      transition: color 420ms ease, transform 360ms cubic-bezier(.2,.7,.2,1);
+    }
+
+    .meter {
+      position: relative;
+    }
+
+    .meter::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff, transparent 70%), transparent);
+      transform: translateX(-100%);
+      animation: meterGlide 2.8s ease-in-out infinite;
+      opacity: 0.55;
+    }
+
+    @keyframes meterGlide {
+      0%, 36% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
     .meter > span {
       background: linear-gradient(90deg, color-mix(in srgb, var(--accent), transparent 35%), var(--accent));
-      transition: width 600ms cubic-bezier(.2,.7,.2,1);
+      transition: width 650ms cubic-bezier(.2,.7,.2,1);
     }
+
     .meter > span.warm {
       background: linear-gradient(90deg, color-mix(in srgb, var(--warm), transparent 35%), var(--warm));
     }
 
-    /* Smooth tab + status transitions */
-    .range-tab {
-      transition: background 240ms ease, color 240ms ease, border-color 240ms ease;
+    canvas {
+      transition: opacity 320ms ease, transform 420ms cubic-bezier(.2,.7,.2,1);
     }
+
+    .motion-panel:hover canvas {
+      opacity: 0.98;
+      transform: translateY(-1px);
+    }
+
+    .range-tab {
+      transition: background 240ms ease, color 240ms ease, border-color 240ms ease, transform 240ms cubic-bezier(.2,.7,.2,1);
+    }
+
+    .range-tab:active {
+      transform: scale(0.96);
+    }
+
+    .range-tab.active {
+      box-shadow: 0 10px 24px color-mix(in srgb, var(--accent), transparent 78%);
+    }
+
     .device-value,
     #statusText {
       transition: color 320ms ease;
     }
-
-    /* Honour reduced-motion preference */
-    /* Note: animations intentionally run regardless of the OS "Reduce Motion"
-       setting, because this dashboard is meant to feel alive on the owner's
-       phone. Motion is kept gentle (no flashing, no rapid spin). */
     /* ===================== PREMIUM POLISH ===================== */
     :root {
       --font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -1026,10 +1528,7 @@
     .legend-line.chip { background: var(--chip); }
     .device-value.chip-accent { color: var(--chip); }
 
-    /* ===================== ROOM PULSE + STORY LAYERS ===================== */
-    .pulse-card,
-    .timeline-card,
-    .sleep-card,
+    /* ===================== AC SESSION STORY LAYER ===================== */
     .ac-session-card {
       margin-top: 12px;
       padding: 20px;
@@ -1045,31 +1544,6 @@
                   border-color 360ms ease;
     }
 
-    .pulse-card {
-      margin-bottom: 12px;
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
-      gap: 18px;
-      align-items: center;
-      background:
-        radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--accent), transparent 72%), transparent 38%),
-        radial-gradient(circle at 86% 18%, color-mix(in srgb, var(--warm), transparent 82%), transparent 34%),
-        var(--panel);
-    }
-
-    .pulse-card.warm {
-      background:
-        radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--warm), transparent 68%), transparent 38%),
-        var(--panel);
-    }
-
-    .pulse-card.cool {
-      background:
-        radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--cool), transparent 70%), transparent 38%),
-        var(--panel);
-    }
-
-    .pulse-kicker,
     .story-kicker {
       margin: 0 0 6px;
       color: var(--muted);
@@ -1080,73 +1554,6 @@
       text-transform: uppercase;
     }
 
-    .pulse-title {
-      margin: 0;
-      color: var(--text);
-      font-family: var(--font-display);
-      font-size: clamp(38px, 7vw, 72px);
-      line-height: 0.96;
-      letter-spacing: -0.02em;
-    }
-
-    .pulse-copy {
-      margin: 12px 0 0;
-      color: var(--muted);
-      font-size: 16px;
-      line-height: 1.45;
-      max-width: 620px;
-    }
-
-    .pulse-orb {
-      justify-self: center;
-      width: min(250px, 62vw);
-      aspect-ratio: 1;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background:
-        conic-gradient(from -90deg, var(--accent) var(--pulse-deg, 0deg), color-mix(in srgb, var(--line), transparent 12%) 0),
-        radial-gradient(circle, var(--panel) 0 58%, transparent 59%);
-      box-shadow: inset 0 0 0 1px var(--line), 0 24px 70px var(--shadow);
-    }
-
-    .pulse-score {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 72%;
-      aspect-ratio: 1;
-      border-radius: 50%;
-      background: color-mix(in srgb, var(--panel), var(--bg) 26%);
-      border: 1px solid var(--line);
-    }
-
-    .pulse-score strong {
-      font-family: var(--font-display);
-      font-size: clamp(42px, 8vw, 72px);
-      line-height: 0.95;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .pulse-score span {
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .pulse-facts {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .pulse-fact,
-    .story-stat,
     .session-stat {
       min-height: 76px;
       padding: 12px;
@@ -1155,8 +1562,6 @@
       background: color-mix(in srgb, var(--panel), var(--bg) 35%);
     }
 
-    .pulse-fact span,
-    .story-stat span,
     .session-stat span {
       display: block;
       color: var(--muted);
@@ -1167,8 +1572,6 @@
       text-transform: uppercase;
     }
 
-    .pulse-fact strong,
-    .story-stat strong,
     .session-stat strong {
       display: block;
       margin-top: 7px;
@@ -1179,7 +1582,6 @@
       overflow-wrap: anywhere;
     }
 
-    .story-grid,
     .session-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1209,14 +1611,12 @@
       line-height: 1.45;
     }
 
-    .timeline-list,
     .session-list {
       display: grid;
       gap: 9px;
       margin-top: 14px;
     }
 
-    .timeline-item,
     .session-item {
       display: grid;
       grid-template-columns: 74px minmax(0, 1fr);
@@ -1228,7 +1628,6 @@
       background: color-mix(in srgb, var(--panel), var(--bg) 34%);
     }
 
-    .timeline-time,
     .session-time {
       color: var(--muted);
       font-family: var(--font-mono);
@@ -1237,7 +1636,6 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .timeline-main,
     .session-main {
       margin: 0;
       color: var(--text);
@@ -1245,7 +1643,6 @@
       line-height: 1.35;
     }
 
-    .timeline-sub,
     .session-sub {
       margin: 3px 0 0;
       color: var(--muted);
@@ -1253,40 +1650,19 @@
       line-height: 1.35;
     }
 
-    .session-list:empty::before,
-    .timeline-list:empty::before {
+    .session-list:empty::before {
       content: "Đang tích lũy dữ liệu";
       color: var(--muted);
       font-size: 14px;
     }
 
-    @media (hover: hover) and (pointer: fine) {
-      .pulse-card:hover,
-      .timeline-card:hover,
-      .sleep-card:hover,
-      .ac-session-card:hover {
-        transform: translateY(-3px);
-        border-color: color-mix(in srgb, var(--accent), var(--line) 45%);
-        box-shadow: 0 28px 64px var(--shadow);
-      }
-    }
-
     @media (max-width: 720px) {
-      .pulse-card {
-        grid-template-columns: 1fr;
-      }
-      .pulse-orb {
-        width: min(210px, 64vw);
-      }
-      .pulse-facts,
-      .story-grid,
       .session-grid {
         grid-template-columns: 1fr;
       }
       .story-head {
         flex-direction: column;
       }
-      .timeline-item,
       .session-item {
         grid-template-columns: 64px minmax(0, 1fr);
       }
@@ -1336,38 +1712,6 @@
           <span id="lastSeen" class="device-value">--</span>
           <p id="uptime" class="device-copy">--</p>
         </article>
-      </section>
-
-      <section id="pulseCard" class="pulse-card" aria-label="Nhịp phòng">
-        <div>
-          <p class="pulse-kicker">Room Pulse</p>
-          <h2 id="pulseTitle" class="pulse-title">Đang đo</h2>
-          <p id="pulseCopy" class="pulse-copy">Đang gom dữ liệu để đọc trạng thái phòng theo cách dễ hiểu hơn.</p>
-        </div>
-        <div id="pulseRing" class="pulse-orb" style="--pulse-deg: 0deg;">
-          <div class="pulse-score">
-            <strong id="pulseScore">--</strong>
-            <span>độ ổn</span>
-          </div>
-        </div>
-        <div class="pulse-facts">
-          <div class="pulse-fact">
-            <span>Nhiệt</span>
-            <strong id="pulseTemp">--.-°C</strong>
-          </div>
-          <div class="pulse-fact">
-            <span>Ẩm</span>
-            <strong id="pulseHumidity">--%</strong>
-          </div>
-          <div class="pulse-fact">
-            <span>1 giờ</span>
-            <strong id="pulseTrend">--</strong>
-          </div>
-          <div class="pulse-fact">
-            <span>Dữ liệu</span>
-            <strong id="pulseFreshness">--</strong>
-          </div>
-        </div>
       </section>
 
       <section class="comfort-card" aria-label="Trạng thái phòng">
@@ -1542,53 +1886,6 @@
         <p id="digestText" class="digest">Đang tổng hợp dữ liệu hôm nay…</p>
       </section>
 
-      <section class="sleep-card" aria-label="Báo cáo ban đêm">
-        <div class="story-head">
-          <div>
-            <p class="story-kicker">Night Report</p>
-            <h2 id="sleepTitle" class="story-title">Đêm qua</h2>
-            <p id="sleepSummary" class="story-copy">Đang đợi dữ liệu từ khung 22:00-07:00.</p>
-          </div>
-        </div>
-        <div class="story-grid">
-          <div class="story-stat">
-            <span>Điểm ngủ</span>
-            <strong id="sleepScore">--/100</strong>
-          </div>
-          <div class="story-stat">
-            <span>Nhiệt TB</span>
-            <strong id="sleepTempAvg">--.-°C</strong>
-          </div>
-          <div class="story-stat">
-            <span>Ẩm cao</span>
-            <strong id="sleepHumidityHigh">--</strong>
-          </div>
-          <div class="story-stat">
-            <span>Giai đoạn</span>
-            <strong id="sleepWindow">22:00-07:00</strong>
-          </div>
-          <div class="story-stat">
-            <span>Tệ nhất</span>
-            <strong id="sleepWorst">--</strong>
-          </div>
-          <div class="story-stat">
-            <span>Mẫu</span>
-            <strong id="sleepSamples">--</strong>
-          </div>
-        </div>
-      </section>
-
-      <section class="timeline-card" aria-label="Timeline hôm nay">
-        <div class="story-head">
-          <div>
-            <p class="story-kicker">Timeline</p>
-            <h2 class="story-title">Hôm nay phòng kể gì</h2>
-            <p id="timelineSummary" class="story-copy">Đang chờ đủ mốc trong ngày.</p>
-          </div>
-        </div>
-        <div id="timelineList" class="timeline-list"></div>
-      </section>
-
       <section class="compare-grid" aria-label="So sánh nhiệt độ">
         <article class="compare-card">
           <p class="compare-label">Hôm nay so với hôm qua</p>
@@ -1661,20 +1958,24 @@
             <p class="compare-label">Lịch sử</p>
             <p id="historySummary" class="compare-copy">Đang tải dữ liệu</p>
           </div>
-          <div class="range-tabs" aria-label="Chọn khoảng lịch sử">
-            <button class="range-tab" type="button" data-range="six">6h</button>
-            <button class="range-tab active" type="button" data-range="day">24h</button>
-            <button class="range-tab" type="button" data-range="week">7 ngày</button>
-            <button class="range-tab" type="button" data-range="month">30 ngày</button>
+          <div class="history-actions">
+            <span class="chart-hint">Cuộn để zoom · kéo để pan</span>
+            <button id="historyResetZoom" class="chart-reset" type="button">Reset</button>
+            <div class="range-tabs" aria-label="Chọn khoảng lịch sử">
+              <button class="range-tab" type="button" data-range="six">6h</button>
+              <button class="range-tab active" type="button" data-range="day">24h</button>
+              <button class="range-tab" type="button" data-range="week">7 ngày</button>
+              <button class="range-tab" type="button" data-range="month">30 ngày</button>
+            </div>
           </div>
         </div>
         <div id="historyChartWrap" class="history-chart-wrap">
           <canvas id="historyChart" width="860" height="130"></canvas>
           <div id="historyTooltip" class="history-tooltip" hidden></div>
         </div>
-        <div class="history-legend" aria-hidden="true">
-          <span class="legend-item"><span class="legend-line warm"></span>Nhiệt độ</span>
-          <span class="legend-item"><span class="legend-line"></span>Độ ẩm</span>
+        <div class="history-legend" aria-label="Bật tắt lớp dữ liệu lịch sử">
+          <button class="legend-item" type="button" data-series="temperatureC" aria-pressed="true"><span class="legend-line warm"></span>Nhiệt độ</button>
+          <button class="legend-item" type="button" data-series="humidity" aria-pressed="true"><span class="legend-line"></span>Độ ẩm</button>
         </div>
       </section>
 
@@ -1857,10 +2158,17 @@
       historyError: false,
       historyHoverPoint: null,
       historyChartModel: null,
+      historyVisible: { temperatureC: true, humidity: true },
+      historyZoom: null,
+      historyDrag: null,
+      historyDrawProgress: 1,
+      historyAnimFrame: 0,
       chipHoverPoint: null,
       chipChartModel: null,
       latestReadingForHistory: null,
       outdoor: null,
+      weatherIconKey: '',
+      forecastKey: '',
       outdoorAttemptedAt: 0,
       outdoorLoadedAt: 0,
       acMonthly: null,
@@ -1885,15 +2193,6 @@
       wifiDetail: document.getElementById('wifiDetail'),
       lastSeen: document.getElementById('lastSeen'),
       uptime: document.getElementById('uptime'),
-      pulseCard: document.getElementById('pulseCard'),
-      pulseTitle: document.getElementById('pulseTitle'),
-      pulseCopy: document.getElementById('pulseCopy'),
-      pulseRing: document.getElementById('pulseRing'),
-      pulseScore: document.getElementById('pulseScore'),
-      pulseTemp: document.getElementById('pulseTemp'),
-      pulseHumidity: document.getElementById('pulseHumidity'),
-      pulseTrend: document.getElementById('pulseTrend'),
-      pulseFreshness: document.getElementById('pulseFreshness'),
       comfortTitle: document.getElementById('comfortTitle'),
       comfortCopy: document.getElementById('comfortCopy'),
       comfortTemp: document.getElementById('comfortTemp'),
@@ -1927,6 +2226,8 @@
       historyChartWrap: document.getElementById('historyChartWrap'),
       historyTooltip: document.getElementById('historyTooltip'),
       rangeTabs: Array.from(document.querySelectorAll('[data-range]')),
+      historyLegendButtons: Array.from(document.querySelectorAll('[data-series]')),
+      historyResetZoom: document.getElementById('historyResetZoom'),
       updatedAt: document.getElementById('updatedAt'),
       source: document.getElementById('source'),
       history: document.getElementById('history'),
@@ -1957,16 +2258,6 @@
       acValue: document.getElementById('acValue'),
       acCopy: document.getElementById('acCopy'),
       digestText: document.getElementById('digestText'),
-      sleepTitle: document.getElementById('sleepTitle'),
-      sleepSummary: document.getElementById('sleepSummary'),
-      sleepScore: document.getElementById('sleepScore'),
-      sleepTempAvg: document.getElementById('sleepTempAvg'),
-      sleepHumidityHigh: document.getElementById('sleepHumidityHigh'),
-      sleepWindow: document.getElementById('sleepWindow'),
-      sleepWorst: document.getElementById('sleepWorst'),
-      sleepSamples: document.getElementById('sleepSamples'),
-      timelineSummary: document.getElementById('timelineSummary'),
-      timelineList: document.getElementById('timelineList'),
       acMonthThis: document.getElementById('acMonthThis'),
       acMonthThisSub: document.getElementById('acMonthThisSub'),
       acMonthLast: document.getElementById('acMonthLast'),
@@ -2609,6 +2900,27 @@
       els.humidityMeter.style.width = humidity === null ? '0%' : clamp(humidity, 0, 100) + '%';
     }
 
+    function updateAlertMotion(temperature, humidity) {
+      const tempCard = els.temperature ? els.temperature.closest('.metric-card') : null;
+      const humidityCard = els.humidity ? els.humidity.closest('.metric-card') : null;
+      const comfortCard = els.comfortTitle ? els.comfortTitle.closest('.comfort-card') : null;
+      [tempCard, humidityCard, comfortCard].forEach(card => {
+        if (!card) return;
+        card.classList.remove('alert-warm', 'alert-humid');
+      });
+
+      const temp = finiteNumber(temperature);
+      const hum = finiteNumber(humidity);
+      if (temp !== null && temp >= settings.hotAbove) {
+        if (tempCard) tempCard.classList.add('alert-warm');
+        if (comfortCard) comfortCard.classList.add('alert-warm');
+      }
+      if (hum !== null && hum >= settings.humidHigh) {
+        if (humidityCard) humidityCard.classList.add('alert-humid');
+        if (comfortCard) comfortCard.classList.add('alert-humid');
+      }
+    }
+
     function resizeCanvas(canvas) {
       const ratio = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -2656,6 +2968,46 @@
       return now - MS_DAY;
     }
 
+    function selectedHistoryWindow(now = Date.now()) {
+      const rangeStart = selectedHistoryStartMs(now);
+      if (state.historyZoom
+        && Number.isFinite(state.historyZoom.startMs)
+        && Number.isFinite(state.historyZoom.endMs)
+        && state.historyZoom.endMs > state.historyZoom.startMs) {
+        return {
+          startMs: Math.max(rangeStart, state.historyZoom.startMs),
+          endMs: Math.min(now, state.historyZoom.endMs),
+          zoomed: true
+        };
+      }
+      return { startMs: rangeStart, endMs: now, zoomed: false };
+    }
+
+    function resetHistoryZoom() {
+      state.historyZoom = null;
+      state.historyDrag = null;
+      if (els.historyChartWrap) els.historyChartWrap.classList.remove('dragging');
+    }
+
+    function animateHistoryChart() {
+      if (state.historyAnimFrame) cancelAnimationFrame(state.historyAnimFrame);
+      const start = performance.now();
+      state.historyDrawProgress = 0;
+      function step(now) {
+        const t = Math.min(1, (now - start) / 680);
+        state.historyDrawProgress = 1 - Math.pow(1 - t, 3);
+        drawHistoryChart();
+        if (t < 1) {
+          state.historyAnimFrame = requestAnimationFrame(step);
+        } else {
+          state.historyDrawProgress = 1;
+          state.historyAnimFrame = 0;
+          drawHistoryChart();
+        }
+      }
+      state.historyAnimFrame = requestAnimationFrame(step);
+    }
+
     // Nếu 2 mẫu liên tiếp cách nhau quá lâu -> coi là mất dữ liệu, NGẮT nét (không kẻ thẳng bắc cầu).
     function historyGapBreakMs() {
       if (state.historyRange === 'six') return 20 * 60 * 1000;
@@ -2687,6 +3039,7 @@
     }
 
     function drawHistoryLine(ctx, model, key, color, scale) {
+      if (state.historyVisible && state.historyVisible[key] === false) return;
       if (model.points.length < 1 || !scale) return;
       const ratio = window.devicePixelRatio || 1;
       const gapBreak = historyGapBreakMs();
@@ -2712,6 +3065,9 @@
       }
       segments.push(seg);
 
+      const drawProgress = clamp(Number.isFinite(model.drawProgress) ? model.drawProgress : 1, 0, 1);
+      const clipRight = model.pad + (model.width - model.pad * 2) * drawProgress;
+
       // --- Helper: path bezier mượt cho một đoạn ---
       function smoothPath(ctx, seg) {
         if (seg.length === 0) return;
@@ -2730,6 +3086,11 @@
           ctx.bezierCurveTo(cpx1, cpy1, cpx2, cpy2, x2, y2);
         }
       }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(model.pad, 0, Math.max(0, clipRight - model.pad), model.height);
+      ctx.clip();
 
       // --- Vẽ gradient fill dưới đường (mỗi đoạn) ---
       segments.forEach(seg => {
@@ -2768,6 +3129,7 @@
         }
       });
       ctx.restore();
+      ctx.restore();
     }
 
     function drawHistoryMarker(ctx, model) {
@@ -2786,7 +3148,7 @@
       [
         ['temperatureC', model.tempScale, getComputedStyle(document.documentElement).getPropertyValue('--warm').trim()],
         ['humidity', model.humidityScale, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()]
-      ].forEach(([key, scale, color]) => {
+      ].filter(([key]) => !state.historyVisible || state.historyVisible[key] !== false).forEach(([key, scale, color]) => {
         const y = historyPointY(point, key, scale, model);
         if (y === null) return;
         ctx.fillStyle = color;
@@ -2820,6 +3182,7 @@
     }
 
     function drawHistoryExtrema(ctx, model) {
+      if (state.historyVisible && state.historyVisible.temperatureC === false) return;
       if (!model || model.points.length < 2 || !model.tempScale) return;
       const candidates = model.points.filter(point => finiteNumber(point.temperatureC) !== null);
       if (candidates.length < 2) return;
@@ -2895,24 +3258,27 @@
       }
 
       const liveSuffix = stats.pointCount > storedPointCount ? ' + hiện tại' : '';
-      const endMs = Date.now();
-      const startMs = selectedHistoryStartMs(endMs);
+      const windowRange = selectedHistoryWindow(Date.now());
+      const endMs = windowRange.endMs;
+      const startMs = windowRange.startMs;
       const rangeCount = validHistoryPoints()
         .filter(point => point.recordedAtMs >= startMs && point.recordedAtMs <= endMs)
         .length;
       const rangeSuffix = rangeCount > 0
         ? ` · ${rangeCount} trong ${historyRangeLabel()}`
         : ` · chưa có mẫu trong ${historyRangeLabel()}`;
+      const zoomSuffix = windowRange.zoomed ? ' · đang zoom' : '';
       const lineSuffix = rangeCount > 0 && rangeCount < 2 ? ' · cần thêm mẫu để vẽ đường' : '';
-      els.historySummary.textContent = `${storedPointCount} mẫu cloud${liveSuffix}${rangeSuffix} · mới nhất ${latest}${lineSuffix}`;
+      els.historySummary.textContent = `${storedPointCount} mẫu cloud${liveSuffix}${rangeSuffix}${zoomSuffix} · mới nhất ${latest}${lineSuffix}`;
     }
 
     function drawHistoryChart() {
       const canvas = els.historyChart;
       const ctx = canvas.getContext('2d');
       const { width, height } = resizeCanvas(canvas);
-      const endMs = Date.now();
-      const startMs = selectedHistoryStartMs(endMs);
+      const windowRange = selectedHistoryWindow(Date.now());
+      const startMs = windowRange.startMs;
+      const endMs = windowRange.endMs;
       const points = validHistoryPoints().filter(point => point.recordedAtMs >= startMs && point.recordedAtMs <= endMs);
 
       ctx.clearRect(0, 0, width, height);
@@ -2932,6 +3298,7 @@
         startMs,
         endMs,
         rangeMs: Math.max(1, endMs - startMs),
+        drawProgress: state.historyDrawProgress,
         tempScale: historyValueScale(points, 'temperatureC'),
         humidityScale: historyValueScale(points, 'humidity')
       };
@@ -2953,13 +3320,15 @@
       ctx.clearRect(0, 0, width, height);
 
       const endMs = Date.now();
-      const startMs = selectedHistoryStartMs(endMs);
+      const windowRange = selectedHistoryWindow(endMs);
+      const startMs = windowRange.startMs;
+      const chipEndMs = windowRange.endMs;
       const points = validHistoryPoints().filter(p =>
-        p.recordedAtMs >= startMs && p.recordedAtMs <= endMs && finiteNumber(p.chipTemperatureC) !== null);
+        p.recordedAtMs >= startMs && p.recordedAtMs <= chipEndMs && finiteNumber(p.chipTemperatureC) !== null);
 
       if (els.chipSummary) {
         els.chipSummary.textContent = points.length
-          ? `${points.length} mẫu · ${historyRangeLabel()}`
+          ? `${points.length} mẫu · ${historyRangeLabel()}${windowRange.zoomed ? ' · đang zoom' : ''}`
           : `Chưa có mẫu chip trong ${historyRangeLabel()}`;
       }
 
@@ -2967,8 +3336,9 @@
 
       const pad = 12 * (window.devicePixelRatio || 1);
       const model = {
-        points, width, height, pad, startMs, endMs,
-        rangeMs: Math.max(1, endMs - startMs),
+        points, width, height, pad, startMs, endMs: chipEndMs,
+        rangeMs: Math.max(1, chipEndMs - startMs),
+        drawProgress: state.historyDrawProgress,
         chipScale: historyValueScale(points, 'chipTemperatureC')
       };
       state.chipChartModel = model;
@@ -3053,9 +3423,14 @@
       const top = clamp(clientY - wrapRect.top, 44, Math.max(44, wrapRect.height - 8));
       els.historyTooltip.style.left = `${left}px`;
       els.historyTooltip.style.top = `${top}px`;
-      els.historyTooltip.innerHTML = `<strong>${formatHistoryTooltipTime(point.recordedAtMs)}</strong><br>`
-        + `Nhiệt ${formatTemperature(point.temperatureC)}<br>`
-        + `Ẩm ${formatHumidity(point.humidity)}`;
+      const lines = [`<strong>${formatHistoryTooltipTime(point.recordedAtMs)}</strong>`];
+      if (!state.historyVisible || state.historyVisible.temperatureC !== false) {
+        lines.push(`Nhiệt ${formatTemperature(point.temperatureC)}`);
+      }
+      if (!state.historyVisible || state.historyVisible.humidity !== false) {
+        lines.push(`Ẩm ${formatHumidity(point.humidity)}`);
+      }
+      els.historyTooltip.innerHTML = lines.join('<br>');
       els.historyTooltip.hidden = false;
     }
 
@@ -3076,6 +3451,116 @@
       state.historyHoverPoint = nearest;
       updateHistoryTooltip(nearest, event.clientX, event.clientY);
       drawHistoryChart();
+    }
+
+    function updateHistoryLegendUi() {
+      els.historyLegendButtons.forEach(button => {
+        const key = button.dataset.series;
+        const isOn = !state.historyVisible || state.historyVisible[key] !== false;
+        button.classList.toggle('off', !isOn);
+        button.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+      });
+    }
+
+    function setHistoryZoomWindow(startMs, endMs) {
+      const now = Date.now();
+      const baseStart = selectedHistoryStartMs(now);
+      const baseEnd = now;
+      const maxRange = Math.max(1, baseEnd - baseStart);
+      const range = Math.max(1, endMs - startMs);
+      let nextStart = startMs;
+      let nextEnd = endMs;
+
+      if (range >= maxRange * 0.995) {
+        state.historyZoom = null;
+        return;
+      }
+
+      if (nextStart < baseStart) {
+        nextEnd += baseStart - nextStart;
+        nextStart = baseStart;
+      }
+      if (nextEnd > baseEnd) {
+        nextStart -= nextEnd - baseEnd;
+        nextEnd = baseEnd;
+      }
+      nextStart = Math.max(baseStart, nextStart);
+      nextEnd = Math.min(baseEnd, nextEnd);
+      if (nextEnd <= nextStart) return;
+      state.historyZoom = { startMs: nextStart, endMs: nextEnd };
+    }
+
+    function zoomHistoryAt(clientX, deltaY) {
+      const model = state.historyChartModel;
+      if (!model || !model.points.length) return;
+      const now = Date.now();
+      const baseStart = selectedHistoryStartMs(now);
+      const maxRange = Math.max(1, now - baseStart);
+      const minRange = Math.min(maxRange, 30 * 60 * 1000);
+      if (maxRange <= minRange) return;
+
+      const rect = els.historyChart.getBoundingClientRect();
+      const pointerRatio = clamp((clientX - rect.left) / Math.max(1, rect.width), 0.02, 0.98);
+      const currentRange = Math.max(1, model.endMs - model.startMs);
+      const factor = deltaY < 0 ? 0.78 : 1.24;
+      const nextRange = clamp(currentRange * factor, minRange, maxRange);
+      const anchorMs = model.startMs + pointerRatio * currentRange;
+      const nextStart = anchorMs - pointerRatio * nextRange;
+      setHistoryZoomWindow(nextStart, nextStart + nextRange);
+      hideHistoryTooltip();
+      updateHistorySummary(buildHistoryStats());
+      animateHistoryChart();
+    }
+
+    function startHistoryPan(event) {
+      const model = state.historyChartModel;
+      if (!model || !model.points.length) return;
+      if (event.button !== undefined && event.button !== 0) return;
+      state.historyDrag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startStartMs: model.startMs,
+        startEndMs: model.endMs,
+        moved: false
+      };
+      if (els.historyChartWrap) els.historyChartWrap.classList.add('dragging');
+      if (els.historyChart.setPointerCapture && event.pointerId !== undefined) {
+        try { els.historyChart.setPointerCapture(event.pointerId); } catch (e) {}
+      }
+      updateHistoryPointer(event);
+    }
+
+    function panHistory(event) {
+      const drag = state.historyDrag;
+      const model = state.historyChartModel;
+      if (!drag || !model) return false;
+      const dx = event.clientX - drag.startX;
+      if (Math.abs(dx) < 3 && !drag.moved) return false;
+      drag.moved = true;
+
+      const now = Date.now();
+      const baseStart = selectedHistoryStartMs(now);
+      const maxRange = Math.max(1, now - baseStart);
+      const range = Math.max(1, drag.startEndMs - drag.startStartMs);
+      if (range >= maxRange * 0.995) return true;
+
+      const rect = els.historyChart.getBoundingClientRect();
+      const shiftMs = -(dx / Math.max(1, rect.width)) * range;
+      setHistoryZoomWindow(drag.startStartMs + shiftMs, drag.startEndMs + shiftMs);
+      state.historyHoverPoint = null;
+      hideHistoryTooltip();
+      updateHistorySummary(buildHistoryStats());
+      drawHistoryChart();
+      return true;
+    }
+
+    function endHistoryPan(event) {
+      if (!state.historyDrag) return;
+      if (els.historyChart.releasePointerCapture && event && event.pointerId !== undefined) {
+        try { els.historyChart.releasePointerCapture(event.pointerId); } catch (e) {}
+      }
+      state.historyDrag = null;
+      if (els.historyChartWrap) els.historyChartWrap.classList.remove('dragging');
     }
 
     function updateDeviceStatus(reading) {
@@ -3148,47 +3633,6 @@
       els.comfortHumidity.textContent = formatHumidity(humidity);
       els.comfortTempTrend.textContent = formatDelta(stats?.temperatureTrend1hC);
       els.comfortHumidityTrend.textContent = formatHumidityDelta(stats?.humidityTrend1h);
-    }
-
-    function renderRoomPulse(reading = {}, stats = null) {
-      if (!els.pulseCard) return;
-      const temperature = finiteNumber(reading.temperatureC);
-      const humidity = finiteNumber(reading.humidity);
-      const deviceOnline = Boolean(reading.deviceOnline);
-      const sensorOnline = Boolean(reading.sensorOnline);
-
-      if (!deviceOnline || !sensorOnline || temperature === null || humidity === null) {
-        els.pulseCard.className = 'pulse-card';
-        els.pulseRing.style.setProperty('--pulse-deg', '0deg');
-        els.pulseTitle.textContent = deviceOnline ? 'Chưa có dữ liệu' : 'Offline';
-        els.pulseCopy.textContent = deviceOnline
-          ? 'ESP32 vẫn sống, nhưng SHT30 chưa trả số đo hợp lệ.'
-          : 'Không có heartbeat mới từ ESP32. Web đang giữ trạng thái chờ.';
-        els.pulseScore.textContent = '--';
-        els.pulseTemp.textContent = '--.-°C';
-        els.pulseHumidity.textContent = '--%';
-        els.pulseTrend.textContent = '--';
-        els.pulseFreshness.textContent = reading.cloudMode ? formatCloudAge(reading) : '--';
-        return;
-      }
-
-      const score = computeComfortScore(temperature, humidity);
-      const roomState = comfortState(temperature, humidity);
-      const scoreValue = score === null ? 0 : score;
-      els.pulseCard.className = `pulse-card ${roomState.tone || ''}`.trim();
-      els.pulseRing.style.setProperty('--pulse-deg', `${Math.round(scoreValue * 3.6)}deg`);
-      els.pulseTitle.textContent = roomState.title;
-      els.pulseCopy.textContent = `${roomState.copy} ${score !== null ? `Độ ổn hiện tại ${score}/100.` : ''}`.trim();
-      els.pulseScore.textContent = score === null ? '--' : String(score);
-      els.pulseTemp.textContent = formatTemperature(temperature);
-      els.pulseHumidity.textContent = formatHumidity(humidity);
-
-      const tempTrend = finiteNumber(stats?.temperatureTrend1hC);
-      const humTrend = finiteNumber(stats?.humidityTrend1h);
-      els.pulseTrend.textContent = tempTrend === null && humTrend === null
-        ? '--'
-        : `${formatDelta(tempTrend)} · ${formatHumidityDelta(humTrend)}`;
-      els.pulseFreshness.textContent = reading.cloudMode ? formatCloudAge(reading) : 'Vừa xong';
     }
 
     function updateMetricStats(stats) {
@@ -3279,13 +3723,10 @@
         state.latestReadingForHistory = null;
       }
       const displayStats = reading.stats || buildHistoryStats();
-      renderRoomPulse(reading, displayStats);
       renderOutdoorComparison(reading);
       renderInsights(reading);
       renderAcMonthly();
       renderAcSessions();
-      renderSleepReport();
-      renderTimeline();
 
       const displayDate = reading.updatedAtIso ? new Date(reading.updatedAtIso) : new Date();
       els.updatedAt.textContent = new Intl.DateTimeFormat('vi-VN', {
@@ -3306,6 +3747,7 @@
         els.humidity.dataset.val = '';
         updateComfort(null, null, displayStats, reading);
         updateMeters({ temperatureC: null, humidity: null });
+        updateAlertMotion(null, null);
         drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
         drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
         return;
@@ -3319,6 +3761,7 @@
 
       updateComfort(temperature, humidity, displayStats, reading);
       updateMeters({ temperatureC: temperature, humidity });
+      updateAlertMotion(temperature, humidity);
       drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
       drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
     }
@@ -3342,19 +3785,54 @@
     els.rangeTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         state.historyRange = tab.dataset.range || 'day';
+        resetHistoryZoom();
         hideHistoryTooltip();
         els.rangeTabs.forEach(item => item.classList.toggle('active', item === tab));
         updateHistorySummary(buildHistoryStats());
-        drawHistoryChart();
+        animateHistoryChart();
       });
     });
 
-    els.historyChart.addEventListener('pointermove', updateHistoryPointer);
-    els.historyChart.addEventListener('pointerdown', updateHistoryPointer);
+    els.historyLegendButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const key = button.dataset.series;
+        if (!key || !(key in state.historyVisible)) return;
+        const activeCount = Object.values(state.historyVisible).filter(Boolean).length;
+        if (state.historyVisible[key] && activeCount <= 1) return;
+        state.historyVisible[key] = !state.historyVisible[key];
+        updateHistoryLegendUi();
+        hideHistoryTooltip();
+        animateHistoryChart();
+      });
+    });
+    updateHistoryLegendUi();
+
+    if (els.historyResetZoom) {
+      els.historyResetZoom.addEventListener('click', () => {
+        resetHistoryZoom();
+        hideHistoryTooltip();
+        updateHistorySummary(buildHistoryStats());
+        animateHistoryChart();
+      });
+    }
+
+    els.historyChart.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      zoomHistoryAt(event.clientX, event.deltaY);
+    }, { passive: false });
+    els.historyChart.addEventListener('pointermove', (event) => {
+      if (panHistory(event)) return;
+      updateHistoryPointer(event);
+    });
+    els.historyChart.addEventListener('pointerdown', startHistoryPan);
+    els.historyChart.addEventListener('pointerup', endHistoryPan);
+    els.historyChart.addEventListener('pointercancel', endHistoryPan);
     els.historyChart.addEventListener('pointerleave', () => {
+      if (state.historyDrag) return;
       hideHistoryTooltip();
       drawHistoryChart();
     });
+    window.addEventListener('pointerup', endHistoryPan);
 
     if (els.chipChart) {
       els.chipChart.addEventListener('pointermove', updateChipPointer);
@@ -3400,6 +3878,51 @@
         99: ['⛈️', 'Dông kèm mưa đá']
       };
       return map[code] || ['🌡️', 'Ngoài trời'];
+    }
+
+    function weatherIconKind(code) {
+      const value = Number(code);
+      if ([0].includes(value)) return 'sun';
+      if ([1, 2].includes(value)) return 'partly';
+      if ([3].includes(value)) return 'cloud';
+      if ([45, 48].includes(value)) return 'fog';
+      if ([71, 73, 75, 77, 85, 86].includes(value)) return 'snow';
+      if ([95, 96, 99].includes(value)) return 'storm';
+      if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(value)) return 'rain';
+      return 'cloud';
+    }
+
+    function animatedWeatherIcon(code, small = false) {
+      const size = small ? ' small' : '';
+      switch (weatherIconKind(code)) {
+        case 'sun':
+          return `<span class="meteo-icon meteo-sun${size}" aria-hidden="true"><span class="sun-core"></span></span>`;
+        case 'partly':
+          return `<span class="meteo-icon meteo-sun meteo-cloud meteo-partly${size}" aria-hidden="true"><span class="sun-core"></span><span class="cloud-main"></span></span>`;
+        case 'fog':
+          return `<span class="meteo-icon meteo-fog${size}" aria-hidden="true"><span class="fog-line"></span><span class="fog-line"></span><span class="fog-line"></span></span>`;
+        case 'snow':
+          return `<span class="meteo-icon meteo-snow${size}" aria-hidden="true"><span class="cloud-main"></span><span class="flake"></span><span class="flake"></span><span class="flake"></span></span>`;
+        case 'storm':
+          return `<span class="meteo-icon meteo-storm${size}" aria-hidden="true"><span class="cloud-main"></span><span class="bolt"></span></span>`;
+        case 'rain':
+          return `<span class="meteo-icon meteo-rain${size}" aria-hidden="true"><span class="cloud-main"></span><span class="drop"></span><span class="drop"></span><span class="drop"></span></span>`;
+        default:
+          return `<span class="meteo-icon meteo-cloud${size}" aria-hidden="true"><span class="cloud-main"></span></span>`;
+      }
+    }
+
+    function setMainWeatherIcon(code) {
+      const key = `code:${Number(code)}`;
+      if (state.weatherIconKey === key) return;
+      els.weatherIcon.innerHTML = animatedWeatherIcon(code);
+      state.weatherIconKey = key;
+    }
+
+    function setMainWeatherIconText(text, key) {
+      if (state.weatherIconKey === key) return;
+      els.weatherIcon.textContent = text;
+      state.weatherIconKey = key;
     }
 
     // Heat index (cảm giác như) từ nhiệt + ẩm, dùng cho cột trong phòng
@@ -3534,11 +4057,11 @@
         els.weatherMeta.textContent = o && o.error
           ? 'Không lấy được thời tiết (thử lại sau)'
           : 'Đang tải thời tiết ngoài trời…';
-        els.weatherIcon.textContent = '··';
+        setMainWeatherIconText('··', o && o.error ? 'error' : 'loading');
         els.weatherCond.textContent = '—';
       } else {
-        const [icon, text] = weatherCodeInfo(o.weatherCode);
-        els.weatherIcon.textContent = icon;
+        const [, text] = weatherCodeInfo(o.weatherCode);
+        setMainWeatherIcon(o.weatherCode);
         els.weatherCond.textContent = text;
         let when = '';
         if (o.time) {
@@ -3602,16 +4125,21 @@
       const strip = els.forecastStrip || document.getElementById('forecastStrip');
       if (!strip) return;
       if (!o || o.error || !Array.isArray(o.hourly) || o.hourly.length === 0) {
-        strip.innerHTML = '';
+        if (state.forecastKey !== 'empty') {
+          strip.innerHTML = '';
+          state.forecastKey = 'empty';
+        }
         return;
       }
+      const key = o.hourly.map(h => `${h.ms}:${h.code}:${h.temp}`).join('|');
+      if (state.forecastKey === key) return;
+      state.forecastKey = key;
       const fmt = new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' });
       strip.innerHTML = o.hourly.map((h, i) => {
-        const [ico] = weatherCodeInfo(h.code);
         const label = i === 0 ? 'Giờ này' : fmt.format(new Date(h.ms));
         const temp = h.temp === null ? '--' : Math.round(h.temp) + '°';
         return '<div class="forecast-cell"><span class="forecast-hour">' + label
-          + '</span><span class="forecast-ico">' + ico
+          + '</span><span class="forecast-ico">' + animatedWeatherIcon(h.code, true)
           + '</span><span class="forecast-temp">' + temp + '</span></div>';
       }).join('');
     }
@@ -3755,160 +4283,6 @@
       const hours = onMs / MS_HOUR;
       const kwh = hours * kw;
       return { hours, kwh, cost: evnMarginalCost(baseKwh, kwh), coveredHours: coveredMs / MS_HOUR };
-    }
-
-    function currentNightWindow() {
-      const now = new Date();
-      const end = new Date(now);
-      const start = new Date(now);
-      if (now.getHours() >= 22) {
-        start.setHours(22, 0, 0, 0);
-        return { startMs: start.getTime(), endMs: now.getTime(), label: 'Đêm nay' };
-      }
-      if (now.getHours() < 7) {
-        start.setDate(start.getDate() - 1);
-        start.setHours(22, 0, 0, 0);
-        return { startMs: start.getTime(), endMs: now.getTime(), label: 'Đêm nay' };
-      }
-      start.setDate(start.getDate() - 1);
-      start.setHours(22, 0, 0, 0);
-      end.setHours(7, 0, 0, 0);
-      return { startMs: start.getTime(), endMs: end.getTime(), label: 'Đêm qua' };
-    }
-
-    function durationAbove(points, startMs, endMs, key, threshold) {
-      const pts = points
-        .filter(point => Number.isFinite(point.recordedAtMs)
-          && point.recordedAtMs >= startMs
-          && point.recordedAtMs <= endMs)
-        .sort((a, b) => a.recordedAtMs - b.recordedAtMs);
-      let total = 0;
-      for (let i = 0; i < pts.length - 1; i++) {
-        const value = finiteNumber(pts[i][key]);
-        const nextMs = pts[i + 1].recordedAtMs;
-        const dt = nextMs - pts[i].recordedAtMs;
-        if (value === null || dt <= 0 || dt > 20 * 60 * 1000) continue;
-        if (value >= threshold) total += Math.min(nextMs, endMs) - Math.max(pts[i].recordedAtMs, startMs);
-      }
-      return Math.max(0, total);
-    }
-
-    function renderSleepReport() {
-      if (!els.sleepScore) return;
-      const win = currentNightWindow();
-      const points = validHistoryPoints()
-        .filter(point => point.recordedAtMs >= win.startMs && point.recordedAtMs <= win.endMs);
-      els.sleepTitle.textContent = win.label;
-      els.sleepWindow.textContent = `${formatClockShort(win.startMs)}-${formatClockShort(win.endMs)}`;
-
-      if (points.length < 2) {
-        els.sleepSummary.textContent = 'Chưa đủ dữ liệu trong khung ngủ để chấm điểm.';
-        els.sleepScore.textContent = '--/100';
-        els.sleepTempAvg.textContent = '--.-°C';
-        els.sleepHumidityHigh.textContent = '--';
-        els.sleepWorst.textContent = '--';
-        els.sleepSamples.textContent = `${points.length} mẫu`;
-        return;
-      }
-
-      const avgTemp = averageFinite(points, 'temperatureC');
-      const avgHumidity = averageFinite(points, 'humidity');
-      const scores = points
-        .map(point => computeComfortScore(finiteNumber(point.temperatureC), finiteNumber(point.humidity)))
-        .filter(score => score !== null);
-      const sleepScore = scores.length
-        ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
-        : null;
-      const humidMs = durationAbove(points, win.startMs, win.endMs, 'humidity', Math.max(70, settings.humidHigh));
-      let worst = null;
-      let worstScore = Infinity;
-      points.forEach(point => {
-        const score = computeComfortScore(finiteNumber(point.temperatureC), finiteNumber(point.humidity));
-        if (score !== null && score < worstScore) {
-          worstScore = score;
-          worst = point;
-        }
-      });
-
-      els.sleepScore.textContent = sleepScore === null ? '--/100' : `${sleepScore}/100`;
-      els.sleepTempAvg.textContent = formatTemperature(avgTemp);
-      els.sleepHumidityHigh.textContent = humidMs > 0 ? formatDurationShort(humidMs) : '0 phút';
-      els.sleepWorst.textContent = worst
-        ? `${formatClockShort(worst.recordedAtMs)} · ${formatTemperature(worst.temperatureC)} · ${formatHumidity(worst.humidity)}`
-        : '--';
-      els.sleepSamples.textContent = `${points.length} mẫu`;
-
-      if (sleepScore === null) {
-        els.sleepSummary.textContent = 'Dữ liệu đêm có nhưng chưa đủ để chấm điểm.';
-      } else if (sleepScore >= 78 && humidMs < 30 * 60 * 1000) {
-        els.sleepSummary.textContent = `${win.label} khá ổn: nhiệt trung bình ${formatTemperature(avgTemp)}, ẩm trung bình ${formatHumidity(avgHumidity)}.`;
-      } else if (humidMs >= 2 * MS_HOUR) {
-        els.sleepSummary.textContent = `${win.label} bị ẩm lâu (${formatDurationShort(humidMs)}). Có thể cân nhắc hút ẩm hoặc hé thông gió trước khi ngủ.`;
-      } else {
-        els.sleepSummary.textContent = `${win.label} tạm ổn, nhưng vẫn có vài đoạn lệch khỏi vùng dễ chịu.`;
-      }
-    }
-
-    function addTimelineItem(list, time, title, sub) {
-      const item = document.createElement('div');
-      item.className = 'timeline-item';
-      const timeEl = document.createElement('div');
-      timeEl.className = 'timeline-time';
-      timeEl.textContent = time;
-      const body = document.createElement('div');
-      const titleEl = document.createElement('p');
-      titleEl.className = 'timeline-main';
-      titleEl.textContent = title;
-      const subEl = document.createElement('p');
-      subEl.className = 'timeline-sub';
-      subEl.textContent = sub;
-      body.append(titleEl, subEl);
-      item.append(timeEl, body);
-      list.appendChild(item);
-    }
-
-    function renderTimeline() {
-      if (!els.timelineList) return;
-      const points = todayPoints();
-      els.timelineList.textContent = '';
-      if (points.length < 2) {
-        els.timelineSummary.textContent = 'Chưa đủ dữ liệu hôm nay để dựng timeline.';
-        return;
-      }
-
-      const maxTemp = extremaPoint(points, 'temperatureC', 'max');
-      const minTemp = extremaPoint(points, 'temperatureC', 'min');
-      const maxHumidity = extremaPoint(points, 'humidity', 'max');
-      const minHumidity = extremaPoint(points, 'humidity', 'min');
-      const humidStart = points.find(point => finiteNumber(point.humidity) !== null && point.humidity >= settings.humidHigh);
-      const hotStart = points.find(point => finiteNumber(point.temperatureC) !== null && point.temperatureC >= settings.hotAbove);
-      const latest = points[points.length - 1];
-      const events = [];
-
-      if (minTemp) events.push({ ms: minTemp.recordedAtMs, title: `Mát nhất ${formatTemperature(minTemp.temperatureC)}`, sub: `Độ ẩm lúc đó ${formatHumidity(minTemp.humidity)}` });
-      if (maxTemp) events.push({ ms: maxTemp.recordedAtMs, title: `Nóng nhất ${formatTemperature(maxTemp.temperatureC)}`, sub: `Độ ẩm lúc đó ${formatHumidity(maxTemp.humidity)}` });
-      if (minHumidity) events.push({ ms: minHumidity.recordedAtMs, title: `Khô nhất ${formatHumidity(minHumidity.humidity)}`, sub: `Nhiệt độ ${formatTemperature(minHumidity.temperatureC)}` });
-      if (maxHumidity) events.push({ ms: maxHumidity.recordedAtMs, title: `Ẩm nhất ${formatHumidity(maxHumidity.humidity)}`, sub: `Nhiệt độ ${formatTemperature(maxHumidity.temperatureC)}` });
-      if (humidStart) events.push({ ms: humidStart.recordedAtMs, title: `Bắt đầu chạm ngưỡng ẩm`, sub: `${formatHumidity(humidStart.humidity)} tại ngưỡng ${Math.round(settings.humidHigh)}%` });
-      if (hotStart) events.push({ ms: hotStart.recordedAtMs, title: `Bắt đầu nóng rõ`, sub: `${formatTemperature(hotStart.temperatureC)} tại ngưỡng ${formatTemperature(settings.hotAbove)}` });
-      if (latest) events.push({ ms: latest.recordedAtMs, title: 'Mẫu mới nhất', sub: `${formatTemperature(latest.temperatureC)} · ${formatHumidity(latest.humidity)}` });
-
-      const deduped = [];
-      const seen = new Set();
-      events.sort((a, b) => a.ms - b.ms).forEach(event => {
-        const key = `${Math.round(event.ms / 60000)}:${event.title}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        deduped.push(event);
-      });
-
-      els.timelineSummary.textContent = `${points.length} mẫu hôm nay · ${deduped.length} mốc đáng chú ý`;
-      deduped.slice(0, 7).forEach(event => addTimelineItem(
-        els.timelineList,
-        formatClockShort(event.ms),
-        event.title,
-        event.sub
-      ));
     }
 
     function computeAcSessions() {
@@ -4209,7 +4583,7 @@
       requestAnimationFrame(frame);
     }
 
-    // Ambient background + staggered scroll reveal
+    // Ambient background, scroll progress, card glow, and staggered reveal.
     (function setupMotion() {
       if (!document.querySelector('.ambient')) {
         const amb = document.createElement('div');
@@ -4217,17 +4591,168 @@
         amb.setAttribute('aria-hidden', 'true');
         document.body.prepend(amb);
       }
-      if (!('IntersectionObserver' in window)) return;
+
+      if (!document.querySelector('.sakura-field')) {
+        const field = document.createElement('div');
+        field.className = 'sakura-field';
+        field.setAttribute('aria-hidden', 'true');
+        const petalCount = window.matchMedia && window.matchMedia('(max-width: 720px)').matches ? 8 : 14;
+        for (let i = 0; i < petalCount; i++) {
+          const petal = document.createElement('span');
+          petal.className = 'sakura-petal';
+          const size = 7 + Math.random() * 10;
+          const drift = -52 + Math.random() * 104;
+          petal.style.setProperty('--x', `${Math.random() * 100}%`);
+          petal.style.setProperty('--size', `${size.toFixed(1)}px`);
+          petal.style.setProperty('--dur', `${12 + Math.random() * 16}s`);
+          petal.style.setProperty('--delay', `${(-Math.random() * 18).toFixed(2)}s`);
+          petal.style.setProperty('--drift', `${drift.toFixed(1)}px`);
+          petal.style.setProperty('--drift-end', `${(-drift * 0.58 + (-22 + Math.random() * 44)).toFixed(1)}px`);
+          petal.style.setProperty('--rot', `${Math.round(Math.random() * 360)}deg`);
+          petal.style.setProperty('--alpha', `${(0.34 + Math.random() * 0.42).toFixed(2)}`);
+          field.appendChild(petal);
+        }
+        document.body.prepend(field);
+      }
+
+      if (!document.querySelector('.scroll-progress')) {
+        const progress = document.createElement('div');
+        progress.className = 'scroll-progress';
+        progress.setAttribute('aria-hidden', 'true');
+        document.body.prepend(progress);
+      }
+
+      const root = document.documentElement;
+      const scenePalettes = [
+        ['#3ad1c9', '#e89456'],
+        ['#77bdf2', '#ff9fbe'],
+        ['#a394ff', '#3ad1c9'],
+        ['#e89456', '#ffd166'],
+        ['#68d391', '#6cb2e8'],
+        ['#ff8fab', '#a394ff']
+      ];
+      let scenicPanels = [];
+      let scrollFrame = 0;
+      let scrollTimer = 0;
+      function updateScrollMotion() {
+        scrollFrame = 0;
+        const max = Math.max(1, root.scrollHeight - window.innerHeight);
+        const ratio = Math.max(0, Math.min(1, window.scrollY / max));
+        root.style.setProperty('--scroll-progress', ratio.toFixed(4));
+        root.style.setProperty('--scroll-ratio', ratio.toFixed(4));
+        root.classList.add('is-scrolling');
+        clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => root.classList.remove('is-scrolling'), 140);
+
+        if (scenicPanels.length) {
+          const centerY = window.innerHeight * 0.5;
+          const focusRange = Math.max(260, window.innerHeight * 0.68);
+          let activeIndex = 0;
+          let bestFocus = -1;
+
+          scenicPanels.forEach((panel, index) => {
+            const rect = panel.getBoundingClientRect();
+            const panelCenter = rect.top + rect.height * 0.5;
+            const distance = Math.abs(panelCenter - centerY);
+            const rawFocus = Math.max(0, 1 - distance / focusRange);
+            const focus = rawFocus * rawFocus * (3 - 2 * rawFocus);
+            const palette = scenePalettes[index % scenePalettes.length];
+
+            panel.style.setProperty('--scene-focus', focus.toFixed(3));
+            panel.style.setProperty('--scene-y', `${(12 - focus * 18).toFixed(1)}px`);
+            panel.style.setProperty('--scene-scale', (0.985 + focus * 0.025).toFixed(4));
+            panel.style.setProperty('--scene-opacity', (0.82 + focus * 0.18).toFixed(3));
+            panel.style.setProperty('--scene-rotate', `${((0.5 - focus) * 1.2).toFixed(2)}deg`);
+            panel.style.setProperty('--scene-shine', `${(-38 + focus * 82).toFixed(1)}%`);
+            panel.style.setProperty('--panel-accent', palette[0]);
+
+            if (focus > bestFocus) {
+              bestFocus = focus;
+              activeIndex = index;
+            }
+          });
+
+          scenicPanels.forEach((panel, index) => {
+            panel.classList.toggle('scene-active', index === activeIndex && bestFocus > 0.32);
+          });
+
+          const activePalette = scenePalettes[activeIndex % scenePalettes.length];
+          root.style.setProperty('--scene-a', activePalette[0]);
+          root.style.setProperty('--scene-b', activePalette[1]);
+        }
+      }
+
+      function requestScrollMotion() {
+        if (scrollFrame) return;
+        scrollFrame = requestAnimationFrame(updateScrollMotion);
+      }
+
+      window.addEventListener('scroll', requestScrollMotion, { passive: true });
+      window.addEventListener('resize', requestScrollMotion, { passive: true });
+      requestScrollMotion();
 
       document.documentElement.classList.add('anim-ready');
 
       const blocks = Array.from(document.querySelectorAll(
-        '.topbar, .device-grid, .pulse-card, .comfort-card, .grid, .weather-card, .insights-card, .sleep-card, .timeline-card, .compare-grid, .ac-session-card, .history-card, .details'
+        '.topbar, .device-grid, .comfort-card, .grid, .weather-card, .insights-card, .compare-grid, .ac-session-card, .history-card, .details'
       ));
       blocks.forEach((el, i) => {
         el.classList.add('reveal');
         el.style.setProperty('--reveal-delay', (Math.min(i, 7) * 70) + 'ms');
+        el.style.setProperty('--reveal-y', (18 + Math.min(i, 5) * 3) + 'px');
       });
+
+      const panels = Array.from(document.querySelectorAll(
+        '.metric-card, .comfort-card, .device-card, .compare-card, .weather-card, .insights-card, .history-card, .details, .ac-session-card'
+      ));
+      panels.forEach((panel) => panel.classList.add('motion-panel'));
+      scenicPanels = panels;
+
+      const finePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+      if (finePointer) {
+        panels.forEach((panel) => {
+          let tiltFrame = 0;
+          let lastPointer = null;
+          panel.addEventListener('pointermove', (event) => {
+            lastPointer = { x: event.clientX, y: event.clientY };
+            if (tiltFrame) return;
+            tiltFrame = requestAnimationFrame(() => {
+              tiltFrame = 0;
+              if (!lastPointer) return;
+              const rect = panel.getBoundingClientRect();
+              const px = clamp((lastPointer.x - rect.left) / Math.max(1, rect.width), 0, 1) - 0.5;
+              const py = clamp((lastPointer.y - rect.top) / Math.max(1, rect.height), 0, 1) - 0.5;
+              panel.style.setProperty('--mx', `${Math.round(lastPointer.x - rect.left)}px`);
+              panel.style.setProperty('--my', `${Math.round(lastPointer.y - rect.top)}px`);
+              panel.style.setProperty('--tilt-x', `${(-py * 4.5).toFixed(2)}deg`);
+              panel.style.setProperty('--tilt-y', `${(px * 5.5).toFixed(2)}deg`);
+              panel.classList.add('pointer-live');
+            });
+          }, { passive: true });
+          panel.addEventListener('pointerleave', () => {
+            if (tiltFrame) {
+              cancelAnimationFrame(tiltFrame);
+              tiltFrame = 0;
+            }
+            lastPointer = null;
+            panel.classList.remove('pointer-live');
+            panel.style.setProperty('--tilt-x', '0deg');
+            panel.style.setProperty('--tilt-y', '0deg');
+          }, { passive: true });
+        });
+      } else {
+        panels.forEach((panel) => {
+          panel.addEventListener('pointerdown', () => {
+            panel.classList.add('touch-pop');
+            setTimeout(() => panel.classList.remove('touch-pop'), 180);
+          }, { passive: true });
+        });
+      }
+
+      if (!('IntersectionObserver' in window)) {
+        blocks.forEach((el) => el.classList.add('in'));
+        return;
+      }
 
       const io = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -4236,7 +4761,7 @@
             io.unobserve(entry.target);
           }
         });
-      }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+      }, { threshold: 0.16, rootMargin: '0px 0px -10% 0px' });
 
       blocks.forEach((el) => io.observe(el));
       // Safety net: never leave a block hidden
