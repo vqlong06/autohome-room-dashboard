@@ -516,6 +516,10 @@
       white-space: nowrap;
     }
 
+    .chart-hint-touch {
+      display: none;
+    }
+
     .chart-reset {
       appearance: none;
       min-height: 26px;
@@ -549,6 +553,9 @@
       touch-action: none;
       cursor: crosshair;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      overscroll-behavior: contain;
     }
 
     .history-chart-wrap.dragging {
@@ -686,163 +693,239 @@
     .weather-icon {
       display: inline-grid;
       place-items: center;
-      width: 34px;
-      height: 34px;
+      width: 44px;
+      height: 44px;
       line-height: 1;
+      flex: 0 0 44px;
     }
     .meteo-icon {
+      --weather-cycle: 6.4s;
+      --weather-delay: 0s;
+      --weather-lift: -1.4px;
       position: relative;
-      display: inline-block;
-      width: 32px;
-      height: 32px;
+      display: inline-grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
       color: var(--accent);
       transform: translateZ(0);
-      contain: layout paint;
+      contain: layout paint style;
+      isolation: isolate;
       will-change: transform;
+      animation: weatherScene var(--weather-cycle) cubic-bezier(.45, 0, .25, 1) infinite;
+      animation-delay: var(--weather-delay);
     }
     .meteo-icon.small {
-      width: 24px;
-      height: 24px;
+      --weather-cycle: 7.2s;
+      --weather-lift: -0.8px;
+      width: 27px;
+      height: 27px;
     }
+
+    .weather-aura {
+      position: absolute;
+      inset: 8%;
+      border-radius: 50%;
+      z-index: -1;
+      background: radial-gradient(circle, color-mix(in srgb, currentColor, transparent 76%), transparent 68%);
+      opacity: 0.55;
+      animation: weatherAura var(--weather-cycle) ease-in-out infinite;
+      animation-delay: var(--weather-delay);
+    }
+
     .meteo-sun .sun-core {
       position: absolute;
-      inset: 8px;
+      left: 31%;
+      top: 31%;
+      width: 38%;
+      height: 38%;
       border-radius: 50%;
-      background: #ffd166;
-      box-shadow: 0 0 18px rgba(255, 209, 102, 0.6);
-      animation: weatherPulse 3.2s ease-in-out infinite;
+      background: linear-gradient(145deg, #ffe48a, #ffb83f);
+      box-shadow: 0 0 12px rgba(255, 195, 76, 0.5);
+      animation: weatherSunGlow var(--weather-cycle) ease-in-out infinite;
+      animation-delay: var(--weather-delay);
+      will-change: transform, opacity;
+    }
+
+    .meteo-sun .sun-rays {
+      position: absolute;
+      inset: 7%;
+      border-radius: 50%;
+      background: repeating-conic-gradient(from 0deg, #ffd166 0 7deg, transparent 7deg 45deg);
+      -webkit-mask: radial-gradient(circle, transparent 0 44%, #000 46% 62%, transparent 64%);
+      mask: radial-gradient(circle, transparent 0 44%, #000 46% 62%, transparent 64%);
+      opacity: 0.92;
+      animation: weatherSunTurn 16s linear infinite;
+      animation-delay: var(--weather-delay);
       will-change: transform;
     }
-    .meteo-sun::before {
-      content: "";
-      position: absolute;
-      inset: 3px;
-      border-radius: 50%;
-      background:
-        conic-gradient(from 0deg, transparent 0 8%, rgba(255,209,102,.9) 8% 12%, transparent 12% 25%,
-          rgba(255,209,102,.9) 25% 29%, transparent 29% 42%, rgba(255,209,102,.9) 42% 46%, transparent 46% 59%,
-          rgba(255,209,102,.9) 59% 63%, transparent 63% 76%, rgba(255,209,102,.9) 76% 80%, transparent 80% 100%);
-      animation: weatherSpin 9s linear infinite;
-    }
+
     .meteo-cloud .cloud-main,
     .meteo-rain .cloud-main,
     .meteo-storm .cloud-main,
     .meteo-snow .cloud-main {
       position: absolute;
-      left: 5px;
-      right: 3px;
-      top: 13px;
-      height: 11px;
+      left: 10%;
+      top: 43%;
+      width: 80%;
+      height: 27%;
       border-radius: 999px;
-      background: color-mix(in srgb, var(--cool), #fff 40%);
-      box-shadow: 0 6px 14px rgba(108, 178, 232, 0.18);
-      animation: cloudFloat 4.2s ease-in-out infinite;
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--cool), #fff 62%),
+        color-mix(in srgb, var(--cool), #fff 30%));
+      box-shadow: 0 5px 12px rgba(79, 132, 176, 0.18);
+      animation: weatherCloudShift var(--weather-cycle) ease-in-out infinite;
+      animation-delay: var(--weather-delay);
       will-change: transform;
     }
     .meteo-cloud .cloud-main::before,
     .meteo-rain .cloud-main::before,
     .meteo-storm .cloud-main::before,
-    .meteo-snow .cloud-main::before {
+    .meteo-snow .cloud-main::before,
+    .meteo-cloud .cloud-main::after,
+    .meteo-rain .cloud-main::after,
+    .meteo-storm .cloud-main::after,
+    .meteo-snow .cloud-main::after {
       content: "";
       position: absolute;
-      left: 4px;
-      top: -7px;
-      width: 13px;
-      height: 13px;
       border-radius: 50%;
       background: inherit;
-      box-shadow: 9px 2px 0 -1px color-mix(in srgb, var(--cool), #fff 38%);
     }
+    .meteo-cloud .cloud-main::before,
+    .meteo-rain .cloud-main::before,
+    .meteo-storm .cloud-main::before,
+    .meteo-snow .cloud-main::before {
+      left: 14%;
+      top: -58%;
+      width: 45%;
+      height: 145%;
+    }
+    .meteo-cloud .cloud-main::after,
+    .meteo-rain .cloud-main::after,
+    .meteo-storm .cloud-main::after,
+    .meteo-snow .cloud-main::after {
+      right: 14%;
+      top: -34%;
+      width: 38%;
+      height: 120%;
+    }
+
     .meteo-partly .sun-core {
-      inset: 5px auto auto 3px;
-      width: 16px;
-      height: 16px;
+      left: 10%;
+      top: 10%;
+      width: 40%;
+      height: 40%;
+    }
+    .meteo-partly .sun-rays {
+      inset: auto;
+      left: -4%;
+      top: -4%;
+      width: 68%;
+      height: 68%;
     }
     .meteo-partly .cloud-main {
-      top: 15px;
-      left: 8px;
+      top: 48%;
+      left: 18%;
+      width: 76%;
     }
+
     .meteo-rain .drop {
       position: absolute;
-      top: 24px;
-      width: 2px;
-      height: 8px;
+      top: 67%;
+      width: 5%;
+      height: 19%;
       border-radius: 999px;
-      background: var(--accent);
-      animation: rainDrop 1.15s linear infinite;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent), #fff 26%), var(--accent));
+      animation: weatherRainDrop 1.45s cubic-bezier(.2, .55, .45, 1) infinite;
       will-change: transform, opacity;
     }
-    .meteo-rain .drop:nth-child(2) { left: 10px; animation-delay: -100ms; }
-    .meteo-rain .drop:nth-child(3) { left: 16px; animation-delay: -340ms; }
-    .meteo-rain .drop:nth-child(4) { left: 22px; animation-delay: -620ms; }
+    .meteo-rain .drop:nth-child(3) { left: 29%; animation-delay: -0.18s; }
+    .meteo-rain .drop:nth-child(4) { left: 48%; animation-delay: -0.62s; }
+    .meteo-rain .drop:nth-child(5) { left: 67%; animation-delay: -1.02s; }
+
     .meteo-storm .bolt {
       position: absolute;
-      left: 14px;
-      top: 21px;
-      width: 8px;
-      height: 13px;
+      left: 39%;
+      top: 62%;
+      width: 24%;
+      height: 34%;
       background: #ffd166;
       clip-path: polygon(45% 0, 100% 0, 64% 44%, 100% 44%, 30% 100%, 48% 55%, 0 55%);
-      filter: drop-shadow(0 0 5px rgba(255, 209, 102, 0.55));
-      animation: boltFlash 1.8s ease-in-out infinite;
+      animation: weatherBolt 2.8s ease-in-out infinite;
       will-change: transform, opacity;
     }
+
     .meteo-fog .fog-line {
       position: absolute;
-      left: 5px;
-      right: 5px;
-      height: 2px;
+      left: 10%;
+      width: 78%;
+      height: 6%;
       border-radius: 999px;
       background: color-mix(in srgb, var(--muted), transparent 12%);
-      animation: fogDrift 4.6s ease-in-out infinite;
+      animation: weatherFogDrift 5.8s ease-in-out infinite;
       will-change: transform, opacity;
     }
-    .meteo-fog .fog-line:nth-child(1) { top: 10px; }
-    .meteo-fog .fog-line:nth-child(2) { top: 16px; animation-delay: -1.1s; }
-    .meteo-fog .fog-line:nth-child(3) { top: 22px; animation-delay: -2.2s; }
+    .meteo-fog .fog-line:nth-child(2) { top: 29%; animation-delay: -0.4s; }
+    .meteo-fog .fog-line:nth-child(3) { top: 47%; width: 66%; left: 22%; animation-delay: -1.8s; }
+    .meteo-fog .fog-line:nth-child(4) { top: 65%; animation-delay: -3.2s; }
+
     .meteo-snow .flake {
       position: absolute;
-      top: 24px;
-      width: 4px;
-      height: 4px;
+      top: 65%;
+      width: 9%;
+      height: 9%;
       border-radius: 50%;
       background: #e7f4ff;
       box-shadow: 0 0 6px rgba(231, 244, 255, 0.5);
-      animation: snowFall 2.2s ease-in-out infinite;
+      animation: weatherSnowFall 2.5s ease-in-out infinite;
       will-change: transform, opacity;
     }
-    .meteo-snow .flake:nth-child(2) { left: 10px; animation-delay: -0.1s; }
-    .meteo-snow .flake:nth-child(3) { left: 18px; animation-delay: -0.7s; }
-    .meteo-snow .flake:nth-child(4) { left: 24px; animation-delay: -1.2s; }
-    @keyframes weatherSpin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    @keyframes weatherPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.08); }
-    }
-    @keyframes cloudFloat {
+    .meteo-snow .flake:nth-child(3) { left: 27%; animation-delay: -0.2s; }
+    .meteo-snow .flake:nth-child(4) { left: 48%; animation-delay: -1s; }
+    .meteo-snow .flake:nth-child(5) { left: 69%; animation-delay: -1.7s; }
+
+    @keyframes weatherScene {
       0%, 100% { transform: translate3d(0, 0, 0); }
-      50% { transform: translate3d(2px, -1px, 0); }
+      42% { transform: translate3d(0, var(--weather-lift), 0); }
+      72% { transform: translate3d(0, 0.35px, 0); }
     }
-    @keyframes rainDrop {
-      0% { opacity: 0; transform: translateY(-3px); }
-      20% { opacity: 1; }
-      100% { opacity: 0; transform: translateY(6px); }
+    @keyframes weatherAura {
+      0%, 100% { opacity: 0.36; transform: scale(0.9); }
+      50% { opacity: 0.72; transform: scale(1.06); }
     }
-    @keyframes boltFlash {
-      0%, 72%, 100% { opacity: 0.42; transform: scale(0.96); }
-      76%, 84% { opacity: 1; transform: scale(1.08); }
+    @keyframes weatherSunTurn {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
-    @keyframes fogDrift {
-      0%, 100% { transform: translate3d(0, 0, 0); opacity: 1; }
-      50% { transform: translate3d(5px, 0, 0); opacity: 0.62; }
+    @keyframes weatherSunGlow {
+      0%, 100% { transform: scale(0.96); opacity: 0.92; }
+      50% { transform: scale(1.06); opacity: 1; }
     }
-    @keyframes snowFall {
-      0% { opacity: 0; transform: translateY(-3px) scale(0.8); }
-      30% { opacity: 1; }
-      100% { opacity: 0; transform: translateY(6px) scale(1.05); }
+    @keyframes weatherCloudShift {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      48% { transform: translate3d(5%, -4%, 0); }
+    }
+    @keyframes weatherRainDrop {
+      0% { opacity: 0; transform: translate3d(2px, -30%, 0); }
+      24% { opacity: 0.96; }
+      78% { opacity: 0.86; }
+      100% { opacity: 0; transform: translate3d(-2px, 90%, 0); }
+    }
+    @keyframes weatherBolt {
+      0%, 68%, 100% { opacity: 0.12; transform: translateY(-4%) scale(0.94); }
+      72%, 78% { opacity: 1; transform: translateY(0) scale(1.06); }
+      82% { opacity: 0.28; }
+      86% { opacity: 0.92; }
+    }
+    @keyframes weatherFogDrift {
+      0%, 100% { transform: translate3d(-5%, 0, 0); opacity: 0.52; }
+      50% { transform: translate3d(7%, 0, 0); opacity: 1; }
+    }
+    @keyframes weatherSnowFall {
+      0% { opacity: 0; transform: translate3d(-2px, -35%, 0) rotate(0deg); }
+      26% { opacity: 1; }
+      78% { opacity: 0.88; }
+      100% { opacity: 0; transform: translate3d(3px, 105%, 0) rotate(160deg); }
     }
     .weather-table-wrap {
       width: 100%;
@@ -906,6 +989,25 @@
       .weather-table td { padding: 10px 6px; }
       .weather-table tbody td { font-size: 15px; }
       .weather-table thead th { font-size: 11px; }
+    }
+
+    @media (hover: none), (pointer: coarse) {
+      .chart-hint-desktop { display: none; }
+      .chart-hint-touch { display: inline; }
+    }
+
+    @media (max-width: 720px) {
+      .chart-hint-desktop { display: none; }
+      .chart-hint-touch { display: inline; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .meteo-icon,
+      .meteo-icon *,
+      .meteo-icon::before,
+      .meteo-icon::after {
+        animation: none !important;
+      }
     }
 
     /* ===================== THEME OVERRIDE (manual) ===================== */
@@ -1959,7 +2061,10 @@
             <p id="historySummary" class="compare-copy">Đang tải dữ liệu</p>
           </div>
           <div class="history-actions">
-            <span class="chart-hint">Cuộn để zoom · kéo để pan</span>
+            <span class="chart-hint">
+              <span class="chart-hint-desktop">Cuộn để zoom · kéo để pan</span>
+              <span class="chart-hint-touch">Chụm 2 ngón để zoom · 1 ngón để kéo</span>
+            </span>
             <button id="historyResetZoom" class="chart-reset" type="button">Reset</button>
             <div class="range-tabs" aria-label="Chọn khoảng lịch sử">
               <button class="range-tab" type="button" data-range="six">6h</button>
@@ -2161,6 +2266,8 @@
       historyVisible: { temperatureC: true, humidity: true },
       historyZoom: null,
       historyDrag: null,
+      historyPinch: null,
+      historyPointers: new Map(),
       historyDrawProgress: 1,
       historyAnimFrame: 0,
       chipHoverPoint: null,
@@ -2986,6 +3093,8 @@
     function resetHistoryZoom() {
       state.historyZoom = null;
       state.historyDrag = null;
+      state.historyPinch = null;
+      state.historyPointers.clear();
       if (els.historyChartWrap) els.historyChartWrap.classList.remove('dragging');
     }
 
@@ -3512,6 +3621,68 @@
       animateHistoryChart();
     }
 
+    function historyTouchPoint(event) {
+      return {
+        pointerId: event.pointerId,
+        pointerType: event.pointerType,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        button: 0
+      };
+    }
+
+    function startHistoryPinch() {
+      const model = state.historyChartModel;
+      const pointers = Array.from(state.historyPointers.values()).slice(0, 2);
+      if (!model || pointers.length < 2) return;
+      const rect = els.historyChart.getBoundingClientRect();
+      const centerX = (pointers[0].clientX + pointers[1].clientX) / 2;
+      const centerRatio = clamp((centerX - rect.left) / Math.max(1, rect.width), 0, 1);
+      const distance = Math.max(12, Math.hypot(
+        pointers[1].clientX - pointers[0].clientX,
+        pointers[1].clientY - pointers[0].clientY
+      ));
+      const rangeMs = Math.max(1, model.endMs - model.startMs);
+
+      state.historyDrag = null;
+      state.historyPinch = {
+        startDistance: distance,
+        startRangeMs: rangeMs,
+        anchorMs: model.startMs + centerRatio * rangeMs
+      };
+      hideHistoryTooltip();
+      if (els.historyChartWrap) els.historyChartWrap.classList.add('dragging');
+    }
+
+    function pinchHistory() {
+      const pinch = state.historyPinch;
+      const pointers = Array.from(state.historyPointers.values()).slice(0, 2);
+      if (!pinch || pointers.length < 2) return false;
+
+      const rect = els.historyChart.getBoundingClientRect();
+      const centerX = (pointers[0].clientX + pointers[1].clientX) / 2;
+      const centerRatio = clamp((centerX - rect.left) / Math.max(1, rect.width), 0, 1);
+      const distance = Math.max(12, Math.hypot(
+        pointers[1].clientX - pointers[0].clientX,
+        pointers[1].clientY - pointers[0].clientY
+      ));
+      const now = Date.now();
+      const maxRange = Math.max(1, now - selectedHistoryStartMs(now));
+      const minRange = Math.min(maxRange, 30 * 60 * 1000);
+      const nextRange = clamp(
+        pinch.startRangeMs * (pinch.startDistance / distance),
+        minRange,
+        maxRange
+      );
+      const nextStart = pinch.anchorMs - centerRatio * nextRange;
+
+      setHistoryZoomWindow(nextStart, nextStart + nextRange);
+      hideHistoryTooltip();
+      updateHistorySummary(buildHistoryStats());
+      drawHistoryChart();
+      return true;
+    }
+
     function startHistoryPan(event) {
       const model = state.historyChartModel;
       if (!model || !model.points.length) return;
@@ -3561,6 +3732,59 @@
       }
       state.historyDrag = null;
       if (els.historyChartWrap) els.historyChartWrap.classList.remove('dragging');
+    }
+
+    function beginHistoryGesture(event) {
+      if (event.pointerType === 'touch') {
+        event.preventDefault();
+        state.historyPointers.set(event.pointerId, historyTouchPoint(event));
+        if (els.historyChart.setPointerCapture) {
+          try { els.historyChart.setPointerCapture(event.pointerId); } catch (e) {}
+        }
+        if (state.historyPointers.size >= 2) {
+          startHistoryPinch();
+          return;
+        }
+      }
+      startHistoryPan(event);
+    }
+
+    function moveHistoryGesture(event) {
+      if (event.pointerType === 'touch' && state.historyPointers.has(event.pointerId)) {
+        event.preventDefault();
+        state.historyPointers.set(event.pointerId, historyTouchPoint(event));
+        if (state.historyPointers.size >= 2) {
+          if (!state.historyPinch) startHistoryPinch();
+          pinchHistory();
+          return;
+        }
+      }
+      if (panHistory(event)) return;
+      updateHistoryPointer(event);
+    }
+
+    function endHistoryGesture(event) {
+      if (event.pointerType === 'touch') {
+        if (!state.historyPointers.has(event.pointerId)) return;
+        state.historyPointers.delete(event.pointerId);
+        if (els.historyChart.releasePointerCapture) {
+          try { els.historyChart.releasePointerCapture(event.pointerId); } catch (e) {}
+        }
+
+        if (state.historyPinch) {
+          state.historyPinch = null;
+          const remaining = Array.from(state.historyPointers.values());
+          if (remaining.length >= 2) {
+            startHistoryPinch();
+            return;
+          }
+          if (remaining.length === 1) {
+            startHistoryPan(remaining[0]);
+            return;
+          }
+        }
+      }
+      endHistoryPan(event);
     }
 
     function updateDeviceStatus(reading) {
@@ -3820,19 +4044,17 @@
       event.preventDefault();
       zoomHistoryAt(event.clientX, event.deltaY);
     }, { passive: false });
-    els.historyChart.addEventListener('pointermove', (event) => {
-      if (panHistory(event)) return;
-      updateHistoryPointer(event);
-    });
-    els.historyChart.addEventListener('pointerdown', startHistoryPan);
-    els.historyChart.addEventListener('pointerup', endHistoryPan);
-    els.historyChart.addEventListener('pointercancel', endHistoryPan);
+    els.historyChart.addEventListener('pointermove', moveHistoryGesture, { passive: false });
+    els.historyChart.addEventListener('pointerdown', beginHistoryGesture, { passive: false });
+    els.historyChart.addEventListener('pointerup', endHistoryGesture);
+    els.historyChart.addEventListener('pointercancel', endHistoryGesture);
     els.historyChart.addEventListener('pointerleave', () => {
-      if (state.historyDrag) return;
+      if (state.historyDrag || state.historyPinch || state.historyPointers.size) return;
       hideHistoryTooltip();
       drawHistoryChart();
     });
-    window.addEventListener('pointerup', endHistoryPan);
+    window.addEventListener('pointerup', endHistoryGesture);
+    window.addEventListener('pointercancel', endHistoryGesture);
 
     if (els.chipChart) {
       els.chipChart.addEventListener('pointermove', updateChipPointer);
@@ -3892,23 +4114,27 @@
       return 'cloud';
     }
 
-    function animatedWeatherIcon(code, small = false) {
+    function animatedWeatherIcon(code, small = false, phase = 0) {
       const size = small ? ' small' : '';
+      const delay = ` style="--weather-delay:-${Math.max(0, Number(phase) || 0) * 0.68}s"`;
+      const aura = '<span class="weather-aura"></span>';
+      const sun = '<span class="sun-rays"></span><span class="sun-core"></span>';
+      const cloud = '<span class="cloud-main"></span>';
       switch (weatherIconKind(code)) {
         case 'sun':
-          return `<span class="meteo-icon meteo-sun${size}" aria-hidden="true"><span class="sun-core"></span></span>`;
+          return `<span class="meteo-icon meteo-sun${size}"${delay} aria-hidden="true">${aura}${sun}</span>`;
         case 'partly':
-          return `<span class="meteo-icon meteo-sun meteo-cloud meteo-partly${size}" aria-hidden="true"><span class="sun-core"></span><span class="cloud-main"></span></span>`;
+          return `<span class="meteo-icon meteo-sun meteo-cloud meteo-partly${size}"${delay} aria-hidden="true">${aura}${sun}${cloud}</span>`;
         case 'fog':
-          return `<span class="meteo-icon meteo-fog${size}" aria-hidden="true"><span class="fog-line"></span><span class="fog-line"></span><span class="fog-line"></span></span>`;
+          return `<span class="meteo-icon meteo-fog${size}"${delay} aria-hidden="true">${aura}<span class="fog-line"></span><span class="fog-line"></span><span class="fog-line"></span></span>`;
         case 'snow':
-          return `<span class="meteo-icon meteo-snow${size}" aria-hidden="true"><span class="cloud-main"></span><span class="flake"></span><span class="flake"></span><span class="flake"></span></span>`;
+          return `<span class="meteo-icon meteo-snow${size}"${delay} aria-hidden="true">${aura}${cloud}<span class="flake"></span><span class="flake"></span><span class="flake"></span></span>`;
         case 'storm':
-          return `<span class="meteo-icon meteo-storm${size}" aria-hidden="true"><span class="cloud-main"></span><span class="bolt"></span></span>`;
+          return `<span class="meteo-icon meteo-storm${size}"${delay} aria-hidden="true">${aura}${cloud}<span class="bolt"></span></span>`;
         case 'rain':
-          return `<span class="meteo-icon meteo-rain${size}" aria-hidden="true"><span class="cloud-main"></span><span class="drop"></span><span class="drop"></span><span class="drop"></span></span>`;
+          return `<span class="meteo-icon meteo-rain${size}"${delay} aria-hidden="true">${aura}${cloud}<span class="drop"></span><span class="drop"></span><span class="drop"></span></span>`;
         default:
-          return `<span class="meteo-icon meteo-cloud${size}" aria-hidden="true"><span class="cloud-main"></span></span>`;
+          return `<span class="meteo-icon meteo-cloud${size}"${delay} aria-hidden="true">${aura}${cloud}</span>`;
       }
     }
 
@@ -4139,7 +4365,7 @@
         const label = i === 0 ? 'Giờ này' : fmt.format(new Date(h.ms));
         const temp = h.temp === null ? '--' : Math.round(h.temp) + '°';
         return '<div class="forecast-cell"><span class="forecast-hour">' + label
-          + '</span><span class="forecast-ico">' + animatedWeatherIcon(h.code, true)
+          + '</span><span class="forecast-ico">' + animatedWeatherIcon(h.code, true, i + 1)
           + '</span><span class="forecast-temp">' + temp + '</span></div>';
       }).join('');
     }
