@@ -1183,6 +1183,22 @@
 
     /* ===================== MOTION & ATMOSPHERE ===================== */
 
+    @property --scene-a {
+      syntax: '<color>';
+      inherits: true;
+      initial-value: #3ad1c9;
+    }
+
+    @property --scene-b {
+      syntax: '<color>';
+      inherits: true;
+      initial-value: #e89456;
+    }
+
+    :root {
+      transition: --scene-a 780ms ease, --scene-b 780ms ease;
+    }
+
     .scroll-progress {
       position: fixed;
       top: 0;
@@ -1342,6 +1358,8 @@
 
     .motion-panel {
       isolation: isolate;
+      overflow: clip;
+      --scene-x: 0px;
       --scene-y: 8px;
       --scene-scale: 0.988;
       --scene-opacity: 0.88;
@@ -1351,7 +1369,7 @@
       --panel-accent: var(--accent);
       opacity: var(--scene-opacity);
       transform:
-        translate3d(0, var(--scene-y), 0)
+        translate3d(var(--scene-x), var(--scene-y), 0)
         perspective(1000px)
         rotateX(calc(var(--scene-rotate) + var(--tilt-x)))
         rotateY(var(--tilt-y))
@@ -1359,6 +1377,10 @@
       transform-origin: center center;
       backface-visibility: hidden;
       transform-style: preserve-3d;
+      transition:
+        box-shadow 380ms ease,
+        border-color 380ms ease,
+        background 380ms ease;
     }
 
     .motion-panel::before {
@@ -1396,6 +1418,48 @@
       z-index: 1;
     }
 
+    .scene-rail {
+      position: absolute !important;
+      top: 18px;
+      bottom: 18px;
+      left: -1px;
+      z-index: 3 !important;
+      width: 2px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, transparent, var(--panel-accent) 24% 76%, transparent);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--panel-accent), transparent 42%);
+      opacity: 0;
+      transform: scaleY(0.22);
+      transform-origin: center;
+      transition: opacity 360ms ease, transform 620ms cubic-bezier(.2,.75,.2,1);
+      pointer-events: none;
+    }
+
+    .motion-panel.scene-active .scene-rail {
+      opacity: 0.92;
+      transform: scaleY(1);
+    }
+
+    .motion-depth {
+      opacity: 0;
+      transform: translate3d(0, 14px, 0) scale(0.994);
+      translate: 0 0;
+      transition:
+        opacity 620ms cubic-bezier(.2,.7,.2,1),
+        transform 720ms cubic-bezier(.16,.8,.24,1),
+        translate 420ms cubic-bezier(.2,.7,.2,1);
+      transition-delay: var(--motion-delay, 0ms);
+    }
+
+    .motion-panel.scene-seen .motion-depth {
+      opacity: 1;
+      transform: none;
+    }
+
+    .motion-panel.scene-active .motion-depth {
+      translate: 0 -2px;
+    }
+
     .motion-panel.pointer-live::before,
     .motion-panel:hover::before {
       opacity: 1;
@@ -1422,6 +1486,19 @@
     .motion-panel.scene-active .insight-value,
     .motion-panel.scene-active .device-value {
       text-shadow: 0 10px 22px color-mix(in srgb, var(--panel-accent), transparent 82%);
+    }
+
+    .motion-panel.scene-active .value,
+    .motion-panel.scene-active .comfort-title,
+    .motion-panel.scene-active .delta,
+    .motion-panel.scene-active .insight-value {
+      animation: sceneValueFocus 720ms cubic-bezier(.16,.8,.24,1);
+    }
+
+    @keyframes sceneValueFocus {
+      0% { transform: translate3d(0, 4px, 0) scale(0.985); }
+      62% { transform: translate3d(0, -1px, 0) scale(1.012); }
+      100% { transform: translate3d(0, 0, 0) scale(1); }
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -1497,6 +1574,50 @@
 
     .anim-ready .reveal.in:nth-child(odd) {
       transition-duration: 840ms;
+    }
+
+    .motion-panel.scene-seen .pill,
+    .motion-panel.scene-seen .quick-stat,
+    .motion-panel.scene-seen .insight,
+    .motion-panel.scene-seen .session-stat,
+    .motion-panel.scene-seen .session-item {
+      animation: sceneMicroRise 680ms cubic-bezier(.16,.8,.24,1) both;
+    }
+
+    .motion-panel.scene-seen :is(.pill, .quick-stat, .insight, .session-stat, .session-item):nth-child(2) {
+      animation-delay: 55ms;
+    }
+
+    .motion-panel.scene-seen :is(.pill, .quick-stat, .insight, .session-stat, .session-item):nth-child(3) {
+      animation-delay: 105ms;
+    }
+
+    .motion-panel.scene-seen :is(.pill, .quick-stat, .insight, .session-stat, .session-item):nth-child(4) {
+      animation-delay: 155ms;
+    }
+
+    @keyframes sceneMicroRise {
+      from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.98); }
+      to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    }
+
+    .weather-card.scene-seen .forecast-cell {
+      animation: forecastGlideIn 640ms cubic-bezier(.16,.8,.24,1) both;
+      animation-delay: calc(var(--forecast-index, 0) * 52ms);
+    }
+
+    @keyframes forecastGlideIn {
+      from { opacity: 0; transform: translate3d(12px, 5px, 0) scale(0.97); }
+      to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    }
+
+    .history-card.scene-seen canvas {
+      animation: chartSurfaceIn 820ms cubic-bezier(.16,.8,.24,1) both;
+    }
+
+    @keyframes chartSurfaceIn {
+      from { opacity: 0; transform: translate3d(0, 8px, 0) scaleY(0.94); }
+      to { opacity: 1; transform: translate3d(0, 0, 0) scaleY(1); }
     }
 
     .dot.live {
@@ -1590,6 +1711,51 @@
     .device-value,
     #statusText {
       transition: color 320ms ease;
+    }
+
+    @media (max-width: 720px) {
+      .motion-panel {
+        --scene-x: 0px;
+      }
+
+      .scene-rail {
+        top: 14px;
+        bottom: 14px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :root {
+        scroll-behavior: auto;
+      }
+
+      .ambient::before,
+      .ambient::after,
+      .sakura-petal,
+      .motion-panel,
+      .motion-depth,
+      .motion-panel.scene-active .value,
+      .motion-panel.scene-active .comfort-title,
+      .motion-panel.scene-active .delta,
+      .motion-panel.scene-active .insight-value,
+      .motion-panel.scene-seen .pill,
+      .motion-panel.scene-seen .quick-stat,
+      .motion-panel.scene-seen .insight,
+      .motion-panel.scene-seen .session-stat,
+      .motion-panel.scene-seen .session-item,
+      .weather-card.scene-seen .forecast-cell,
+      .history-card.scene-seen canvas,
+      .meter::after {
+        animation: none !important;
+        transition: none !important;
+        transform: none !important;
+        translate: none !important;
+      }
+
+      .motion-panel,
+      .motion-depth {
+        opacity: 1 !important;
+      }
     }
     /* ===================== PREMIUM POLISH ===================== */
     :root {
@@ -2175,6 +2341,13 @@
         <div class="field"><label for="setRefresh">Làm mới mỗi (giây)</label><input id="setRefresh" type="number" min="1" max="30" step="1" inputmode="numeric"></div>
       </div>
 
+      <p class="field-group-title">Truy cập cloud</p>
+      <div class="field">
+        <label for="setCloudToken">Mã truy cập riêng</label>
+        <input id="setCloudToken" type="password" autocomplete="current-password" placeholder="Dán mã trong dashboard_access.local.txt">
+        <p class="field-hint">Chỉ lưu trên trình duyệt này, không gửi lên GitHub.</p>
+      </div>
+
       <div class="panel-actions">
         <button id="settingsReset" class="btn" type="button">Mặc định</button>
         <button id="settingsSave" class="btn primary" type="button">Lưu</button>
@@ -2188,10 +2361,11 @@
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
+    const CLOUD_ACCESS_STORAGE_KEY = 'autohome.cloudAccessToken.v1';
     const HISTORY_PAGE_SIZE = 1000;     // Supabase REST thường giới hạn 1000 dòng mỗi request
-    const HISTORY_INITIAL_LIMIT = 10000; // số mẫu mới nhất tải ở lần đầu (~34 ngày @5 phút)
+    const HISTORY_INITIAL_LIMIT = 30000; // đủ hai tháng lịch kể cả khi có cả cron và firmware cùng ghi
     const HISTORY_INCREMENTAL_LIMIT = 8000; // mẫu mới mỗi lần poll (đủ để bắt kịp sau khi treo tab)
-    const HISTORY_MAX_POINTS = 15000;    // trần bộ nhớ: giữ tối đa ngần này mẫu gần nhất
+    const HISTORY_MAX_POINTS = 32000;    // giữ trọn tháng hiện tại + tháng trước để so sánh
     const MS_HOUR = 60 * 60 * 1000;
     const MS_DAY = 24 * MS_HOUR;
     const EVN_TARIFF_EFFECTIVE = '10/05/2025';
@@ -2249,9 +2423,37 @@
     function isLocalDashboardHost(hostname) {
       return hostname === 'localhost'
         || hostname === '127.0.0.1'
+        || hostname.endsWith('.local')
         || hostname.startsWith('192.168.')
         || hostname.startsWith('10.')
         || /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
+    }
+
+    if (params.get('reset_access') === '1') {
+      try { localStorage.removeItem(CLOUD_ACCESS_STORAGE_KEY); } catch (error) {}
+    }
+
+    function readCloudAccessToken() {
+      try { return (localStorage.getItem(CLOUD_ACCESS_STORAGE_KEY) || '').trim(); }
+      catch (error) { return ''; }
+    }
+
+    function writeCloudAccessToken(token) {
+      try {
+        const value = (token || '').trim();
+        if (value) localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, value);
+        else localStorage.removeItem(CLOUD_ACCESS_STORAGE_KEY);
+      } catch (error) {}
+    }
+
+    function cloudHeaders() {
+      const token = readCloudAccessToken();
+      if (!token) return null;
+      return {
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+        'x-dashboard-token': token
+      };
     }
 
     const state = {
@@ -2515,18 +2717,18 @@
 
     async function fetchCloudReading() {
       const endpoint = `${SUPABASE_URL}/rest/v1/room_latest?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&select=*&limit=1`;
+      const headers = cloudHeaders();
+      if (!headers) return makeNoDataReading('Cần nhập mã cloud trong Cài đặt');
 
       try {
         const response = await fetch(endpoint, {
           cache: 'no-store',
-          headers: {
-            apikey: SUPABASE_PUBLISHABLE_KEY
-          }
+          headers
         });
         if (!response.ok) throw new Error('Cloud endpoint unavailable');
         const rows = await response.json();
         if (!Array.isArray(rows) || rows.length === 0) {
-          return makeNoDataReading('Chưa có dữ liệu cloud');
+          return makeNoDataReading('Mã cloud sai hoặc chưa có dữ liệu');
         }
         return cloudReadingFromRow(rows[0]);
       } catch (error) {
@@ -2547,12 +2749,11 @@
     }
 
     async function fetchHistoryRows(url) {
+      const headers = cloudHeaders();
+      if (!headers) throw new Error('Cloud access token missing');
       const response = await fetch(url, {
         cache: 'no-store',
-        headers: {
-          apikey: SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
-        }
+        headers
       });
       if (!response.ok) throw new Error('History endpoint unavailable');
       return mapHistoryRows(await response.json());
@@ -2608,7 +2809,7 @@
     }
 
     async function maybeFetchCloudHistory(force = false) {
-      if (state.demoMode) return;
+      if (state.demoMode || !state.cloudMode) return;
       const ageMs = Date.now() - state.historyAttemptedAt;
       if (!force && ageMs < CLOUD_HISTORY_REFRESH_MS) return;
       await fetchCloudHistory();
@@ -4364,7 +4565,7 @@
       strip.innerHTML = o.hourly.map((h, i) => {
         const label = i === 0 ? 'Giờ này' : fmt.format(new Date(h.ms));
         const temp = h.temp === null ? '--' : Math.round(h.temp) + '°';
-        return '<div class="forecast-cell"><span class="forecast-hour">' + label
+        return '<div class="forecast-cell" style="--forecast-index:' + i + '"><span class="forecast-hour">' + label
           + '</span><span class="forecast-ico">' + animatedWeatherIcon(h.code, true, i + 1)
           + '</span><span class="forecast-temp">' + temp + '</span></div>';
       }).join('');
@@ -4811,6 +5012,9 @@
 
     // Ambient background, scroll progress, card glow, and staggered reveal.
     (function setupMotion() {
+      const reduceMotion = Boolean(window.matchMedia
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
       if (!document.querySelector('.ambient')) {
         const amb = document.createElement('div');
         amb.className = 'ambient';
@@ -4818,7 +5022,7 @@
         document.body.prepend(amb);
       }
 
-      if (!document.querySelector('.sakura-field')) {
+      if (!reduceMotion && !document.querySelector('.sakura-field')) {
         const field = document.createElement('div');
         field.className = 'sakura-field';
         field.setAttribute('aria-hidden', 'true');
@@ -4858,6 +5062,7 @@
         ['#ff8fab', '#a394ff']
       ];
       let scenicPanels = [];
+      const visiblePanels = new Set();
       let scrollFrame = 0;
       let scrollTimer = 0;
       function updateScrollMotion() {
@@ -4870,13 +5075,18 @@
         clearTimeout(scrollTimer);
         scrollTimer = setTimeout(() => root.classList.remove('is-scrolling'), 140);
 
+        if (reduceMotion) return;
+
         if (scenicPanels.length) {
           const centerY = window.innerHeight * 0.5;
           const focusRange = Math.max(260, window.innerHeight * 0.68);
+          const compactMotion = window.innerWidth <= 720;
+          const candidates = visiblePanels.size ? Array.from(visiblePanels) : scenicPanels;
           let activeIndex = 0;
           let bestFocus = -1;
 
-          scenicPanels.forEach((panel, index) => {
+          candidates.forEach((panel) => {
+            const index = Number(panel.dataset.sceneIndex || 0);
             const rect = panel.getBoundingClientRect();
             const panelCenter = rect.top + rect.height * 0.5;
             const distance = Math.abs(panelCenter - centerY);
@@ -4885,6 +5095,9 @@
             const palette = scenePalettes[index % scenePalettes.length];
 
             panel.style.setProperty('--scene-focus', focus.toFixed(3));
+            panel.style.setProperty('--scene-x', compactMotion
+              ? '0px'
+              : `${(((index % 2 ? 1 : -1) * (1 - focus) * 4.5)).toFixed(1)}px`);
             panel.style.setProperty('--scene-y', `${(12 - focus * 18).toFixed(1)}px`);
             panel.style.setProperty('--scene-scale', (0.985 + focus * 0.025).toFixed(4));
             panel.style.setProperty('--scene-opacity', (0.82 + focus * 0.18).toFixed(3));
@@ -4931,8 +5144,46 @@
       const panels = Array.from(document.querySelectorAll(
         '.metric-card, .comfort-card, .device-card, .compare-card, .weather-card, .insights-card, .history-card, .details, .ac-session-card'
       ));
-      panels.forEach((panel) => panel.classList.add('motion-panel'));
+      panels.forEach((panel, panelIndex) => {
+        panel.classList.add('motion-panel');
+        panel.dataset.sceneIndex = String(panelIndex);
+
+        if (!panel.querySelector(':scope > .scene-rail')) {
+          const rail = document.createElement('span');
+          rail.className = 'scene-rail';
+          rail.setAttribute('aria-hidden', 'true');
+          panel.prepend(rail);
+        }
+
+        Array.from(panel.children).forEach((child, childIndex) => {
+          if (child.classList.contains('scene-rail')) return;
+          child.classList.add('motion-depth');
+          child.style.setProperty('--motion-delay', `${Math.min(childIndex, 6) * 52}ms`);
+        });
+      });
       scenicPanels = panels;
+
+      if ('IntersectionObserver' in window) {
+        const panelObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              visiblePanels.add(entry.target);
+              if (!entry.target.classList.contains('scene-seen')) {
+                entry.target.classList.add('scene-seen');
+                if (entry.target.contains(els.historyChart)) animateHistoryChart();
+              }
+            } else {
+              visiblePanels.delete(entry.target);
+            }
+          });
+          requestScrollMotion();
+        }, { threshold: 0.06, rootMargin: '28% 0px 28% 0px' });
+        panels.forEach((panel) => panelObserver.observe(panel));
+      } else {
+        panels.forEach((panel) => panel.classList.add('scene-seen'));
+      }
+
+      setTimeout(() => panels.forEach((panel) => panel.classList.add('scene-seen')), 1600);
 
       const finePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
       if (finePointer) {
@@ -5009,6 +5260,8 @@
       });
       const locationBtn = document.getElementById('settingsUseLocation');
       if (locationBtn) locationBtn.textContent = 'Dùng vị trí hiện tại';
+      const cloudToken = document.getElementById('setCloudToken');
+      if (cloudToken) cloudToken.value = readCloudAccessToken();
     }
 
     function openSettings() {
@@ -5021,6 +5274,7 @@
 
     function applySettingsFromForm() {
       const next = Object.assign({}, settings);
+      const previousCloudToken = readCloudAccessToken();
       Object.keys(settingsFields).forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -5037,6 +5291,14 @@
       next.monthlyKwh = Math.max(0, Math.round(next.monthlyKwh || DEFAULT_SETTINGS.monthlyKwh));
       settings = next;
       saveSettings();
+      const cloudToken = document.getElementById('setCloudToken');
+      writeCloudAccessToken(cloudToken ? cloudToken.value : previousCloudToken);
+      if (readCloudAccessToken() !== previousCloudToken) {
+        state.historyPoints = [];
+        state.historyAttemptedAt = 0;
+        state.historyLoadedAt = 0;
+        state.historyError = false;
+      }
       applyTheme();
       restartTimer();
       // ép cập nhật thời tiết theo toạ độ mới
