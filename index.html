@@ -2341,13 +2341,6 @@
         <div class="field"><label for="setRefresh">Làm mới mỗi (giây)</label><input id="setRefresh" type="number" min="1" max="30" step="1" inputmode="numeric"></div>
       </div>
 
-      <p class="field-group-title">Truy cập cloud</p>
-      <div class="field">
-        <label for="setCloudToken">Mã truy cập riêng</label>
-        <input id="setCloudToken" type="password" autocomplete="current-password" placeholder="Dán mã trong dashboard_access.local.txt">
-        <p class="field-hint">Chỉ lưu trên trình duyệt này, không gửi lên GitHub.</p>
-      </div>
-
       <div class="panel-actions">
         <button id="settingsReset" class="btn" type="button">Mặc định</button>
         <button id="settingsSave" class="btn primary" type="button">Lưu</button>
@@ -2361,7 +2354,6 @@
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
-    const CLOUD_ACCESS_STORAGE_KEY = 'autohome.cloudAccessToken.v1';
     const HISTORY_PAGE_SIZE = 1000;     // Supabase REST thường giới hạn 1000 dòng mỗi request
     const HISTORY_INITIAL_LIMIT = 30000; // đủ hai tháng lịch kể cả khi có cả cron và firmware cùng ghi
     const HISTORY_INCREMENTAL_LIMIT = 8000; // mẫu mới mỗi lần poll (đủ để bắt kịp sau khi treo tab)
@@ -2429,30 +2421,10 @@
         || /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname);
     }
 
-    if (params.get('reset_access') === '1') {
-      try { localStorage.removeItem(CLOUD_ACCESS_STORAGE_KEY); } catch (error) {}
-    }
-
-    function readCloudAccessToken() {
-      try { return (localStorage.getItem(CLOUD_ACCESS_STORAGE_KEY) || '').trim(); }
-      catch (error) { return ''; }
-    }
-
-    function writeCloudAccessToken(token) {
-      try {
-        const value = (token || '').trim();
-        if (value) localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, value);
-        else localStorage.removeItem(CLOUD_ACCESS_STORAGE_KEY);
-      } catch (error) {}
-    }
-
     function cloudHeaders() {
-      const token = readCloudAccessToken();
-      if (!token) return null;
       return {
         apikey: SUPABASE_PUBLISHABLE_KEY,
-        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
-        'x-dashboard-token': token
+        Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`
       };
     }
 
@@ -2669,7 +2641,7 @@
 
     function makeNoDataReading(source = 'No data', deviceOnline = false) {
       return {
-        appVersion: 'web-local',
+        appVersion: state.cloudMode ? 'web-cloud' : 'web-local',
         cloudMode: state.cloudMode,
         deviceOnline,
         wifiConnected: false,
@@ -2718,7 +2690,6 @@
     async function fetchCloudReading() {
       const endpoint = `${SUPABASE_URL}/rest/v1/room_latest?room_id=eq.${encodeURIComponent(SUPABASE_ROOM_ID)}&select=*&limit=1`;
       const headers = cloudHeaders();
-      if (!headers) return makeNoDataReading('Cần nhập mã cloud trong Cài đặt');
 
       try {
         const response = await fetch(endpoint, {
@@ -2728,7 +2699,7 @@
         if (!response.ok) throw new Error('Cloud endpoint unavailable');
         const rows = await response.json();
         if (!Array.isArray(rows) || rows.length === 0) {
-          return makeNoDataReading('Mã cloud sai hoặc chưa có dữ liệu');
+          return makeNoDataReading('Chưa có dữ liệu cloud');
         }
         return cloudReadingFromRow(rows[0]);
       } catch (error) {
@@ -2750,7 +2721,6 @@
 
     async function fetchHistoryRows(url) {
       const headers = cloudHeaders();
-      if (!headers) throw new Error('Cloud access token missing');
       const response = await fetch(url, {
         cache: 'no-store',
         headers
@@ -5260,8 +5230,6 @@
       });
       const locationBtn = document.getElementById('settingsUseLocation');
       if (locationBtn) locationBtn.textContent = 'Dùng vị trí hiện tại';
-      const cloudToken = document.getElementById('setCloudToken');
-      if (cloudToken) cloudToken.value = readCloudAccessToken();
     }
 
     function openSettings() {
@@ -5274,7 +5242,6 @@
 
     function applySettingsFromForm() {
       const next = Object.assign({}, settings);
-      const previousCloudToken = readCloudAccessToken();
       Object.keys(settingsFields).forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -5291,14 +5258,6 @@
       next.monthlyKwh = Math.max(0, Math.round(next.monthlyKwh || DEFAULT_SETTINGS.monthlyKwh));
       settings = next;
       saveSettings();
-      const cloudToken = document.getElementById('setCloudToken');
-      writeCloudAccessToken(cloudToken ? cloudToken.value : previousCloudToken);
-      if (readCloudAccessToken() !== previousCloudToken) {
-        state.historyPoints = [];
-        state.historyAttemptedAt = 0;
-        state.historyLoadedAt = 0;
-        state.historyError = false;
-      }
       applyTheme();
       restartTimer();
       // ép cập nhật thời tiết theo toạ độ mới
