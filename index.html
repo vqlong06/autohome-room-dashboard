@@ -2596,6 +2596,9 @@
       transition: opacity 700ms ease;
       mask-image: radial-gradient(ellipse 108% 125% at 94% 14%, #000 0 48%, transparent 94%);
       -webkit-mask-image: radial-gradient(ellipse 108% 125% at 94% 14%, #000 0 48%, transparent 94%);
+      contain: paint;
+      transform: translateZ(0);
+      will-change: opacity;
     }
 
     .airflow-visual::before {
@@ -2749,33 +2752,6 @@
       to { background-position: -40% 0; }
     }
 
-    .dashboard {
-      view-transition-name: autohome-dashboard;
-    }
-
-    ::view-transition-old(autohome-dashboard),
-    ::view-transition-new(autohome-dashboard) {
-      animation-duration: 320ms;
-      animation-timing-function: cubic-bezier(.2, .78, .2, 1);
-    }
-
-    ::view-transition-old(autohome-dashboard) {
-      animation-name: dashboardFadeOut;
-    }
-
-    ::view-transition-new(autohome-dashboard) {
-      animation-name: dashboardFadeIn;
-    }
-
-    @keyframes dashboardFadeOut {
-      to { opacity: 0; transform: translateY(-5px) scale(.995); filter: blur(2px); }
-    }
-
-    @keyframes dashboardFadeIn {
-      from { opacity: 0; transform: translateY(8px) scale(.995); filter: blur(3px); }
-      to { opacity: 1; transform: none; filter: none; }
-    }
-
     @media (hover: hover) and (pointer: fine) {
       .metric-card,
       .comfort-card,
@@ -2862,6 +2838,16 @@
     }
 
     @media (max-width: 720px) {
+      .dashboard > .view-entering {
+        animation: none;
+      }
+
+      .dashboard > [data-dashboard-view].ui-reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+
       .status.status-alert,
       .status.status-hot {
         max-width: none;
@@ -2893,16 +2879,39 @@
         inset: 0;
         width: auto;
         opacity: 0;
-        mask-image: radial-gradient(ellipse 145% 108% at 82% 20%, #000 0 50%, transparent 94%);
-        -webkit-mask-image: radial-gradient(ellipse 145% 108% at 82% 20%, #000 0 50%, transparent 94%);
+        mask-image: radial-gradient(ellipse 150% 115% at 80% 24%, #000 0 54%, transparent 96%);
+        -webkit-mask-image: radial-gradient(ellipse 150% 115% at 80% 24%, #000 0 54%, transparent 96%);
+      }
+
+      .airflow-visual::before {
+        top: 54px;
+        right: -34px;
+        width: 220px;
+        height: 160px;
+      }
+
+      .airflow-plume {
+        top: 50px;
+        right: auto;
+        bottom: auto;
+        left: 0;
+        width: 100%;
+        height: calc(100% - 50px);
+        transform: translate3d(-14%, 0, 0);
+        transform-origin: top right;
       }
 
       .airflow-stream {
         stroke-width: 1.35;
       }
 
-      .airflow-stream:nth-of-type(n + 5) {
+      .airflow-stream:nth-of-type(n + 4) {
         display: none;
+        animation: none !important;
+      }
+
+      html.ac-active .ac-session-card:not([hidden]) .airflow-visual {
+        opacity: .8;
       }
 
       .ac-live-badge {
@@ -2946,11 +2955,6 @@
         transition: none !important;
         opacity: 1;
         transform: none;
-      }
-
-      ::view-transition-old(autohome-dashboard),
-      ::view-transition-new(autohome-dashboard) {
-        animation: none;
       }
 
       .dot.live,
@@ -4457,6 +4461,13 @@
 
     function animateHistoryChart() {
       if (state.historyAnimFrame) cancelAnimationFrame(state.historyAnimFrame);
+      if (window.matchMedia('(max-width: 720px), (prefers-reduced-motion: reduce)').matches) {
+        state.historyAnimFrame = 0;
+        state.historyDrawProgress = 1;
+        drawHistoryChart();
+        return;
+      }
+
       const start = performance.now();
       state.historyDrawProgress = 0;
       function step(now) {
@@ -5306,6 +5317,18 @@
         : 'Đang tích lũy';
     }
 
+    function dashboardViewIsActive(view) {
+      const shell = document.querySelector('.dashboard');
+      return !shell || shell.dataset.activeView === view;
+    }
+
+    function drawOverviewCharts() {
+      if (!dashboardViewIsActive('overview')) return;
+      const styles = getComputedStyle(document.documentElement);
+      drawChart(els.tempChart, 'temperatureC', styles.getPropertyValue('--warm').trim());
+      drawChart(els.humidityChart, 'humidity', styles.getPropertyValue('--accent').trim());
+    }
+
     function render(reading) {
       const temperature = finiteNumber(reading.temperatureC);
       const humidity = finiteNumber(reading.humidity);
@@ -5350,8 +5373,7 @@
         updateComfort(null, null, displayStats, reading);
         updateMeters({ temperatureC: null, humidity: null });
         updateAlertMotion(null, null);
-        drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
-        drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+        drawOverviewCharts();
         return;
       }
 
@@ -5364,8 +5386,7 @@
       updateComfort(temperature, humidity, displayStats, reading);
       updateMeters({ temperatureC: temperature, humidity });
       updateAlertMotion(temperature, humidity);
-      drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
-      drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+      drawOverviewCharts();
     }
 
     async function tick() {
@@ -5378,11 +5399,20 @@
       render(await fetchReading());
     }
 
+    let dashboardResizeTimer = 0;
     window.addEventListener('resize', () => {
-      drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
-      drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
-      drawHistoryChart();
-    });
+      window.clearTimeout(dashboardResizeTimer);
+      dashboardResizeTimer = window.setTimeout(() => {
+        requestAnimationFrame(() => {
+          if (dashboardViewIsActive('overview')) {
+            drawOverviewCharts();
+          } else if (dashboardViewIsActive('data')) {
+            drawHistoryChart();
+            drawChipChart();
+          }
+        });
+      }, 120);
+    }, { passive: true });
 
     els.rangeTabs.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -6344,9 +6374,18 @@
       if (section) dashboardShell.appendChild(section);
     });
 
+    let dashboardViewEnterTimer = 0;
+
     function applyDashboardView(view) {
       const nextView = ['overview', 'ac', 'data'].includes(view) ? view : 'overview';
+      if (nextView !== 'data' && state.historyAnimFrame) {
+        cancelAnimationFrame(state.historyAnimFrame);
+        state.historyAnimFrame = 0;
+        state.historyDrawProgress = 1;
+      }
+
       dashboardShell.dataset.activeView = nextView;
+      dashboardShell.dataset.viewReady = 'true';
       setDashboardTabIndicator(nextView);
 
       dashboardTabs.forEach(tab => {
@@ -6364,20 +6403,17 @@
       });
 
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (nextView === 'overview') {
-            drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
-            drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
-          } else if (nextView === 'data') {
-            updateHistorySummary(buildHistoryStats());
-            animateHistoryChart();
-            drawChipChart();
-          }
-          window.dispatchEvent(new Event('resize'));
-        });
+        if (nextView === 'overview') {
+          drawOverviewCharts();
+        } else if (nextView === 'data') {
+          updateHistorySummary(buildHistoryStats());
+          animateHistoryChart();
+          drawChipChart();
+        }
       });
 
-      window.setTimeout(() => {
+      window.clearTimeout(dashboardViewEnterTimer);
+      dashboardViewEnterTimer = window.setTimeout(() => {
         dashboardViews.forEach(section => section.classList.remove('view-entering'));
       }, 340);
 
@@ -6386,43 +6422,40 @@
     function scrollDashboardToTop() {
       if (window.matchMedia('(max-width: 720px)').matches) {
         const top = dashboardShell.getBoundingClientRect().top + window.scrollY - 12;
-        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        const target = Math.max(0, top);
+        const distance = Math.abs(window.scrollY - target);
+        const behavior = distance < window.innerHeight * 0.75 ? 'smooth' : 'auto';
+        window.scrollTo({ top: target, behavior });
       }
     }
 
-    function setDashboardView(view, shouldScroll = true, allowTransition = true) {
+    function setDashboardView(view, shouldScroll = true) {
       const nextView = ['overview', 'ac', 'data'].includes(view) ? view : 'overview';
-      const currentView = dashboardShell.dataset.activeView || 'overview';
-      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const commit = () => applyDashboardView(nextView);
-      let transition = null;
-
-      if (allowTransition && nextView !== currentView && document.startViewTransition && !reducedMotion) {
-        try {
-          transition = document.startViewTransition(commit);
-        } catch (error) {
-          commit();
-        }
-      } else {
-        commit();
+      if (dashboardShell.dataset.viewReady === 'true' && dashboardShell.dataset.activeView === nextView) {
+        if (shouldScroll) requestAnimationFrame(scrollDashboardToTop);
+        return;
       }
 
+      applyDashboardView(nextView);
+
       if (shouldScroll) {
-        if (transition && transition.finished) transition.finished.finally(scrollDashboardToTop);
-        else scrollDashboardToTop();
+        requestAnimationFrame(scrollDashboardToTop);
       }
     }
 
     const dashboardTabPressTimers = new WeakMap();
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     dashboardTabs.forEach(tab => {
-      tab.addEventListener('pointermove', (event) => {
-        const rect = tab.getBoundingClientRect();
-        if (!rect.width || !rect.height) return;
-        const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
-        const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
-        tab.style.setProperty('--hover-x', `${x}%`);
-        tab.style.setProperty('--hover-y', `${y}%`);
-      });
+      if (finePointer) {
+        tab.addEventListener('pointermove', (event) => {
+          const rect = tab.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
+          const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
+          tab.style.setProperty('--hover-x', `${x}%`);
+          tab.style.setProperty('--hover-y', `${y}%`);
+        }, { passive: true });
+      }
 
       tab.addEventListener('click', (event) => {
         const rect = tab.getBoundingClientRect();
@@ -6430,14 +6463,14 @@
         tab.style.setProperty('--press-x', `${keyboardClick ? rect.width / 2 : event.clientX - rect.left}px`);
         tab.style.setProperty('--press-y', `${keyboardClick ? rect.height / 2 : event.clientY - rect.top}px`);
         tab.classList.remove('tab-press');
-        void tab.offsetWidth;
-        tab.classList.add('tab-press');
         window.clearTimeout(dashboardTabPressTimers.get(tab));
-        dashboardTabPressTimers.set(tab, window.setTimeout(() => tab.classList.remove('tab-press'), 520));
         hapticFeedback(10);
         const nextView = tab.dataset.dashboardTab;
-        setDashboardTabIndicator(nextView);
-        requestAnimationFrame(() => setDashboardView(nextView));
+        setDashboardView(nextView);
+        requestAnimationFrame(() => {
+          tab.classList.add('tab-press');
+          dashboardTabPressTimers.set(tab, window.setTimeout(() => tab.classList.remove('tab-press'), 520));
+        });
       });
     });
 
@@ -6457,13 +6490,16 @@
       colorSchemeQuery.addEventListener('change', () => {
         if (settings.theme !== 'auto') return;
         applyTheme();
-        drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
-        drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
-        drawHistoryChart();
+        if (dashboardViewIsActive('overview')) {
+          drawOverviewCharts();
+        } else if (dashboardViewIsActive('data')) {
+          drawHistoryChart();
+          drawChipChart();
+        }
       });
     }
 
-    setDashboardView('overview', false, false);
+    setDashboardView('overview', false);
 
     tick();
     restartTimer();
