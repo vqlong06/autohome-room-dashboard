@@ -1935,11 +1935,425 @@
         grid-template-columns: 64px minmax(0, 1fr);
       }
     }
+
+    /* ===================== BENTO APP SHELL ===================== */
+    body {
+      background: var(--bg);
+    }
+
+    body * {
+      letter-spacing: 0 !important;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 12px;
+      perspective: none;
+      transform-style: flat;
+    }
+
+    .topbar,
+    .dashboard-nav {
+      grid-column: 1 / -1;
+    }
+
+    .topbar {
+      margin-bottom: 2px;
+    }
+
+    h1,
+    .value,
+    .device-value,
+    .delta,
+    .insight-value,
+    .forecast-temp,
+    .metric-label,
+    .detail-label,
+    .insight-label,
+    .field-group-title {
+      letter-spacing: 0;
+    }
+
+    .dashboard-nav {
+      position: sticky;
+      top: 10px;
+      z-index: 30;
+      justify-self: center;
+      display: inline-grid;
+      grid-template-columns: repeat(3, minmax(112px, 1fr));
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid color-mix(in srgb, var(--line), transparent 38%);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), transparent 8%);
+      box-shadow: 0 10px 26px color-mix(in srgb, var(--shadow), transparent 30%);
+      backdrop-filter: blur(18px) saturate(125%);
+      -webkit-backdrop-filter: blur(18px) saturate(125%);
+    }
+
+    .dashboard-tab {
+      appearance: none;
+      min-height: 42px;
+      padding: 7px 14px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 720;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 220ms ease, color 220ms ease, transform 220ms ease;
+    }
+
+    .dashboard-tab:hover {
+      color: var(--text);
+      background: color-mix(in srgb, var(--panel), var(--bg) 36%);
+    }
+
+    .dashboard-tab:active {
+      transform: scale(0.98);
+    }
+
+    .dashboard-tab.active {
+      color: #ffffff;
+      background: var(--accent);
+      box-shadow: 0 7px 18px color-mix(in srgb, var(--accent), transparent 76%);
+    }
+
+    .dashboard-tab:focus-visible,
+    .system-status > summary:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent), transparent 55%);
+      outline-offset: 2px;
+    }
+
+    .dashboard-tab-mark {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      opacity: 0.72;
+    }
+
+    [data-dashboard-view][hidden] {
+      display: none !important;
+    }
+
+    .dashboard > [data-dashboard-view]:not([hidden]) {
+      animation: dashboardViewEnter 360ms cubic-bezier(.2, .75, .2, 1) both;
+    }
+
+    @keyframes dashboardViewEnter {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .dashboard[data-active-view="overview"] > .grid {
+      grid-column: span 8;
+      order: 1;
+    }
+
+    .dashboard[data-active-view="overview"] > .comfort-card {
+      grid-column: span 4;
+      order: 2;
+    }
+
+    .dashboard[data-active-view="overview"] > .weather-card {
+      grid-column: span 7;
+      order: 3;
+    }
+
+    .dashboard[data-active-view="overview"] > .insights-card {
+      grid-column: span 5;
+      order: 4;
+    }
+
+    .dashboard[data-active-view="overview"] > .system-status {
+      grid-column: 1 / -1;
+      order: 5;
+    }
+
+    .dashboard[data-active-view="ac"] > [data-dashboard-view],
+    .dashboard[data-active-view="data"] > [data-dashboard-view] {
+      grid-column: 1 / -1;
+      margin-top: 0;
+    }
+
+    .dashboard[data-active-view="data"] > .compare-grid {
+      order: 2;
+    }
+
+    .dashboard[data-active-view="data"] > .history-card:not(.chip-card) {
+      order: 1;
+    }
+
+    .dashboard[data-active-view="data"] > .chip-card {
+      order: 3;
+    }
+
+    .dashboard[data-active-view="data"] > .details {
+      order: 4;
+    }
+
+    .grid[data-dashboard-view="overview"] {
+      align-self: stretch;
+      gap: 12px;
+    }
+
+    .metric-card,
+    .comfort-card,
+    .weather-card,
+    .insights-card,
+    .compare-card,
+    .history-card,
+    .details,
+    .ac-session-card,
+    .system-status {
+      border-color: color-mix(in srgb, var(--line), transparent 38%);
+      box-shadow: 0 10px 28px color-mix(in srgb, var(--shadow), transparent 24%);
+    }
+
+    .metric-card {
+      min-height: 330px;
+      padding: 24px;
+    }
+
+    .value {
+      margin-top: 7px;
+      font-size: 72px;
+      font-weight: 500;
+      background: none;
+      color: var(--text);
+      -webkit-text-fill-color: currentColor;
+    }
+
+    .unit {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .comfort-card {
+      min-height: 330px;
+      margin: 0;
+      padding: 26px;
+      grid-template-columns: 1fr;
+      align-content: space-between;
+      gap: 24px;
+    }
+
+    .comfort-title {
+      font-size: 48px;
+      font-weight: 650;
+    }
+
+    .comfort-copy {
+      max-width: 34ch;
+    }
+
+    .quick-stat,
+    .pill,
+    .insight,
+    .session-stat,
+    .session-item,
+    .forecast-cell,
+    .chart-hint,
+    .chart-reset,
+    .range-tabs {
+      border-color: transparent;
+      background: color-mix(in srgb, var(--panel), var(--bg) 42%);
+      box-shadow: none;
+    }
+
+    .quick-stat,
+    .pill {
+      border-radius: 7px;
+    }
+
+    .stat-label,
+    .pill-label {
+      letter-spacing: 0;
+      font-size: 10px;
+    }
+
+    .weather-card,
+    .insights-card {
+      height: 100%;
+      margin-top: 0;
+    }
+
+    .system-status {
+      overflow: hidden;
+      border: 1px solid color-mix(in srgb, var(--line), transparent 38%);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .system-status > summary {
+      min-height: 72px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      cursor: pointer;
+      list-style: none;
+      color: var(--text);
+    }
+
+    .system-status > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .system-status > summary strong,
+    .system-status > summary small {
+      display: block;
+    }
+
+    .system-status > summary strong {
+      font-size: 15px;
+      font-weight: 720;
+    }
+
+    .system-status > summary small {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .system-status-action {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .system-status[open] .system-status-action {
+      font-size: 0;
+    }
+
+    .system-status[open] .system-status-action::after {
+      content: "Thu gọn";
+      font-size: 12px;
+    }
+
+    .system-status .device-grid {
+      margin: 0;
+      padding: 0 14px 14px;
+    }
+
+    .system-status .device-card {
+      min-height: 82px;
+      border-color: transparent;
+      background: color-mix(in srgb, var(--panel), var(--bg) 42%);
+      box-shadow: none;
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        padding: 16px 14px calc(92px + env(safe-area-inset-bottom));
+      }
+
+      .dashboard {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+      }
+
+      .topbar,
+      .dashboard-nav,
+      .dashboard > [data-dashboard-view] {
+        grid-column: 1 / -1 !important;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+      }
+
+      .status {
+        width: 100%;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        justify-content: stretch;
+        text-align: left;
+      }
+
+      .dashboard-nav {
+        position: fixed;
+        top: auto;
+        right: 12px;
+        bottom: calc(10px + env(safe-area-inset-bottom));
+        left: 12px;
+        width: auto;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 5px;
+        border-color: color-mix(in srgb, var(--line), transparent 18%);
+        background: color-mix(in srgb, var(--panel), transparent 4%);
+        box-shadow: 0 18px 48px color-mix(in srgb, var(--shadow), #000 18%);
+      }
+
+      .dashboard-tab {
+        min-width: 0;
+        min-height: 48px;
+        padding: 6px 8px;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 11px;
+      }
+
+      .dashboard-tab-mark {
+        font-size: 8px;
+      }
+
+      .grid[data-dashboard-view="overview"] {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .metric-card,
+      .comfort-card {
+        min-height: 278px;
+      }
+
+      .metric-card {
+        padding: 22px;
+      }
+
+      .value {
+        font-size: 64px;
+      }
+
+      .comfort-title {
+        font-size: 40px;
+      }
+
+      .system-status .device-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .system-status .device-card:last-child {
+        grid-column: 1 / -1;
+      }
+
+      .compare-grid,
+      .details {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dashboard > [data-dashboard-view]:not([hidden]) {
+        animation: none;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="app">
-    <section class="dashboard" aria-label="Bảng điều khiển cảm biến phòng">
+    <section class="dashboard" data-active-view="overview" aria-label="Bảng điều khiển cảm biến phòng">
       <div class="topbar">
         <div>
           <h1>Phòng của Long</h1>
@@ -1954,7 +2368,30 @@
         </div>
       </div>
 
-      <section class="device-grid" aria-label="Trạng thái thiết bị">
+      <nav class="dashboard-nav" aria-label="Điều hướng dashboard">
+        <button class="dashboard-tab active" type="button" data-dashboard-tab="overview" aria-pressed="true">
+          <span class="dashboard-tab-mark" aria-hidden="true">01</span>
+          <span>Tổng quan</span>
+        </button>
+        <button class="dashboard-tab" type="button" data-dashboard-tab="ac" aria-pressed="false">
+          <span class="dashboard-tab-mark" aria-hidden="true">02</span>
+          <span>Điều hòa</span>
+        </button>
+        <button class="dashboard-tab" type="button" data-dashboard-tab="data" aria-pressed="false">
+          <span class="dashboard-tab-mark" aria-hidden="true">03</span>
+          <span>Biểu đồ</span>
+        </button>
+      </nav>
+
+      <details class="system-status" data-dashboard-view="overview">
+        <summary>
+          <span>
+            <strong>Trạng thái hệ thống</strong>
+            <small>ESP32, SHT30, Wi-Fi và heartbeat</small>
+          </span>
+          <span class="system-status-action">Chi tiết</span>
+        </summary>
+        <section class="device-grid" aria-label="Trạng thái thiết bị">
         <article class="device-card">
           <p class="device-label">ESP32</p>
           <span id="deviceStatus" class="device-value">Đang kiểm tra</span>
@@ -1980,9 +2417,10 @@
           <span id="lastSeen" class="device-value">--</span>
           <p id="uptime" class="device-copy">--</p>
         </article>
-      </section>
+        </section>
+      </details>
 
-      <section class="comfort-card" aria-label="Trạng thái phòng">
+      <section class="comfort-card" data-dashboard-view="overview" aria-label="Trạng thái phòng">
         <div>
           <p class="comfort-kicker">Trạng thái phòng</p>
           <p id="comfortTitle" class="comfort-title">Đang đo</p>
@@ -2008,7 +2446,7 @@
         </div>
       </section>
 
-      <div class="grid">
+      <div class="grid" data-dashboard-view="overview">
         <article class="metric-card">
           <div>
             <p class="metric-label">Nhiệt độ</p>
@@ -2066,7 +2504,7 @@
         </article>
       </div>
 
-      <section class="weather-card" aria-label="So sánh trong phòng và ngoài trời">
+      <section class="weather-card" data-dashboard-view="overview" aria-label="So sánh trong phòng và ngoài trời">
         <div class="weather-head">
           <div>
             <p class="compare-label">Trong phòng vs Ngoài trời</p>
@@ -2121,7 +2559,7 @@
         <p class="weather-attrib">Nguồn ngoài trời: Open-Meteo</p>
       </section>
 
-      <section class="insights-card" aria-label="Phân tích phòng">
+      <section class="insights-card" data-dashboard-view="overview" aria-label="Phân tích phòng">
         <div class="weather-head">
           <div>
             <p class="compare-label">Phân tích phòng</p>
@@ -2154,7 +2592,7 @@
         <p id="digestText" class="digest">Đang tổng hợp dữ liệu hôm nay…</p>
       </section>
 
-      <section class="compare-grid" aria-label="So sánh nhiệt độ">
+      <section class="compare-grid" data-dashboard-view="data" aria-label="So sánh nhiệt độ" hidden>
         <article class="compare-card">
           <p class="compare-label">Hôm nay so với hôm qua</p>
           <span id="dayDelta" class="delta">--</span>
@@ -2174,7 +2612,7 @@
         </article>
       </section>
 
-      <section class="insights-card ac-month-card" aria-label="Điện điều hoà theo tháng">
+      <section class="insights-card ac-month-card" data-dashboard-view="ac" aria-label="Điện điều hoà theo tháng" hidden>
         <div class="weather-head">
           <div>
             <p class="compare-label">Điện điều hoà — cộng dồn theo tháng</p>
@@ -2195,7 +2633,7 @@
         </div>
       </section>
 
-      <section class="ac-session-card" aria-label="Phiên điều hoà hôm nay">
+      <section class="ac-session-card" data-dashboard-view="ac" aria-label="Phiên điều hoà hôm nay" hidden>
         <div class="story-head">
           <div>
             <p class="story-kicker">AC Sessions</p>
@@ -2220,7 +2658,7 @@
         <div id="acSessionList" class="session-list"></div>
       </section>
 
-      <section class="history-card" aria-label="Lịch sử nhiệt độ và độ ẩm">
+      <section class="history-card" data-dashboard-view="data" aria-label="Lịch sử nhiệt độ và độ ẩm" hidden>
         <div class="history-head">
           <div>
             <p class="compare-label">Lịch sử</p>
@@ -2250,7 +2688,7 @@
         </div>
       </section>
 
-      <section class="history-card chip-card" aria-label="Lịch sử nhiệt độ chip ESP">
+      <section class="history-card chip-card" data-dashboard-view="data" aria-label="Lịch sử nhiệt độ chip ESP" hidden>
         <div class="history-head">
           <div>
             <p class="compare-label">Nhiệt độ chip ESP</p>
@@ -2266,7 +2704,7 @@
         </div>
       </section>
 
-      <section class="details" aria-label="Chi tiết cảm biến">
+      <section class="details" data-dashboard-view="data" aria-label="Chi tiết cảm biến" hidden>
         <div>
           <p class="detail-label">Cập nhật</p>
           <p id="updatedAt" class="detail-value">--:--:--</p>
@@ -5318,6 +5756,66 @@
       state.outdoorAttemptedAt = 0;
       maybeFetchOutdoorWeather(true);
     });
+
+    const dashboardShell = document.querySelector('.dashboard');
+    const dashboardTabs = Array.from(document.querySelectorAll('[data-dashboard-tab]'));
+    const dashboardViews = Array.from(document.querySelectorAll('[data-dashboard-view]'));
+    const dashboardReadingOrder = [
+      '.grid[data-dashboard-view="overview"]',
+      '.comfort-card[data-dashboard-view="overview"]',
+      '.weather-card[data-dashboard-view="overview"]',
+      '.insights-card[data-dashboard-view="overview"]',
+      '.system-status[data-dashboard-view="overview"]',
+      '.ac-month-card[data-dashboard-view="ac"]',
+      '.ac-session-card[data-dashboard-view="ac"]',
+      '.history-card[data-dashboard-view="data"]:not(.chip-card)',
+      '.compare-grid[data-dashboard-view="data"]',
+      '.chip-card[data-dashboard-view="data"]',
+      '.details[data-dashboard-view="data"]'
+    ];
+
+    dashboardReadingOrder.forEach(selector => {
+      const section = dashboardShell.querySelector(selector);
+      if (section) dashboardShell.appendChild(section);
+    });
+
+    function setDashboardView(view, shouldScroll = true) {
+      const nextView = ['overview', 'ac', 'data'].includes(view) ? view : 'overview';
+      dashboardShell.dataset.activeView = nextView;
+
+      dashboardTabs.forEach(tab => {
+        const active = tab.dataset.dashboardTab === nextView;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-pressed', String(active));
+      });
+
+      dashboardViews.forEach(section => {
+        section.hidden = section.dataset.dashboardView !== nextView;
+      });
+
+      requestAnimationFrame(() => {
+        if (nextView === 'overview') {
+          drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
+          drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+        } else if (nextView === 'data') {
+          updateHistorySummary(buildHistoryStats());
+          animateHistoryChart();
+          drawChipChart();
+        }
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      if (shouldScroll && window.matchMedia('(max-width: 720px)').matches) {
+        const top = dashboardShell.getBoundingClientRect().top + window.scrollY - 12;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
+    }
+
+    dashboardTabs.forEach(tab => {
+      tab.addEventListener('click', () => setDashboardView(tab.dataset.dashboardTab));
+    });
+
+    setDashboardView('overview', false);
 
     tick();
     restartTimer();
