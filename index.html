@@ -4,11 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cảm biến phòng của Long</title>
-  <meta name="theme-color" content="#0b1420">
+  <meta name="theme-color" content="#0b0e15">
   <meta name="application-name" content="Phòng của Long">
   <meta name="apple-mobile-web-app-title" content="Phòng của Long">
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260528">
-  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260528">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.webmanifest?v=20260713">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260713">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260713">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -117,17 +121,54 @@
     }
 
     .dot {
+      --dot-color: var(--warm);
+      position: relative;
       width: 10px;
       height: 10px;
       flex: 0 0 auto;
       border-radius: 50%;
-      background: var(--warm);
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--warm), transparent 82%);
+      background: var(--dot-color);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--dot-color), transparent 82%);
+      isolation: isolate;
+    }
+
+    .dot::before,
+    .dot::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      border: 1.5px solid var(--dot-color);
+      border-radius: 50%;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(.65);
+      pointer-events: none;
     }
 
     .dot.live {
-      background: var(--accent);
-      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent), transparent 82%);
+      --dot-color: var(--accent);
+      animation: onlineDotCore 2.4s ease-in-out infinite;
+    }
+
+    .dot.live::before,
+    .dot.live::after {
+      animation: onlineDotWave 2.4s cubic-bezier(.18, .62, .3, 1) infinite;
+    }
+
+    .dot.live::after {
+      animation-delay: .8s;
+    }
+
+    @keyframes onlineDotCore {
+      0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--dot-color), transparent 84%), 0 0 8px color-mix(in srgb, var(--dot-color), transparent 60%); }
+      50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--dot-color), transparent 76%), 0 0 16px color-mix(in srgb, var(--dot-color), transparent 42%); }
+    }
+
+    @keyframes onlineDotWave {
+      0% { opacity: .58; transform: translate(-50%, -50%) scale(.7); }
+      72%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.7); }
     }
 
     .grid,
@@ -1181,582 +1222,6 @@
       body.kiosk .value { font-size: 64px; }
     }
 
-    /* ===================== MOTION & ATMOSPHERE ===================== */
-
-    @property --scene-a {
-      syntax: '<color>';
-      inherits: true;
-      initial-value: #3ad1c9;
-    }
-
-    @property --scene-b {
-      syntax: '<color>';
-      inherits: true;
-      initial-value: #e89456;
-    }
-
-    :root {
-      transition: --scene-a 780ms ease, --scene-b 780ms ease;
-    }
-
-    .scroll-progress {
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 50;
-      width: 100%;
-      height: 3px;
-      transform: scaleX(var(--scroll-progress, 0));
-      transform-origin: left center;
-      background: linear-gradient(90deg, var(--accent), var(--warm), var(--cool));
-      box-shadow: 0 0 24px color-mix(in srgb, var(--accent), transparent 42%);
-      pointer-events: none;
-    }
-
-    .ambient {
-      position: fixed;
-      inset: -12%;
-      z-index: -1;
-      pointer-events: none;
-      background:
-        linear-gradient(115deg, transparent 0 26%, color-mix(in srgb, var(--scene-a, var(--accent)), transparent 82%) 38%, transparent 52% 100%),
-        linear-gradient(24deg, transparent 0 42%, color-mix(in srgb, var(--scene-b, var(--warm)), transparent 86%) 56%, transparent 70% 100%),
-        linear-gradient(180deg, transparent, color-mix(in srgb, var(--bg-2), transparent 30%));
-      opacity: 0.9;
-      transform: translate3d(0, calc(var(--scroll-ratio, 0) * -22px), 0);
-      transition: transform 140ms linear;
-      overflow: hidden;
-    }
-
-    .sakura-field {
-      position: fixed;
-      inset: 0;
-      z-index: 1;
-      pointer-events: none;
-      overflow: hidden;
-      opacity: 0.42;
-      transform: translate3d(0, calc(var(--scroll-ratio, 0) * -18px), 0);
-      transition: opacity 300ms ease, transform 160ms linear;
-    }
-
-    .sakura-petal {
-      position: absolute;
-      top: -12vh;
-      left: var(--x, 50%);
-      width: var(--size, 12px);
-      height: calc(var(--size, 12px) * 0.68);
-      border-radius: 82% 18% 72% 28% / 72% 28% 70% 30%;
-      background:
-        radial-gradient(circle at 28% 42%, rgba(255,255,255,.78), transparent 28%),
-        linear-gradient(135deg, rgba(255, 224, 232, 0.94), rgba(255, 145, 174, 0.74));
-      box-shadow: 0 8px 18px rgba(255, 128, 166, 0.16);
-      opacity: var(--alpha, 0.62);
-      transform: translate3d(0, -14vh, 0) rotate(var(--rot, 0deg));
-      animation: sakuraFall var(--dur, 16s) linear infinite;
-      animation-delay: var(--delay, 0s);
-      will-change: transform;
-    }
-
-    .sakura-petal::after {
-      content: "";
-      position: absolute;
-      width: 32%;
-      height: 34%;
-      right: 9%;
-      bottom: 7%;
-      border-radius: 50%;
-      background: color-mix(in srgb, #ff7fa8, transparent 48%);
-      opacity: 0.55;
-    }
-
-    @keyframes sakuraFall {
-      0% {
-        transform: translate3d(0, -14vh, 0) rotate(var(--rot, 0deg));
-      }
-      42% {
-        transform: translate3d(var(--drift, 28px), 46vh, 0) rotate(calc(var(--rot, 0deg) + 170deg));
-      }
-      100% {
-        transform: translate3d(var(--drift-end, -18px), 114vh, 0) rotate(calc(var(--rot, 0deg) + 420deg));
-      }
-    }
-
-    .is-scrolling .sakura-field {
-      opacity: 0.36;
-    }
-
-    .ambient::before,
-    .ambient::after {
-      content: "";
-      position: absolute;
-      inset: -8%;
-      opacity: 0.22;
-      will-change: transform;
-    }
-
-    .ambient::before {
-      background:
-        linear-gradient(120deg, transparent 0 18%, color-mix(in srgb, var(--accent), transparent 70%) 34%, transparent 48%),
-        linear-gradient(300deg, transparent 0 36%, color-mix(in srgb, var(--cool), transparent 78%) 54%, transparent 72%);
-      animation: meshSlideA 24s ease-in-out infinite alternate;
-    }
-
-    .ambient::after {
-      background:
-        linear-gradient(40deg, transparent 0 32%, color-mix(in srgb, var(--warm), transparent 78%) 48%, transparent 66%),
-        linear-gradient(170deg, transparent 0 46%, color-mix(in srgb, var(--chip), transparent 82%) 62%, transparent 78%);
-      animation: meshSlideB 31s ease-in-out infinite alternate;
-    }
-
-    @media (prefers-color-scheme: light) {
-      .ambient {
-        opacity: 0.72;
-      }
-      .ambient::before,
-      .ambient::after {
-        opacity: 0.2;
-      }
-    }
-
-    @keyframes meshSlideA {
-      from { transform: translate3d(-4%, -2%, 0) rotate(-2deg); }
-      to   { transform: translate3d(5%, 4%, 0) rotate(3deg); }
-    }
-
-    @keyframes meshSlideB {
-      from { transform: translate3d(4%, 3%, 0) rotate(2deg); }
-      to   { transform: translate3d(-5%, -3%, 0) rotate(-3deg); }
-    }
-
-    @media (max-width: 720px) {
-      .ambient {
-        inset: -6%;
-      }
-      .ambient::before,
-      .ambient::after {
-        opacity: 0.16;
-      }
-    }
-
-    .metric-card,
-    .comfort-card,
-    .device-card,
-    .compare-card,
-    .history-card,
-    .weather-card,
-    .insights-card,
-    .details,
-    .ac-session-card {
-      position: relative;
-      transition:
-        transform 420ms cubic-bezier(.2,.7,.2,1),
-        box-shadow 420ms ease,
-        border-color 420ms ease,
-        background 420ms ease;
-      will-change: transform;
-    }
-
-    .motion-panel {
-      isolation: isolate;
-      overflow: clip;
-      --scene-x: 0px;
-      --scene-y: 8px;
-      --scene-scale: 0.988;
-      --scene-opacity: 0.88;
-      --scene-rotate: 0deg;
-      --tilt-x: 0deg;
-      --tilt-y: 0deg;
-      --panel-accent: var(--accent);
-      opacity: var(--scene-opacity);
-      transform:
-        translate3d(var(--scene-x), var(--scene-y), 0)
-        perspective(1000px)
-        rotateX(calc(var(--scene-rotate) + var(--tilt-x)))
-        rotateY(var(--tilt-y))
-        scale(var(--scene-scale));
-      transform-origin: center center;
-      backface-visibility: hidden;
-      transform-style: preserve-3d;
-      transition:
-        box-shadow 380ms ease,
-        border-color 380ms ease,
-        background 380ms ease;
-    }
-
-    .motion-panel::before {
-      content: "";
-      position: absolute;
-      inset: 1px;
-      z-index: 0;
-      border-radius: 7px;
-      background:
-        radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%),
-          color-mix(in srgb, var(--panel-accent), transparent 84%),
-          transparent 58%),
-        linear-gradient(180deg, color-mix(in srgb, #fff, transparent 94%), transparent 36%),
-        linear-gradient(135deg, color-mix(in srgb, var(--panel-accent), transparent 94%), transparent 54%);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 260ms ease;
-    }
-
-    .motion-panel::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      border-radius: 8px;
-      background: linear-gradient(115deg, transparent 0 36%, color-mix(in srgb, #fff, transparent 88%) 48%, transparent 62% 100%);
-      opacity: 0;
-      transform: translateX(-46%);
-      pointer-events: none;
-      transition: opacity 260ms ease, transform 780ms cubic-bezier(.2,.7,.2,1);
-    }
-
-    .motion-panel > * {
-      position: relative;
-      z-index: 1;
-    }
-
-    .scene-rail {
-      position: absolute !important;
-      top: 18px;
-      bottom: 18px;
-      left: -1px;
-      z-index: 3 !important;
-      width: 2px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, transparent, var(--panel-accent) 24% 76%, transparent);
-      box-shadow: 0 0 18px color-mix(in srgb, var(--panel-accent), transparent 42%);
-      opacity: 0;
-      transform: scaleY(0.22);
-      transform-origin: center;
-      transition: opacity 360ms ease, transform 620ms cubic-bezier(.2,.75,.2,1);
-      pointer-events: none;
-    }
-
-    .motion-panel.scene-active .scene-rail {
-      opacity: 0.92;
-      transform: scaleY(1);
-    }
-
-    .motion-depth {
-      opacity: 0;
-      transform: translate3d(0, 14px, 0) scale(0.994);
-      translate: 0 0;
-      transition:
-        opacity 620ms cubic-bezier(.2,.7,.2,1),
-        transform 720ms cubic-bezier(.16,.8,.24,1),
-        translate 420ms cubic-bezier(.2,.7,.2,1);
-      transition-delay: var(--motion-delay, 0ms);
-    }
-
-    .motion-panel.scene-seen .motion-depth {
-      opacity: 1;
-      transform: none;
-    }
-
-    .motion-panel.scene-active .motion-depth {
-      translate: 0 -2px;
-    }
-
-    .motion-panel.pointer-live::before,
-    .motion-panel:hover::before {
-      opacity: 1;
-    }
-
-    .motion-panel.scene-active {
-      border-color: color-mix(in srgb, var(--panel-accent), var(--line) 28%);
-      box-shadow:
-        0 24px 54px color-mix(in srgb, var(--shadow), #000 10%),
-        0 0 0 1px color-mix(in srgb, var(--panel-accent), transparent 78%);
-    }
-
-    .motion-panel.scene-active::before {
-      opacity: 0.96;
-    }
-
-    .motion-panel.scene-active::after {
-      opacity: 0.62;
-      transform: translateX(var(--scene-shine, 16%));
-    }
-
-    .motion-panel.scene-active .value,
-    .motion-panel.scene-active .delta,
-    .motion-panel.scene-active .insight-value,
-    .motion-panel.scene-active .device-value {
-      text-shadow: 0 10px 22px color-mix(in srgb, var(--panel-accent), transparent 82%);
-    }
-
-    .motion-panel.scene-active .value,
-    .motion-panel.scene-active .comfort-title,
-    .motion-panel.scene-active .delta,
-    .motion-panel.scene-active .insight-value {
-      animation: sceneValueFocus 720ms cubic-bezier(.16,.8,.24,1);
-    }
-
-    @keyframes sceneValueFocus {
-      0% { transform: translate3d(0, 4px, 0) scale(0.985); }
-      62% { transform: translate3d(0, -1px, 0) scale(1.012); }
-      100% { transform: translate3d(0, 0, 0) scale(1); }
-    }
-
-    @media (hover: hover) and (pointer: fine) {
-      .motion-panel:hover {
-        transform:
-          translate3d(0, calc(var(--scene-y, 0px) - 4px), 0)
-          perspective(1000px)
-          rotateX(calc(var(--scene-rotate) + var(--tilt-x, 0deg)))
-          rotateY(var(--tilt-y, 0deg))
-          scale(calc(var(--scene-scale, 1) + 0.006));
-        border-color: color-mix(in srgb, var(--panel-accent), var(--line) 44%);
-        box-shadow: 0 30px 70px var(--shadow);
-      }
-
-      .motion-panel:hover::after {
-        opacity: 1;
-        transform: translateX(46%);
-      }
-    }
-
-    .motion-panel.touch-pop {
-      transform:
-        translate3d(0, calc(var(--scene-y, 0px) - 2px), 0)
-        perspective(1000px)
-        rotateX(calc(var(--scene-rotate) + var(--tilt-x, 0deg)))
-        rotateY(var(--tilt-y, 0deg))
-        scale(calc(var(--scene-scale, 1) - 0.003));
-    }
-
-    .motion-panel.alert-warm,
-    .motion-panel.alert-humid {
-      animation: alertAura 2.7s ease-in-out infinite;
-    }
-
-    .motion-panel.alert-warm {
-      --panel-accent: var(--warm);
-      border-color: color-mix(in srgb, var(--warm), var(--line) 42%);
-    }
-
-    .motion-panel.alert-humid {
-      --panel-accent: var(--accent);
-      border-color: color-mix(in srgb, var(--accent), var(--line) 42%);
-    }
-
-    @keyframes alertAura {
-      0%, 100% {
-        box-shadow:
-          0 18px 40px var(--shadow),
-          0 0 0 0 color-mix(in srgb, var(--panel-accent), transparent 78%);
-      }
-      54% {
-        box-shadow:
-          0 24px 58px var(--shadow),
-          0 0 0 8px color-mix(in srgb, var(--panel-accent), transparent 92%);
-      }
-    }
-
-    .anim-ready .reveal {
-      opacity: 0;
-      filter: none;
-      transform: translate3d(0, var(--reveal-y, 24px), 0) scale(0.982);
-      transition:
-        opacity 760ms cubic-bezier(.2,.7,.2,1),
-        transform 760ms cubic-bezier(.2,.7,.2,1);
-      transition-delay: var(--reveal-delay, 0ms);
-      will-change: opacity, transform, filter;
-    }
-
-    .anim-ready .reveal.in {
-      opacity: 1;
-      transform: none;
-    }
-
-    .anim-ready .reveal.in:nth-child(odd) {
-      transition-duration: 840ms;
-    }
-
-    .motion-panel.scene-seen .pill,
-    .motion-panel.scene-seen .quick-stat,
-    .motion-panel.scene-seen .insight,
-    .motion-panel.scene-seen .session-stat,
-    .motion-panel.scene-seen .session-item {
-      animation: sceneMicroRise 680ms cubic-bezier(.16,.8,.24,1) both;
-    }
-
-    .motion-panel.scene-seen :is(.pill, .quick-stat, .insight, .session-stat, .session-item):nth-child(2) {
-      animation-delay: 55ms;
-    }
-
-    .motion-panel.scene-seen :is(.pill, .quick-stat, .insight, .session-stat, .session-item):nth-child(3) {
-      animation-delay: 105ms;
-    }
-
-    .motion-panel.scene-seen :is(.pill, .quick-stat, .insight, .session-stat, .session-item):nth-child(4) {
-      animation-delay: 155ms;
-    }
-
-    @keyframes sceneMicroRise {
-      from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.98); }
-      to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
-    }
-
-    .weather-card.scene-seen .forecast-cell {
-      animation: forecastGlideIn 640ms cubic-bezier(.16,.8,.24,1) both;
-      animation-delay: calc(var(--forecast-index, 0) * 52ms);
-    }
-
-    @keyframes forecastGlideIn {
-      from { opacity: 0; transform: translate3d(12px, 5px, 0) scale(0.97); }
-      to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
-    }
-
-    .history-card.scene-seen canvas {
-      animation: chartSurfaceIn 820ms cubic-bezier(.16,.8,.24,1) both;
-    }
-
-    @keyframes chartSurfaceIn {
-      from { opacity: 0; transform: translate3d(0, 8px, 0) scaleY(0.94); }
-      to { opacity: 1; transform: translate3d(0, 0, 0) scaleY(1); }
-    }
-
-    .dot.live {
-      animation: breathe 2.4s ease-in-out infinite;
-    }
-
-    @keyframes breathe {
-      0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent), transparent 82%); }
-      50%      { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent), transparent 90%); }
-    }
-
-    .value,
-    .delta,
-    .comfort-title,
-    .stat-value,
-    .pill-value {
-      font-variant-numeric: tabular-nums;
-    }
-
-    @supports ((-webkit-background-clip: text) or (background-clip: text)) {
-      .value {
-        background: linear-gradient(180deg, var(--text), color-mix(in srgb, var(--text), var(--muted) 50%));
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-    }
-
-    .value {
-      transition: transform 260ms cubic-bezier(.2,.7,.2,1), filter 260ms ease;
-    }
-
-    .value.bump {
-      transform: scale(1.06);
-      filter: drop-shadow(0 10px 20px color-mix(in srgb, var(--accent), transparent 72%));
-    }
-
-    .comfort-title {
-      transition: color 420ms ease, transform 360ms cubic-bezier(.2,.7,.2,1);
-    }
-
-    .meter {
-      position: relative;
-    }
-
-    .meter::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, color-mix(in srgb, #fff, transparent 70%), transparent);
-      transform: translateX(-100%);
-      animation: meterGlide 2.8s ease-in-out infinite;
-      opacity: 0.55;
-    }
-
-    @keyframes meterGlide {
-      0%, 36% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-
-    .meter > span {
-      background: linear-gradient(90deg, color-mix(in srgb, var(--accent), transparent 35%), var(--accent));
-      transition: width 650ms cubic-bezier(.2,.7,.2,1);
-    }
-
-    .meter > span.warm {
-      background: linear-gradient(90deg, color-mix(in srgb, var(--warm), transparent 35%), var(--warm));
-    }
-
-    canvas {
-      transition: opacity 320ms ease, transform 420ms cubic-bezier(.2,.7,.2,1);
-    }
-
-    .motion-panel:hover canvas {
-      opacity: 0.98;
-      transform: translateY(-1px);
-    }
-
-    .range-tab {
-      transition: background 240ms ease, color 240ms ease, border-color 240ms ease, transform 240ms cubic-bezier(.2,.7,.2,1);
-    }
-
-    .range-tab:active {
-      transform: scale(0.96);
-    }
-
-    .range-tab.active {
-      box-shadow: 0 10px 24px color-mix(in srgb, var(--accent), transparent 78%);
-    }
-
-    .device-value,
-    #statusText {
-      transition: color 320ms ease;
-    }
-
-    @media (max-width: 720px) {
-      .motion-panel {
-        --scene-x: 0px;
-      }
-
-      .scene-rail {
-        top: 14px;
-        bottom: 14px;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      :root {
-        scroll-behavior: auto;
-      }
-
-      .ambient::before,
-      .ambient::after,
-      .sakura-petal,
-      .motion-panel,
-      .motion-depth,
-      .motion-panel.scene-active .value,
-      .motion-panel.scene-active .comfort-title,
-      .motion-panel.scene-active .delta,
-      .motion-panel.scene-active .insight-value,
-      .motion-panel.scene-seen .pill,
-      .motion-panel.scene-seen .quick-stat,
-      .motion-panel.scene-seen .insight,
-      .motion-panel.scene-seen .session-stat,
-      .motion-panel.scene-seen .session-item,
-      .weather-card.scene-seen .forecast-cell,
-      .history-card.scene-seen canvas,
-      .meter::after {
-        animation: none !important;
-        transition: none !important;
-        transform: none !important;
-        translate: none !important;
-      }
-
-      .motion-panel,
-      .motion-depth {
-        opacity: 1 !important;
-      }
-    }
     /* ===================== PREMIUM POLISH ===================== */
     :root {
       --font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -1936,19 +1401,33 @@
       }
     }
 
-    /* ===================== BENTO APP SHELL ===================== */
+    /* ===================== AUTOHOME APP SHELL ===================== */
+    :root {
+      --surface-soft: color-mix(in srgb, var(--panel), var(--bg) 46%);
+      --surface-raised: color-mix(in srgb, var(--panel), #ffffff 3%);
+      --shadow-soft: 0 14px 38px color-mix(in srgb, var(--shadow), transparent 34%);
+      --shadow-float: 0 20px 52px color-mix(in srgb, var(--shadow), transparent 16%);
+    }
+
     body {
       background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
 
     body * {
       letter-spacing: 0 !important;
     }
 
+    .app {
+      padding: 26px 28px 54px;
+    }
+
     .dashboard {
+      width: min(1180px, 100%);
       display: grid;
       grid-template-columns: repeat(12, minmax(0, 1fr));
-      gap: 12px;
+      gap: 14px;
       perspective: none;
       transform-style: flat;
     }
@@ -1959,7 +1438,94 @@
     }
 
     .topbar {
-      margin-bottom: 2px;
+      min-height: 76px;
+      margin: 0;
+      padding: 4px 2px 2px;
+      align-items: center;
+      order: 0;
+    }
+
+    .brand-kicker {
+      margin: 0 0 5px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+      font-size: clamp(30px, 3vw, 40px);
+      line-height: 1;
+      font-weight: 650;
+    }
+
+    .subtitle {
+      font-size: 14px;
+    }
+
+    .status {
+      min-width: 0;
+      max-width: min(440px, 48vw);
+      min-height: 48px;
+      padding: 8px 8px 8px 14px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+      text-align: left;
+    }
+
+    #statusText {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .topbar-actions {
+      display: flex;
+      margin-left: 4px;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
+      border: 0;
+      border-radius: 7px;
+      background: var(--surface-soft);
+      color: var(--text);
+      box-shadow: none;
+      cursor: pointer;
+      transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    .icon-btn:hover {
+      transform: none;
+      background: color-mix(in srgb, var(--accent), var(--surface-soft) 86%);
+      color: var(--accent);
+      border-color: transparent;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.94);
+    }
+
+    .icon-btn svg,
+    .dashboard-tab svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     h1,
@@ -1976,54 +1542,136 @@
     }
 
     .dashboard-nav {
+      --tab-offset: 0px;
       position: sticky;
-      top: 10px;
+      top: 12px;
       z-index: 30;
       justify-self: center;
       display: inline-grid;
-      grid-template-columns: repeat(3, minmax(112px, 1fr));
+      grid-template-columns: repeat(3, minmax(128px, 1fr));
       gap: 4px;
       padding: 4px;
-      border: 1px solid color-mix(in srgb, var(--line), transparent 38%);
+      border: 0;
       border-radius: 8px;
-      background: color-mix(in srgb, var(--panel), transparent 8%);
-      box-shadow: 0 10px 26px color-mix(in srgb, var(--shadow), transparent 30%);
-      backdrop-filter: blur(18px) saturate(125%);
-      -webkit-backdrop-filter: blur(18px) saturate(125%);
+      background: color-mix(in srgb, var(--panel), transparent 4%);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(20px) saturate(120%);
+      -webkit-backdrop-filter: blur(20px) saturate(120%);
+      order: 1;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .dashboard-nav::before {
+      content: "";
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 4px;
+      z-index: 0;
+      width: calc((100% - 16px) / 3);
+      border-radius: 6px;
+      background: var(--accent);
+      box-shadow:
+        0 8px 22px color-mix(in srgb, var(--accent), transparent 72%),
+        inset 0 1px 0 color-mix(in srgb, #ffffff, transparent 68%);
+      transform: translate3d(var(--tab-offset), 0, 0);
+      transition: transform 430ms cubic-bezier(.22, .82, .2, 1), box-shadow 240ms ease;
+      pointer-events: none;
     }
 
     .dashboard-tab {
       appearance: none;
-      min-height: 42px;
-      padding: 7px 14px;
+      position: relative;
+      z-index: 1;
+      min-height: 44px;
+      padding: 8px 14px;
       border: 0;
       border-radius: 6px;
       background: transparent;
       color: var(--muted);
       font: inherit;
       font-size: 13px;
-      font-weight: 720;
+      font-weight: 650;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      transition: background 220ms ease, color 220ms ease, transform 220ms ease;
+      gap: 7px;
+      overflow: hidden;
+      isolation: isolate;
+      transition: color 220ms ease, transform 260ms cubic-bezier(.2, .8, .2, 1), filter 220ms ease;
+    }
+
+    .dashboard-tab::before {
+      content: "";
+      position: absolute;
+      top: var(--press-y, 50%);
+      left: var(--press-x, 50%);
+      z-index: 0;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: color-mix(in srgb, #ffffff, transparent 72%);
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(.08);
+      pointer-events: none;
+    }
+
+    .dashboard-tab::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      z-index: 0;
+      border-radius: 5px;
+      background: radial-gradient(
+        circle at var(--hover-x, 50%) var(--hover-y, 50%),
+        color-mix(in srgb, var(--accent), transparent 76%) 0,
+        transparent 66%
+      );
+      opacity: 0;
+      transform: scale(.86);
+      transition: opacity 220ms ease, transform 320ms cubic-bezier(.2, .8, .2, 1);
+      pointer-events: none;
+    }
+
+    .dashboard-tab > span {
+      position: relative;
+      z-index: 1;
     }
 
     .dashboard-tab:hover {
       color: var(--text);
-      background: color-mix(in srgb, var(--panel), var(--bg) 36%);
+      background: transparent;
+      transform: translateY(-1px);
+    }
+
+    .dashboard-tab:hover::after {
+      opacity: 1;
+      transform: scale(1);
     }
 
     .dashboard-tab:active {
-      transform: scale(0.98);
+      transform: translateY(0) scale(.96);
     }
 
     .dashboard-tab.active {
       color: #ffffff;
-      background: var(--accent);
-      box-shadow: 0 7px 18px color-mix(in srgb, var(--accent), transparent 76%);
+      background: transparent;
+      box-shadow: none;
+      filter: drop-shadow(0 2px 8px color-mix(in srgb, var(--accent), transparent 64%));
+    }
+
+    .dashboard-tab.active::after {
+      background: radial-gradient(
+        circle at var(--hover-x, 50%) var(--hover-y, 50%),
+        color-mix(in srgb, #ffffff, transparent 78%) 0,
+        transparent 68%
+      );
+    }
+
+    .dashboard-tab.tab-press::before {
+      animation: dashboardTabRipple 480ms cubic-bezier(.16, .72, .28, 1) both;
     }
 
     .dashboard-tab:focus-visible,
@@ -2032,49 +1680,69 @@
       outline-offset: 2px;
     }
 
-    .dashboard-tab-mark {
-      font-family: var(--font-mono);
-      font-size: 9px;
-      font-weight: 700;
-      opacity: 0.72;
+    .dashboard-tab-icon {
+      width: 20px;
+      height: 20px;
+      display: inline-grid;
+      place-items: center;
+      transition: transform 280ms cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .dashboard-tab:hover .dashboard-tab-icon {
+      transform: translateY(-1px) scale(1.08);
+    }
+
+    .dashboard-tab.active .dashboard-tab-icon {
+      animation: dashboardTabIconPop 430ms cubic-bezier(.2, .8, .2, 1) both;
+    }
+
+    @keyframes dashboardTabRipple {
+      0% { opacity: .46; transform: translate(-50%, -50%) scale(.08); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(2.5); }
+    }
+
+    @keyframes dashboardTabIconPop {
+      0% { transform: scale(.78); }
+      58% { transform: scale(1.14); }
+      100% { transform: scale(1); }
     }
 
     [data-dashboard-view][hidden] {
       display: none !important;
     }
 
-    .dashboard > [data-dashboard-view]:not([hidden]) {
-      animation: dashboardViewEnter 360ms cubic-bezier(.2, .75, .2, 1) both;
+    .dashboard > .view-entering {
+      animation: dashboardViewEnter 300ms cubic-bezier(.2, .75, .2, 1) both;
     }
 
     @keyframes dashboardViewEnter {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(7px); }
       to { opacity: 1; transform: none; }
     }
 
     .dashboard[data-active-view="overview"] > .grid {
       grid-column: span 8;
-      order: 1;
+      order: 2;
     }
 
     .dashboard[data-active-view="overview"] > .comfort-card {
       grid-column: span 4;
-      order: 2;
+      order: 3;
     }
 
     .dashboard[data-active-view="overview"] > .weather-card {
       grid-column: span 7;
-      order: 3;
+      order: 4;
     }
 
     .dashboard[data-active-view="overview"] > .insights-card {
       grid-column: span 5;
-      order: 4;
+      order: 5;
     }
 
     .dashboard[data-active-view="overview"] > .system-status {
       grid-column: 1 / -1;
-      order: 5;
+      order: 6;
     }
 
     .dashboard[data-active-view="ac"] > [data-dashboard-view],
@@ -2083,25 +1751,33 @@
       margin-top: 0;
     }
 
-    .dashboard[data-active-view="data"] > .compare-grid {
+    .dashboard[data-active-view="ac"] > .ac-month-card {
       order: 2;
     }
 
-    .dashboard[data-active-view="data"] > .history-card:not(.chip-card) {
-      order: 1;
-    }
-
-    .dashboard[data-active-view="data"] > .chip-card {
+    .dashboard[data-active-view="ac"] > .ac-session-card {
       order: 3;
     }
 
-    .dashboard[data-active-view="data"] > .details {
+    .dashboard[data-active-view="data"] > .compare-grid {
+      order: 3;
+    }
+
+    .dashboard[data-active-view="data"] > .history-card:not(.chip-card) {
+      order: 2;
+    }
+
+    .dashboard[data-active-view="data"] > .chip-card {
       order: 4;
+    }
+
+    .dashboard[data-active-view="data"] > .details {
+      order: 5;
     }
 
     .grid[data-dashboard-view="overview"] {
       align-self: stretch;
-      gap: 12px;
+      gap: 14px;
     }
 
     .metric-card,
@@ -2113,19 +1789,41 @@
     .details,
     .ac-session-card,
     .system-status {
-      border-color: color-mix(in srgb, var(--line), transparent 38%);
-      box-shadow: 0 10px 28px color-mix(in srgb, var(--shadow), transparent 24%);
+      position: relative;
+      border: 0;
+      border-top: 0;
+      border-radius: 8px;
+      background: var(--surface-raised);
+      box-shadow: var(--shadow-soft);
+      transform: none;
+      overflow: hidden;
     }
 
     .metric-card {
-      min-height: 330px;
-      padding: 24px;
+      min-height: 318px;
+      padding: 26px;
+    }
+
+    .metric-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 26px;
+      left: 26px;
+      height: 3px;
+      border-radius: 0 0 3px 3px;
+      background: var(--warm);
+    }
+
+    .metric-card:nth-child(2)::before {
+      background: var(--accent);
     }
 
     .value {
-      margin-top: 7px;
-      font-size: 72px;
-      font-weight: 500;
+      margin-top: 12px;
+      font-size: clamp(70px, 7vw, 88px);
+      font-weight: 450;
+      line-height: 0.92;
       background: none;
       color: var(--text);
       -webkit-text-fill-color: currentColor;
@@ -2137,21 +1835,53 @@
     }
 
     .comfort-card {
-      min-height: 330px;
+      min-height: 318px;
       margin: 0;
-      padding: 26px;
+      padding: 28px;
       grid-template-columns: 1fr;
       align-content: space-between;
-      gap: 24px;
+      gap: 22px;
+      background: color-mix(in srgb, var(--panel), var(--accent) 5%);
+      color: var(--text);
+    }
+
+    .comfort-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 28px;
+      left: 28px;
+      height: 3px;
+      border-radius: 0 0 3px 3px;
+      background: var(--accent);
     }
 
     .comfort-title {
-      font-size: 48px;
-      font-weight: 650;
+      font-size: clamp(44px, 4.8vw, 62px);
+      font-weight: 600;
+      color: currentColor;
     }
 
     .comfort-copy {
       max-width: 34ch;
+      color: var(--muted);
+    }
+
+    .comfort-kicker {
+      color: var(--muted);
+    }
+
+    .comfort-title.good { color: var(--accent); }
+    .comfort-title.warm { color: var(--warm); }
+    .comfort-title.cool { color: var(--cool); }
+
+    .comfort-card .pill {
+      color: var(--text);
+      background: var(--surface-soft);
+    }
+
+    .comfort-card .pill-label {
+      color: var(--muted);
     }
 
     .quick-stat,
@@ -2164,7 +1894,7 @@
     .chart-reset,
     .range-tabs {
       border-color: transparent;
-      background: color-mix(in srgb, var(--panel), var(--bg) 42%);
+      background: var(--surface-soft);
       box-shadow: none;
     }
 
@@ -2179,22 +1909,112 @@
       font-size: 10px;
     }
 
+    .quick-stats {
+      gap: 7px;
+    }
+
+    .quick-stat {
+      min-width: 0;
+      min-height: 64px;
+      padding: 11px 12px;
+    }
+
+    .stat-value {
+      font-size: 16px;
+    }
+
     .weather-card,
     .insights-card {
       height: 100%;
       margin-top: 0;
+      padding: 24px;
+    }
+
+    .weather-card {
+      background: color-mix(in srgb, var(--panel), var(--cool) 5%);
+    }
+
+    .weather-table-wrap {
+      overflow: hidden;
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+
+    .weather-table {
+      table-layout: fixed;
+    }
+
+    .weather-table th,
+    .weather-table td {
+      border-color: color-mix(in srgb, var(--line), transparent 44%);
+    }
+
+    .weather-cond {
+      min-width: 0;
+      padding: 6px 10px 6px 6px;
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+
+    .insights-grid {
+      gap: 9px;
+    }
+
+    .insight {
+      min-height: 130px;
+      padding: 16px;
+      border-radius: 8px;
+    }
+
+    .compare-card {
+      min-height: 150px;
+      padding: 20px;
+    }
+
+    .history-card {
+      padding: 22px 24px;
+    }
+
+    #historyChart {
+      height: 250px;
+    }
+
+    #chipChart {
+      height: 150px;
+    }
+
+    .range-tabs {
+      padding: 4px;
+    }
+
+    .chart-hint {
+      display: none;
+    }
+
+    .range-tab {
+      min-width: 66px;
+      height: 34px;
+    }
+
+    .details {
+      padding: 18px 20px;
+    }
+
+    .detail-value {
+      font-size: 14px;
     }
 
     .system-status {
       overflow: hidden;
-      border: 1px solid color-mix(in srgb, var(--line), transparent 38%);
+      border: 0;
       border-radius: 8px;
       background: var(--panel);
+      box-shadow: var(--shadow-soft);
     }
 
     .system-status > summary {
       min-height: 72px;
-      padding: 16px 18px;
+      padding: 16px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -2242,19 +2062,100 @@
 
     .system-status .device-grid {
       margin: 0;
-      padding: 0 14px 14px;
+      padding: 0 16px 16px;
+      gap: 9px;
     }
 
     .system-status .device-card {
       min-height: 82px;
-      border-color: transparent;
-      background: color-mix(in srgb, var(--panel), var(--bg) 42%);
+      border: 0;
+      background: var(--surface-soft);
       box-shadow: none;
+    }
+
+    .system-status[open] > summary {
+      border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 56%);
+    }
+
+    .ui-reveal {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 460ms cubic-bezier(.2,.7,.2,1), transform 460ms cubic-bezier(.2,.7,.2,1);
+    }
+
+    .ui-reveal.ui-visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    .value {
+      transition: transform 180ms ease;
+    }
+
+    .value.bump {
+      transform: translateY(-2px);
+    }
+
+    .alert-warm {
+      box-shadow: 0 14px 38px color-mix(in srgb, var(--warm), transparent 84%);
+    }
+
+    .alert-humid {
+      box-shadow: 0 14px 38px color-mix(in srgb, var(--accent), transparent 84%);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .metric-card,
+      .comfort-card,
+      .weather-card,
+      .insights-card,
+      .compare-card,
+      .history-card,
+      .ac-session-card,
+      .system-status {
+        transition: box-shadow 200ms ease, translate 200ms ease;
+      }
+
+      .metric-card:hover,
+      .comfort-card:hover,
+      .weather-card:hover,
+      .insights-card:hover,
+      .compare-card:hover,
+      .history-card:hover,
+      .ac-session-card:hover,
+      .system-status:hover {
+        translate: 0 -2px;
+        box-shadow: var(--shadow-float);
+      }
+    }
+
+    @media (max-width: 960px) {
+      .dashboard[data-active-view="overview"] > .grid,
+      .dashboard[data-active-view="overview"] > .comfort-card,
+      .dashboard[data-active-view="overview"] > .weather-card,
+      .dashboard[data-active-view="overview"] > .insights-card {
+        grid-column: 1 / -1;
+      }
+
+      .comfort-card {
+        min-height: 250px;
+        grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+        align-items: center;
+      }
+
+      .weather-card,
+      .insights-card {
+        height: auto;
+      }
     }
 
     @media (max-width: 720px) {
       .app {
-        padding: 16px 14px calc(92px + env(safe-area-inset-bottom));
+        padding:
+          calc(18px + env(safe-area-inset-top))
+          max(14px, env(safe-area-inset-right))
+          calc(92px + env(safe-area-inset-bottom))
+          max(14px, env(safe-area-inset-left));
       }
 
       .dashboard {
@@ -2271,42 +2172,53 @@
       .topbar {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
-        gap: 12px;
+        gap: 14px;
+        min-height: 0;
+        padding: 0;
+      }
+
+      h1 {
+        font-size: 30px;
       }
 
       .status {
+        max-width: none;
         width: 100%;
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        display: flex;
         justify-content: stretch;
         text-align: left;
+      }
+
+      #statusText {
+        flex: 1;
       }
 
       .dashboard-nav {
         position: fixed;
         top: auto;
-        right: 12px;
+        right: max(12px, env(safe-area-inset-right));
         bottom: calc(10px + env(safe-area-inset-bottom));
-        left: 12px;
+        left: max(12px, env(safe-area-inset-left));
         width: auto;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         padding: 5px;
-        border-color: color-mix(in srgb, var(--line), transparent 18%);
+        border: 0;
         background: color-mix(in srgb, var(--panel), transparent 4%);
         box-shadow: 0 18px 48px color-mix(in srgb, var(--shadow), #000 18%);
       }
 
       .dashboard-tab {
         min-width: 0;
-        min-height: 48px;
+        min-height: 52px;
         padding: 6px 8px;
         flex-direction: column;
         gap: 2px;
         font-size: 11px;
       }
 
-      .dashboard-tab-mark {
-        font-size: 8px;
+      .dashboard-tab-icon {
+        width: 19px;
+        height: 19px;
       }
 
       .grid[data-dashboard-view="overview"] {
@@ -2315,19 +2227,41 @@
 
       .metric-card,
       .comfort-card {
-        min-height: 278px;
+        min-height: 260px;
       }
 
       .metric-card {
-        padding: 22px;
+        padding: 23px 20px 20px;
       }
 
       .value {
-        font-size: 64px;
+        font-size: clamp(68px, 21vw, 82px);
       }
 
       .comfort-title {
-        font-size: 40px;
+        font-size: 44px;
+      }
+
+      .comfort-card {
+        padding: 24px 20px;
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .quick-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .quick-stat {
+        min-height: 62px;
+        padding: 10px 8px;
+      }
+
+      .stat-label {
+        font-size: 9px;
+      }
+
+      .stat-value {
+        font-size: 14px;
       }
 
       .system-status .device-grid {
@@ -2342,43 +2276,741 @@
       .details {
         grid-template-columns: minmax(0, 1fr);
       }
+
+      .weather-card,
+      .insights-card,
+      .history-card,
+      .ac-session-card {
+        padding: 20px 16px;
+      }
+
+      .weather-head {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .weather-cond-text {
+        display: none;
+      }
+
+      .weather-cond {
+        flex: 0 0 auto;
+        padding: 4px;
+      }
+
+      .weather-table th,
+      .weather-table td {
+        padding: 10px 5px;
+      }
+
+      .weather-table thead th {
+        font-size: 9px;
+      }
+
+      .weather-table tbody th {
+        width: 24%;
+        font-size: 10px;
+      }
+
+      .weather-table tbody td {
+        font-size: 13px;
+      }
+
+      .forecast-strip {
+        grid-auto-columns: minmax(86px, 32%);
+      }
+
+      .insights-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .insight {
+        min-height: 122px;
+        padding: 14px 12px;
+      }
+
+      .insight-value {
+        font-size: 24px;
+      }
+
+      .history-head,
+      .history-actions {
+        width: 100%;
+      }
+
+      .range-tabs {
+        order: -1;
+        width: 100%;
+      }
+
+      .range-tab {
+        min-width: 0;
+        flex: 1;
+      }
+
+      #historyChart {
+        height: 220px;
+      }
+
+      #chipChart {
+        height: 140px;
+      }
+
+      .details {
+        gap: 0;
+        padding: 4px 18px;
+      }
+
+      .details > div {
+        padding: 14px 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--line), transparent 50%);
+      }
+
+      .details > div:last-child {
+        border-bottom: 0;
+      }
+    }
+
+    /* ===================== REACTIVE ENVIRONMENT EXPERIENCE ===================== */
+    :root {
+      --ambient-a: rgba(15, 139, 141, 0.08);
+      --ambient-b: rgba(45, 127, 184, 0.06);
+      --ambient-c: rgba(194, 106, 45, 0.025);
+    }
+
+    html[data-environment="hot"] {
+      --ambient-a: rgba(194, 106, 45, 0.14);
+      --ambient-b: rgba(232, 148, 86, 0.08);
+      --ambient-c: rgba(15, 139, 141, 0.035);
+    }
+
+    html[data-environment="cool"] {
+      --ambient-a: rgba(45, 127, 184, 0.13);
+      --ambient-b: rgba(58, 209, 201, 0.09);
+      --ambient-c: rgba(109, 94, 240, 0.035);
+    }
+
+    html[data-environment="humid"] {
+      --ambient-a: rgba(15, 139, 141, 0.12);
+      --ambient-b: rgba(109, 94, 240, 0.055);
+      --ambient-c: rgba(45, 127, 184, 0.045);
+    }
+
+    html[data-environment="offline"] {
+      --ambient-a: rgba(102, 112, 133, 0.06);
+      --ambient-b: rgba(194, 106, 45, 0.045);
+      --ambient-c: rgba(102, 112, 133, 0.025);
+    }
+
+    body {
+      isolation: isolate;
+    }
+
+    .environment-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      contain: strict;
+    }
+
+    .environment-layer::before,
+    .environment-layer::after {
+      content: "";
+      position: absolute;
+      inset: -18%;
+      will-change: transform;
+      transform: translate3d(0, 0, 0) scale(1.02);
+    }
+
+    .environment-layer::before {
+      background:
+        linear-gradient(132deg, var(--ambient-a) 0%, transparent 42%),
+        linear-gradient(318deg, var(--ambient-b) 0%, transparent 46%),
+        linear-gradient(24deg, transparent 56%, var(--ambient-c) 100%);
+      animation: ambientMeshDrift 24s ease-in-out infinite alternate;
+    }
+
+    .environment-layer::after {
+      background:
+        linear-gradient(72deg, transparent 34%, var(--ambient-c) 62%, transparent 83%),
+        linear-gradient(250deg, var(--ambient-b) 0%, transparent 36%);
+      opacity: 0.55;
+      animation: ambientMeshCounter 31s ease-in-out infinite alternate;
+    }
+
+    @keyframes ambientMeshDrift {
+      from { transform: translate3d(-2.5%, -1.5%, 0) scale(1.04); }
+      to { transform: translate3d(3%, 2%, 0) scale(1.09); }
+    }
+
+    @keyframes ambientMeshCounter {
+      from { transform: translate3d(2%, -2%, 0) scale(1.05); }
+      to { transform: translate3d(-2%, 2.5%, 0) scale(1.1); }
+    }
+
+    .status {
+      width: fit-content;
+      border-radius: 999px;
+      transition:
+        max-width 360ms cubic-bezier(.2, .8, .2, 1),
+        padding 360ms cubic-bezier(.2, .8, .2, 1),
+        background 260ms ease,
+        box-shadow 260ms ease,
+        transform 360ms cubic-bezier(.175, .885, .32, 1.18);
+    }
+
+    .status.status-live {
+      background: color-mix(in srgb, var(--panel), var(--accent) 4%);
+    }
+
+    .status.status-alert,
+    .status.status-hot {
+      max-width: min(570px, 54vw);
+      padding-left: 18px;
+      background: color-mix(in srgb, var(--panel), var(--warm) 9%);
+      box-shadow: 0 16px 42px color-mix(in srgb, var(--warm), transparent 84%);
+      transform: scale(1.015);
+    }
+
+    .status.status-hot .dot,
+    .status.status-alert .dot {
+      --dot-color: var(--warm);
+      background: var(--warm);
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--warm), transparent 80%);
+    }
+
+    .metric-card {
+      min-height: 276px;
+      padding: 20px 20px 18px;
+      gap: 8px;
+      justify-content: flex-start;
+    }
+
+    .grid[data-dashboard-view="overview"] {
+      align-self: start;
+    }
+
+    .metric-reading {
+      position: relative;
+      width: 100%;
+      height: 100px;
+      margin-top: 0;
+      display: grid;
+      place-items: end center;
+    }
+
+    .metric-gauge {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .gauge-track,
+    .gauge-progress {
+      fill: none;
+      stroke-width: 7;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .gauge-track {
+      stroke: color-mix(in srgb, var(--line), transparent 8%);
+    }
+
+    .gauge-progress {
+      stroke-dasharray: 0 100;
+      transition: stroke-dasharray 700ms cubic-bezier(.2, .8, .2, 1), stroke 240ms ease;
+      filter: drop-shadow(0 4px 7px color-mix(in srgb, currentColor, transparent 78%));
+    }
+
+    .gauge-warm { stroke: var(--warm); color: var(--warm); }
+    .gauge-humidity { stroke: var(--accent); color: var(--accent); }
+
+    .metric-reading .value-row {
+      position: relative;
+      z-index: 1;
+      justify-content: center;
+      padding-bottom: 0;
+      transform: translateY(-11px);
+    }
+
+    .metric-reading .value {
+      margin-top: 0;
+      font-size: clamp(58px, 5.2vw, 68px);
+      line-height: 0.9;
+    }
+
+    .metric-reading .unit {
+      font-size: 16px;
+    }
+
+    .metric-card .quick-stats {
+      margin-top: 0;
+    }
+
+    .metric-card .quick-stat {
+      min-height: 56px;
+      padding: 8px 10px;
+    }
+
+    .metric-card .meter {
+      display: none;
+    }
+
+    .metric-card canvas {
+      height: 44px;
+      margin-top: 2px;
+    }
+
+    @media (min-width: 961px) {
+      .dashboard[data-active-view="overview"] > .grid,
+      .grid[data-dashboard-view="overview"] {
+        align-self: stretch;
+        height: 100%;
+        align-items: stretch;
+      }
+
+      .grid[data-dashboard-view="overview"] .metric-card,
+      .dashboard[data-active-view="overview"] > .comfort-card {
+        min-height: 318px;
+        height: 100%;
+      }
+
+      .grid[data-dashboard-view="overview"] .metric-card {
+        justify-content: space-between;
+      }
+    }
+
+    .airflow-visual {
+      position: absolute;
+      inset: 0;
+      width: auto;
+      height: auto;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 700ms ease;
+      mask-image: radial-gradient(ellipse 108% 125% at 94% 14%, #000 0 48%, transparent 94%);
+      -webkit-mask-image: radial-gradient(ellipse 108% 125% at 94% 14%, #000 0 48%, transparent 94%);
+    }
+
+    .airflow-visual::before {
+      content: "";
+      position: absolute;
+      top: -20px;
+      right: -8px;
+      width: 260px;
+      height: 170px;
+      border-radius: 50%;
+      background: radial-gradient(
+        ellipse at 58% 42%,
+        color-mix(in srgb, var(--cool), transparent 72%) 0,
+        color-mix(in srgb, var(--cool), transparent 90%) 38%,
+        transparent 72%
+      );
+      transform: translate3d(0, 0, 0) scale(.92);
+      transform-origin: 58% 42%;
+    }
+
+    .airflow-plume {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .airflow-stream,
+    .cooling-wave {
+      fill: none;
+      stroke: color-mix(in srgb, var(--cool), transparent 28%);
+      vector-effect: non-scaling-stroke;
+    }
+
+    .airflow-stream {
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-dasharray: .18 .82;
+      stroke-dashoffset: 1;
+      opacity: 0;
+      will-change: stroke-dashoffset, opacity;
+    }
+
+    .cooling-wave {
+      stroke-width: 1.15;
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+      transform: scale(.16);
+      will-change: transform, opacity;
+    }
+
+    html.ac-active .ac-session-card:not([hidden]) .airflow-visual {
+      opacity: 0.88;
+    }
+
+    html.ac-active .ac-session-card:not([hidden]) .airflow-visual::before {
+      animation: coolingSourceBreath 3.8s ease-in-out infinite;
+    }
+
+    html.ac-active .ac-session-card:not([hidden]) .airflow-stream {
+      animation: airflowFanOut 7.8s cubic-bezier(.32, .04, .2, 1) infinite;
+      animation-delay: var(--airflow-delay);
+    }
+
+    html.ac-active .ac-session-card:not([hidden]) .cooling-wave {
+      animation: coolingWaveExpand 6.6s cubic-bezier(.18, .56, .22, 1) infinite;
+      animation-delay: var(--airflow-delay);
+    }
+
+    html.ac-active .ac-live-badge {
+      animation: coolingBadgePulse 3.8s ease-in-out infinite;
+    }
+
+    @keyframes airflowFanOut {
+      0% { stroke-dashoffset: 1; opacity: 0; }
+      14% { opacity: var(--airflow-opacity, .62); }
+      66% { opacity: .28; }
+      100% { stroke-dashoffset: -.28; opacity: 0; }
+    }
+
+    @keyframes coolingWaveExpand {
+      0% { transform: scale(.16); opacity: 0; }
+      15% { opacity: .36; }
+      68% { opacity: .13; }
+      100% { transform: scale(22, 10); opacity: 0; }
+    }
+
+    @keyframes coolingSourceBreath {
+      0%, 100% { opacity: .56; transform: translate3d(0, 0, 0) scale(.92); }
+      50% { opacity: .9; transform: translate3d(-6px, 5px, 0) scale(1.08); }
+    }
+
+    @keyframes coolingBadgePulse {
+      0%, 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--cool), transparent 72%), 0 0 0 transparent; }
+      50% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--cool), transparent 54%), 0 0 24px color-mix(in srgb, var(--cool), transparent 78%); }
+    }
+
+    .story-head,
+    .session-grid,
+    .session-list {
+      position: relative;
+      z-index: 1;
+    }
+
+    .ac-live-badge {
+      min-height: 34px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--cool), transparent 84%);
+      color: var(--cool);
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 750;
+      white-space: nowrap;
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--cool), transparent 72%);
+    }
+
+    .ac-live-badge[hidden] {
+      display: none;
+    }
+
+    body.is-loading #statusText,
+    body.is-loading .value,
+    body.is-loading .device-value,
+    body.is-loading .pill-value,
+    body.is-loading .stat-value,
+    body.is-loading .insight-value,
+    body.is-loading .detail-value {
+      color: transparent !important;
+      -webkit-text-fill-color: transparent !important;
+      border-radius: 5px;
+      background-image: linear-gradient(
+        105deg,
+        color-mix(in srgb, var(--surface-soft), var(--text) 1%) 18%,
+        color-mix(in srgb, var(--surface-soft), var(--text) 8%) 42%,
+        color-mix(in srgb, var(--surface-soft), var(--text) 1%) 66%
+      ) !important;
+      background-size: 220% 100% !important;
+      animation: skeletonShimmer 1.45s linear infinite !important;
+    }
+
+    body.is-loading .gauge-progress {
+      stroke-dasharray: 18 100;
+      opacity: 0.35;
+    }
+
+    @keyframes skeletonShimmer {
+      from { background-position: 180% 0; }
+      to { background-position: -40% 0; }
+    }
+
+    .dashboard {
+      view-transition-name: autohome-dashboard;
+    }
+
+    ::view-transition-old(autohome-dashboard),
+    ::view-transition-new(autohome-dashboard) {
+      animation-duration: 320ms;
+      animation-timing-function: cubic-bezier(.2, .78, .2, 1);
+    }
+
+    ::view-transition-old(autohome-dashboard) {
+      animation-name: dashboardFadeOut;
+    }
+
+    ::view-transition-new(autohome-dashboard) {
+      animation-name: dashboardFadeIn;
+    }
+
+    @keyframes dashboardFadeOut {
+      to { opacity: 0; transform: translateY(-5px) scale(.995); filter: blur(2px); }
+    }
+
+    @keyframes dashboardFadeIn {
+      from { opacity: 0; transform: translateY(8px) scale(.995); filter: blur(3px); }
+      to { opacity: 1; transform: none; filter: none; }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .metric-card,
+      .comfort-card,
+      .weather-card,
+      .insights-card,
+      .compare-card,
+      .history-card,
+      .ac-session-card,
+      .system-status {
+        transition:
+          box-shadow 420ms cubic-bezier(.175, .885, .32, 1.18),
+          translate 420ms cubic-bezier(.175, .885, .32, 1.18),
+          border-color 240ms ease;
+      }
+
+      .metric-card:hover,
+      .comfort-card:hover,
+      .weather-card:hover,
+      .insights-card:hover,
+      .compare-card:hover,
+      .history-card:hover,
+      .ac-session-card:hover,
+      .system-status:hover {
+        translate: 0 -4px;
+      }
+    }
+
+    html[data-theme="dark"] .metric-card,
+    html[data-theme="dark"] .comfort-card,
+    html[data-theme="dark"] .weather-card,
+    html[data-theme="dark"] .insights-card,
+    html[data-theme="dark"] .compare-card,
+    html[data-theme="dark"] .history-card,
+    html[data-theme="dark"] .details,
+    html[data-theme="dark"] .ac-session-card,
+    html[data-theme="dark"] .system-status,
+    html[data-theme="dark"] .status,
+    html[data-theme="dark"] .dashboard-nav {
+      background-color: color-mix(in srgb, var(--panel), transparent 15%);
+      backdrop-filter: blur(15px) saturate(118%);
+      -webkit-backdrop-filter: blur(15px) saturate(118%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html:not([data-theme="light"]) .metric-card,
+      html:not([data-theme="light"]) .comfort-card,
+      html:not([data-theme="light"]) .weather-card,
+      html:not([data-theme="light"]) .insights-card,
+      html:not([data-theme="light"]) .compare-card,
+      html:not([data-theme="light"]) .history-card,
+      html:not([data-theme="light"]) .details,
+      html:not([data-theme="light"]) .ac-session-card,
+      html:not([data-theme="light"]) .system-status,
+      html:not([data-theme="light"]) .status,
+      html:not([data-theme="light"]) .dashboard-nav {
+        background-color: color-mix(in srgb, var(--panel), transparent 15%);
+        backdrop-filter: blur(15px) saturate(118%);
+        -webkit-backdrop-filter: blur(15px) saturate(118%);
+      }
+    }
+
+    html.page-hidden .environment-layer::before,
+    html.page-hidden .environment-layer::after,
+    html.page-hidden .meteo-icon,
+    html.page-hidden .meteo-icon *,
+    html.page-hidden .dot.live,
+    html.page-hidden .dot.live::before,
+    html.page-hidden .dot.live::after,
+    html.page-hidden .airflow-visual::before,
+    html.page-hidden .airflow-stream,
+    html.page-hidden .cooling-wave,
+    html.page-hidden .ac-live-badge {
+      animation-play-state: paused !important;
+    }
+
+    .motion-paused .meteo-icon,
+    .motion-paused .meteo-icon *,
+    .motion-paused .airflow-visual::before,
+    .motion-paused .airflow-stream,
+    .motion-paused .cooling-wave,
+    .motion-paused .ac-live-badge {
+      animation-play-state: paused !important;
+      will-change: auto !important;
+    }
+
+    @media (max-width: 720px) {
+      .status.status-alert,
+      .status.status-hot {
+        max-width: none;
+        transform: none;
+      }
+
+      .metric-card {
+        min-height: 268px;
+        padding: 19px 16px 16px;
+      }
+
+      .metric-reading {
+        height: 96px;
+      }
+
+      .metric-reading .value {
+        font-size: clamp(54px, 16.5vw, 64px);
+      }
+
+      .metric-reading .value-row {
+        transform: translateY(-10px);
+      }
+
+      .metric-card canvas {
+        height: 42px;
+      }
+
+      .airflow-visual {
+        inset: 0;
+        width: auto;
+        opacity: 0;
+        mask-image: radial-gradient(ellipse 145% 108% at 82% 20%, #000 0 50%, transparent 94%);
+        -webkit-mask-image: radial-gradient(ellipse 145% 108% at 82% 20%, #000 0 50%, transparent 94%);
+      }
+
+      .airflow-stream {
+        stroke-width: 1.35;
+      }
+
+      .airflow-stream:nth-of-type(n + 5) {
+        display: none;
+      }
+
+      .ac-live-badge {
+        align-self: flex-end;
+      }
+
+      html[data-theme="dark"] .metric-card,
+      html[data-theme="dark"] .comfort-card,
+      html[data-theme="dark"] .weather-card,
+      html[data-theme="dark"] .insights-card,
+      html[data-theme="dark"] .history-card,
+      html[data-theme="dark"] .ac-session-card,
+      html:not([data-theme="light"]) .metric-card,
+      html:not([data-theme="light"]) .comfort-card,
+      html:not([data-theme="light"]) .weather-card,
+      html:not([data-theme="light"]) .insights-card,
+      html:not([data-theme="light"]) .history-card,
+      html:not([data-theme="light"]) .ac-session-card {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .dashboard > [data-dashboard-view]:not([hidden]) {
+      .dashboard > .view-entering,
+      .ui-reveal,
+      .environment-layer::before,
+      .environment-layer::after,
+      .airflow-visual::before,
+      .airflow-stream,
+      .cooling-wave,
+      .ac-live-badge,
+      body.is-loading #statusText,
+      body.is-loading .value,
+      body.is-loading .device-value,
+      body.is-loading .pill-value,
+      body.is-loading .stat-value,
+      body.is-loading .insight-value,
+      body.is-loading .detail-value {
+        animation: none !important;
+        transition: none !important;
+        opacity: 1;
+        transform: none;
+      }
+
+      ::view-transition-old(autohome-dashboard),
+      ::view-transition-new(autohome-dashboard) {
         animation: none;
+      }
+
+      .dot.live,
+      .dashboard-tab,
+      .dashboard-tab-icon,
+      .dashboard-tab::before,
+      .dashboard-tab::after,
+      .dashboard-nav::before {
+        animation: none !important;
+        transition: none !important;
+      }
+
+      .dot.live::before,
+      .dot.live::after {
+        opacity: 0 !important;
       }
     }
   </style>
 </head>
-<body>
+<body class="is-loading">
+  <div class="environment-layer" aria-hidden="true"></div>
   <main class="app">
     <section class="dashboard" data-active-view="overview" aria-label="Bảng điều khiển cảm biến phòng">
       <div class="topbar">
         <div>
+          <p class="brand-kicker">AutoHome / Trực tiếp</p>
           <h1>Phòng của Long</h1>
           <p class="subtitle">Nhiệt độ và độ ẩm theo thời gian thực</p>
         </div>
-        <div class="status">
+        <div id="statusPill" class="status status-loading">
           <span id="statusDot" class="dot" aria-hidden="true"></span>
           <span id="statusText">Chưa có dữ liệu</span>
           <div class="topbar-actions">
-            <button id="settingsBtn" class="icon-btn" type="button" title="Cài đặt" aria-label="Cài đặt">⚙</button>
+            <button id="settingsBtn" class="icon-btn" type="button" title="Cài đặt" aria-label="Cài đặt">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.6a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.6a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2Z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
 
       <nav class="dashboard-nav" aria-label="Điều hướng dashboard">
         <button class="dashboard-tab active" type="button" data-dashboard-tab="overview" aria-pressed="true">
-          <span class="dashboard-tab-mark" aria-hidden="true">01</span>
+          <span class="dashboard-tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+          </span>
           <span>Tổng quan</span>
         </button>
         <button class="dashboard-tab" type="button" data-dashboard-tab="ac" aria-pressed="false">
-          <span class="dashboard-tab-mark" aria-hidden="true">02</span>
+          <span class="dashboard-tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M3 8h11a2 2 0 1 0-2-2"/><path d="M5 12h14a2 2 0 1 1-2 2"/><path d="M3 16h8a2 2 0 1 1-2 2"/></svg>
+          </span>
           <span>Điều hòa</span>
         </button>
         <button class="dashboard-tab" type="button" data-dashboard-tab="data" aria-pressed="false">
-          <span class="dashboard-tab-mark" aria-hidden="true">03</span>
+          <span class="dashboard-tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 4-4 3 2 5-6"/></svg>
+          </span>
           <span>Biểu đồ</span>
         </button>
       </nav>
@@ -2450,9 +3082,15 @@
         <article class="metric-card">
           <div>
             <p class="metric-label">Nhiệt độ</p>
-            <div class="value-row">
-              <span id="temperature" class="value">--.-</span>
-              <span class="unit">&deg;C</span>
+            <div class="metric-reading">
+              <svg class="metric-gauge" viewBox="0 0 240 124" preserveAspectRatio="none" aria-hidden="true">
+                <path class="gauge-track" pathLength="100" d="M20 110 A100 100 0 0 1 220 110"></path>
+                <path id="tempGauge" class="gauge-progress gauge-warm" pathLength="100" d="M20 110 A100 100 0 0 1 220 110"></path>
+              </svg>
+              <div class="value-row">
+                <span id="temperature" class="value">--.-</span>
+                <span class="unit">&deg;C</span>
+              </div>
             </div>
             <div class="quick-stats">
               <div class="quick-stat">
@@ -2478,9 +3116,15 @@
         <article class="metric-card">
           <div>
             <p class="metric-label">Độ ẩm</p>
-            <div class="value-row">
-              <span id="humidity" class="value">--</span>
-              <span class="unit">%</span>
+            <div class="metric-reading">
+              <svg class="metric-gauge" viewBox="0 0 240 124" preserveAspectRatio="none" aria-hidden="true">
+                <path class="gauge-track" pathLength="100" d="M20 110 A100 100 0 0 1 220 110"></path>
+                <path id="humidityGauge" class="gauge-progress gauge-humidity" pathLength="100" d="M20 110 A100 100 0 0 1 220 110"></path>
+              </svg>
+              <div class="value-row">
+                <span id="humidity" class="value">--</span>
+                <span class="unit">%</span>
+              </div>
             </div>
             <div class="quick-stats">
               <div class="quick-stat">
@@ -2507,7 +3151,7 @@
       <section class="weather-card" data-dashboard-view="overview" aria-label="So sánh trong phòng và ngoài trời">
         <div class="weather-head">
           <div>
-            <p class="compare-label">Trong phòng vs Ngoài trời</p>
+            <p class="compare-label">Trong phòng và ngoài trời</p>
             <p id="weatherMeta" class="compare-copy">Đang tải thời tiết ngoài trời…</p>
           </div>
           <div class="weather-cond" aria-hidden="true">
@@ -2634,12 +3278,25 @@
       </section>
 
       <section class="ac-session-card" data-dashboard-view="ac" aria-label="Phiên điều hoà hôm nay" hidden>
+        <div class="airflow-visual" aria-hidden="true">
+          <svg class="airflow-plume" viewBox="0 0 1200 360" preserveAspectRatio="none">
+            <ellipse class="cooling-wave" cx="1128" cy="48" rx="28" ry="18" style="--airflow-delay: -0.4s;"></ellipse>
+            <ellipse class="cooling-wave" cx="1128" cy="48" rx="28" ry="18" style="--airflow-delay: -2.6s;"></ellipse>
+            <ellipse class="cooling-wave" cx="1128" cy="48" rx="28" ry="18" style="--airflow-delay: -4.8s;"></ellipse>
+            <path class="airflow-stream" pathLength="1" style="--airflow-delay: -0.2s; --airflow-opacity: .72;" d="M1128 48 C1010 30 932 36 834 66 C672 116 545 98 386 104 C232 110 116 142 0 178"></path>
+            <path class="airflow-stream" pathLength="1" style="--airflow-delay: -1.8s; --airflow-opacity: .64;" d="M1128 48 C1014 52 948 78 844 116 C681 176 510 158 344 194 C204 224 99 256 0 280"></path>
+            <path class="airflow-stream" pathLength="1" style="--airflow-delay: -3.4s; --airflow-opacity: .54;" d="M1128 48 C1038 76 982 118 892 166 C736 248 562 230 402 282 C292 318 190 342 82 354"></path>
+            <path class="airflow-stream" pathLength="1" style="--airflow-delay: -4.9s; --airflow-opacity: .58;" d="M1128 48 C1028 18 942 8 824 26 C664 50 540 76 390 62 C244 48 120 72 0 108"></path>
+            <path class="airflow-stream" pathLength="1" style="--airflow-delay: -6.1s; --airflow-opacity: .48;" d="M1128 48 C1052 96 1022 154 916 214 C756 304 594 288 454 332"></path>
+          </svg>
+        </div>
         <div class="story-head">
           <div>
-            <p class="story-kicker">AC Sessions</p>
+            <p class="story-kicker">Nhật ký điều hòa</p>
             <h2 class="story-title">Phiên điều hoà hôm nay</h2>
             <p id="acSessionSummary" class="story-copy">Đang suy luận theo chênh lệch trong phòng và ngoài trời.</p>
           </div>
+          <span id="acLiveBadge" class="ac-live-badge" hidden>Đang làm mát</span>
         </div>
         <div class="session-grid">
           <div class="session-stat">
@@ -2669,7 +3326,7 @@
               <span class="chart-hint-desktop">Cuộn để zoom · kéo để pan</span>
               <span class="chart-hint-touch">Chụm 2 ngón để zoom · 1 ngón để kéo</span>
             </span>
-            <button id="historyResetZoom" class="chart-reset" type="button">Reset</button>
+            <button id="historyResetZoom" class="chart-reset" type="button">Đặt lại</button>
             <div class="range-tabs" aria-label="Chọn khoảng lịch sử">
               <button class="range-tab" type="button" data-range="six">6h</button>
               <button class="range-tab active" type="button" data-range="day">24h</button>
@@ -2837,6 +3494,28 @@
     }
     let settings = loadSettings();
 
+    function isDarkTheme() {
+      if (settings.theme === 'dark') return true;
+      if (settings.theme === 'light') return false;
+      return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+
+    function updateThemeColor() {
+      const themeMeta = document.querySelector('meta[name="theme-color"]');
+      if (!themeMeta) return;
+      const tone = document.documentElement.dataset.environment || 'normal';
+      const colors = isDarkTheme()
+        ? { normal: '#0b0e15', hot: '#25150f', cool: '#0a2028', humid: '#102225', offline: '#12151b' }
+        : { normal: '#f4f6f9', hot: '#faeee7', cool: '#eaf5f8', humid: '#edf7f5', offline: '#f1f2f4' };
+      themeMeta.setAttribute('content', colors[tone] || colors.normal);
+    }
+
+    function hapticFeedback(duration = 10) {
+      try {
+        if (navigator.vibrate) navigator.vibrate(duration);
+      } catch (error) {}
+    }
+
     function applyTheme() {
       const root = document.documentElement;
       if (settings.theme === 'light' || settings.theme === 'dark') {
@@ -2844,6 +3523,7 @@
       } else {
         root.removeAttribute('data-theme');
       }
+      updateThemeColor();
     }
     applyTheme();
 
@@ -2892,6 +3572,8 @@
       outdoorLoadedAt: 0,
       acMonthly: null,
       acMonthlyAt: 0,
+      acNow: false,
+      environmentTone: 'normal',
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
@@ -2900,6 +3582,7 @@
     };
 
     const els = {
+      statusPill: document.getElementById('statusPill'),
       statusDot: document.getElementById('statusDot'),
       statusText: document.getElementById('statusText'),
       deviceStatus: document.getElementById('deviceStatus'),
@@ -2926,6 +3609,8 @@
       humidityMinToday: document.getElementById('humidityMinToday'),
       humidityMaxToday: document.getElementById('humidityMaxToday'),
       humidityTrend1h: document.getElementById('humidityTrend1h'),
+      tempGauge: document.getElementById('tempGauge'),
+      humidityGauge: document.getElementById('humidityGauge'),
       tempMeter: document.getElementById('tempMeter'),
       humidityMeter: document.getElementById('humidityMeter'),
       tempChart: document.getElementById('tempChart'),
@@ -2986,7 +3671,8 @@
       acSessionCount: document.getElementById('acSessionCount'),
       acSessionTotal: document.getElementById('acSessionTotal'),
       acSessionLongest: document.getElementById('acSessionLongest'),
-      acSessionList: document.getElementById('acSessionList')
+      acSessionList: document.getElementById('acSessionList'),
+      acLiveBadge: document.getElementById('acLiveBadge')
     };
 
     function ensureDemoHistory() {
@@ -3608,12 +4294,67 @@
       };
     }
 
+    function inferCurrentAcState(reading) {
+      const temperature = finiteNumber(reading.temperatureC);
+      const humidity = finiteNumber(reading.humidity);
+      if (!reading.deviceOnline || !reading.sensorOnline || temperature === null || humidity === null) return false;
+
+      const outdoor = state.outdoor;
+      if (outdoor && !outdoor.error) {
+        const outdoorTemp = finiteNumber(outdoor.temperatureC);
+        const outdoorHumidity = finiteNumber(outdoor.humidity);
+        if (outdoorTemp !== null && outdoorHumidity !== null) {
+          return isAcOn(temperature, humidity, outdoorTemp, outdoorHumidity);
+        }
+      }
+
+      const byHour = outdoorHourMap();
+      const latest = state.latestReadingForHistory;
+      return Boolean(byHour && latest && acSampleIsOn(latest, byHour) === true);
+    }
+
+    function updateExperienceState(reading) {
+      const root = document.documentElement;
+      const temperature = finiteNumber(reading.temperatureC);
+      const humidity = finiteNumber(reading.humidity);
+      const deviceOnline = Boolean(reading.deviceOnline);
+      const sensorOnline = Boolean(reading.sensorOnline);
+
+      state.acNow = inferCurrentAcState(reading);
+      root.classList.toggle('ac-active', state.acNow);
+      if (els.acLiveBadge) {
+        els.acLiveBadge.hidden = !state.acNow;
+        els.acLiveBadge.textContent = state.acNow ? 'Đang làm mát' : 'Đang tắt';
+      }
+
+      let tone = 'normal';
+      if (!deviceOnline || !sensorOnline || temperature === null || humidity === null) tone = 'offline';
+      else if (temperature >= settings.hotAbove) tone = 'hot';
+      else if (humidity >= settings.humidHigh) tone = 'humid';
+      else if (state.acNow || temperature <= settings.coolBelow) tone = 'cool';
+
+      state.environmentTone = tone;
+      root.dataset.environment = tone;
+      updateThemeColor();
+    }
+
+    function setCanvasGlow(ctx, color, ratio, strength = 5) {
+      if (!isDarkTheme()) return;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = Math.min(16, strength * Math.max(1, ratio));
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+    }
+
     function updateMeters(reading) {
       const temperature = finiteNumber(reading.temperatureC);
       const humidity = finiteNumber(reading.humidity);
       const tempPercent = temperature === null ? 0 : clamp(((temperature - 16) / 20) * 100, 0, 100);
-      els.tempMeter.style.width = tempPercent + '%';
-      els.humidityMeter.style.width = humidity === null ? '0%' : clamp(humidity, 0, 100) + '%';
+      const humidityPercent = humidity === null ? 0 : clamp(humidity, 0, 100);
+      if (els.tempMeter) els.tempMeter.style.width = tempPercent + '%';
+      if (els.humidityMeter) els.humidityMeter.style.width = humidityPercent + '%';
+      if (els.tempGauge) els.tempGauge.style.strokeDasharray = `${tempPercent.toFixed(1)} 100`;
+      if (els.humidityGauge) els.humidityGauge.style.strokeDasharray = `${humidityPercent.toFixed(1)} 100`;
     }
 
     function updateAlertMotion(temperature, humidity) {
@@ -3658,23 +4399,30 @@
 
       const min = Math.min(...points);
       const max = Math.max(...points);
-      const span = Math.max(0.8, max - min);
+      const rawSpan = max - min;
+      const minimumSpan = key === 'humidity' ? 4 : 0.5;
+      const span = Math.max(minimumSpan, rawSpan * 1.25);
+      const scaleMin = ((min + max) / 2) - (span / 2);
       const pad = 8 * (window.devicePixelRatio || 1);
 
-      ctx.lineWidth = 2.5 * (window.devicePixelRatio || 1);
+      const ratio = window.devicePixelRatio || 1;
+      ctx.save();
+      ctx.lineWidth = 2.5 * ratio;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.strokeStyle = color;
+      setCanvasGlow(ctx, color, ratio, 4.5);
       ctx.beginPath();
 
       points.forEach((value, index) => {
         const x = (index / (points.length - 1)) * (width - pad * 2) + pad;
-        const y = height - pad - ((value - min) / span) * (height - pad * 2);
+        const y = height - pad - ((value - scaleMin) / span) * (height - pad * 2);
         if (index === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       });
 
       ctx.stroke();
+      ctx.restore();
     }
 
     function selectedHistoryStartMs(now = Date.now()) {
@@ -3834,6 +4582,7 @@
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.strokeStyle = color;
+      setCanvasGlow(ctx, color, ratio, 4);
       segments.forEach(seg => {
         if (seg.length < 1) return;
         ctx.beginPath();
@@ -4434,10 +5183,26 @@
       const deviceOnline = Boolean(reading.deviceOnline);
       const isLive = Boolean(reading.sensorOnline);
       const isDemo = reading.source === 'Demo';
+      const temperature = finiteNumber(reading.temperatureC);
+      const tone = state.environmentTone || 'normal';
       els.statusDot.classList.toggle('live', deviceOnline);
-      els.statusText.textContent = !deviceOnline
+      let statusText = !deviceOnline
         ? (reading.cloudMode ? 'ESP32 offline · cloud đã cũ' : 'ESP32 offline')
         : (isLive ? 'ESP32 online · SHT30 online' : (isDemo ? 'Dữ liệu demo' : 'ESP32 online · cảm biến offline'));
+      if (deviceOnline && isLive && tone === 'hot' && temperature !== null) {
+        statusText = `ESP32 online · phòng nóng ${temperature.toFixed(1)}°C`;
+      } else if (deviceOnline && isLive && tone === 'humid') {
+        statusText = 'ESP32 online · độ ẩm đang cao';
+      } else if (deviceOnline && isLive && state.acNow) {
+        statusText = 'ESP32 online · điều hòa đang làm mát';
+      }
+      els.statusText.textContent = statusText;
+      if (els.statusPill) {
+        els.statusPill.classList.remove('status-loading');
+        els.statusPill.classList.toggle('status-live', deviceOnline && isLive);
+        els.statusPill.classList.toggle('status-alert', !deviceOnline || (!isLive && !isDemo));
+        els.statusPill.classList.toggle('status-hot', tone === 'hot');
+      }
       els.source.textContent = !deviceOnline
         ? (reading.cloudMode ? 'Supabase' : 'Mất kết nối ESP32')
         : (reading.cloudMode ? (isLive ? 'Supabase · SHT30' : 'Supabase') : (isLive ? 'SHT30' : (isDemo ? 'Demo' : 'Chưa có cảm biến')));
@@ -4557,6 +5322,7 @@
       }
       const displayStats = reading.stats || buildHistoryStats();
       renderOutdoorComparison(reading);
+      updateExperienceState(reading);
       renderInsights(reading);
       renderAcMonthly();
       renderAcSessions();
@@ -4572,6 +5338,9 @@
       updateStatus(reading);
       updateStats(reading.stats, reading);
       els.appVersion.textContent = reading.appVersion || '--';
+      if (document.body.classList.contains('is-loading')) {
+        requestAnimationFrame(() => document.body.classList.remove('is-loading'));
+      }
 
       if (temperature === null || humidity === null) {
         els.temperature.textContent = '--.-';
@@ -4642,6 +5411,7 @@
 
     if (els.historyResetZoom) {
       els.historyResetZoom.addEventListener('click', () => {
+        hapticFeedback(10);
         resetHistoryZoom();
         hideHistoryTooltip();
         updateHistorySummary(buildHistoryStats());
@@ -5336,18 +6106,7 @@
           els.acValue.className = 'insight-value';
           els.acCopy.textContent = 'Chưa đủ dữ liệu hôm nay để suy luận.';
         } else {
-          // Trạng thái hiện tại: mẫu mới nhất so với ngoài trời ngay lúc này
-          const usable = tp.filter(p => acSampleIsOn(p, byHour) !== null);
-          const latest = usable.length ? usable[usable.length - 1] : null;
-          let acNow = false;
-          if (latest) {
-            const o = state.outdoor;
-            if (o && !o.error && o.temperatureC !== null && o.humidity !== null) {
-              acNow = isAcOn(latest.temperatureC, latest.humidity, o.temperatureC, o.humidity);
-            } else {
-              acNow = acSampleIsOn(latest, byHour) === true;
-            }
-          }
+          const acNow = state.acNow;
           els.acValue.textContent = day.hours.toFixed(1) + ' giờ';
           els.acValue.className = 'insight-value ' + (acNow ? 'cool' : 'good');
           els.acCopy.textContent = (acNow ? 'Có vẻ đang BẬT. ' : 'Có vẻ đang tắt. ')
@@ -5418,239 +6177,34 @@
       requestAnimationFrame(frame);
     }
 
-    // Ambient background, scroll progress, card glow, and staggered reveal.
+    // Lightweight in-view reveal. No scroll transforms, so charts keep stable geometry.
     (function setupMotion() {
-      const reduceMotion = Boolean(window.matchMedia
-        && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      {
+        const reduced = Boolean(window.matchMedia
+          && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        const blocks = Array.from(document.querySelectorAll(
+          '.topbar, .dashboard-nav, .system-status, .comfort-card, .grid, .weather-card, .insights-card, .compare-grid, .ac-session-card, .history-card, .details'
+        ));
 
-      if (!document.querySelector('.ambient')) {
-        const amb = document.createElement('div');
-        amb.className = 'ambient';
-        amb.setAttribute('aria-hidden', 'true');
-        document.body.prepend(amb);
-      }
+        const reveal = (element) => element.classList.add('ui-visible');
+        blocks.forEach((element) => element.classList.add('ui-reveal'));
 
-      if (!reduceMotion && !document.querySelector('.sakura-field')) {
-        const field = document.createElement('div');
-        field.className = 'sakura-field';
-        field.setAttribute('aria-hidden', 'true');
-        const petalCount = window.matchMedia && window.matchMedia('(max-width: 720px)').matches ? 8 : 14;
-        for (let i = 0; i < petalCount; i++) {
-          const petal = document.createElement('span');
-          petal.className = 'sakura-petal';
-          const size = 7 + Math.random() * 10;
-          const drift = -52 + Math.random() * 104;
-          petal.style.setProperty('--x', `${Math.random() * 100}%`);
-          petal.style.setProperty('--size', `${size.toFixed(1)}px`);
-          petal.style.setProperty('--dur', `${12 + Math.random() * 16}s`);
-          petal.style.setProperty('--delay', `${(-Math.random() * 18).toFixed(2)}s`);
-          petal.style.setProperty('--drift', `${drift.toFixed(1)}px`);
-          petal.style.setProperty('--drift-end', `${(-drift * 0.58 + (-22 + Math.random() * 44)).toFixed(1)}px`);
-          petal.style.setProperty('--rot', `${Math.round(Math.random() * 360)}deg`);
-          petal.style.setProperty('--alpha', `${(0.34 + Math.random() * 0.42).toFixed(2)}`);
-          field.appendChild(petal);
-        }
-        document.body.prepend(field);
-      }
-
-      if (!document.querySelector('.scroll-progress')) {
-        const progress = document.createElement('div');
-        progress.className = 'scroll-progress';
-        progress.setAttribute('aria-hidden', 'true');
-        document.body.prepend(progress);
-      }
-
-      const root = document.documentElement;
-      const scenePalettes = [
-        ['#3ad1c9', '#e89456'],
-        ['#77bdf2', '#ff9fbe'],
-        ['#a394ff', '#3ad1c9'],
-        ['#e89456', '#ffd166'],
-        ['#68d391', '#6cb2e8'],
-        ['#ff8fab', '#a394ff']
-      ];
-      let scenicPanels = [];
-      const visiblePanels = new Set();
-      let scrollFrame = 0;
-      let scrollTimer = 0;
-      function updateScrollMotion() {
-        scrollFrame = 0;
-        const max = Math.max(1, root.scrollHeight - window.innerHeight);
-        const ratio = Math.max(0, Math.min(1, window.scrollY / max));
-        root.style.setProperty('--scroll-progress', ratio.toFixed(4));
-        root.style.setProperty('--scroll-ratio', ratio.toFixed(4));
-        root.classList.add('is-scrolling');
-        clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(() => root.classList.remove('is-scrolling'), 140);
-
-        if (reduceMotion) return;
-
-        if (scenicPanels.length) {
-          const centerY = window.innerHeight * 0.5;
-          const focusRange = Math.max(260, window.innerHeight * 0.68);
-          const compactMotion = window.innerWidth <= 720;
-          const candidates = visiblePanels.size ? Array.from(visiblePanels) : scenicPanels;
-          let activeIndex = 0;
-          let bestFocus = -1;
-
-          candidates.forEach((panel) => {
-            const index = Number(panel.dataset.sceneIndex || 0);
-            const rect = panel.getBoundingClientRect();
-            const panelCenter = rect.top + rect.height * 0.5;
-            const distance = Math.abs(panelCenter - centerY);
-            const rawFocus = Math.max(0, 1 - distance / focusRange);
-            const focus = rawFocus * rawFocus * (3 - 2 * rawFocus);
-            const palette = scenePalettes[index % scenePalettes.length];
-
-            panel.style.setProperty('--scene-focus', focus.toFixed(3));
-            panel.style.setProperty('--scene-x', compactMotion
-              ? '0px'
-              : `${(((index % 2 ? 1 : -1) * (1 - focus) * 4.5)).toFixed(1)}px`);
-            panel.style.setProperty('--scene-y', `${(12 - focus * 18).toFixed(1)}px`);
-            panel.style.setProperty('--scene-scale', (0.985 + focus * 0.025).toFixed(4));
-            panel.style.setProperty('--scene-opacity', (0.82 + focus * 0.18).toFixed(3));
-            panel.style.setProperty('--scene-rotate', `${((0.5 - focus) * 1.2).toFixed(2)}deg`);
-            panel.style.setProperty('--scene-shine', `${(-38 + focus * 82).toFixed(1)}%`);
-            panel.style.setProperty('--panel-accent', palette[0]);
-
-            if (focus > bestFocus) {
-              bestFocus = focus;
-              activeIndex = index;
-            }
-          });
-
-          scenicPanels.forEach((panel, index) => {
-            panel.classList.toggle('scene-active', index === activeIndex && bestFocus > 0.32);
-          });
-
-          const activePalette = scenePalettes[activeIndex % scenePalettes.length];
-          root.style.setProperty('--scene-a', activePalette[0]);
-          root.style.setProperty('--scene-b', activePalette[1]);
-        }
-      }
-
-      function requestScrollMotion() {
-        if (scrollFrame) return;
-        scrollFrame = requestAnimationFrame(updateScrollMotion);
-      }
-
-      window.addEventListener('scroll', requestScrollMotion, { passive: true });
-      window.addEventListener('resize', requestScrollMotion, { passive: true });
-      requestScrollMotion();
-
-      document.documentElement.classList.add('anim-ready');
-
-      const blocks = Array.from(document.querySelectorAll(
-        '.topbar, .device-grid, .comfort-card, .grid, .weather-card, .insights-card, .compare-grid, .ac-session-card, .history-card, .details'
-      ));
-      blocks.forEach((el, i) => {
-        el.classList.add('reveal');
-        el.style.setProperty('--reveal-delay', (Math.min(i, 7) * 70) + 'ms');
-        el.style.setProperty('--reveal-y', (18 + Math.min(i, 5) * 3) + 'px');
-      });
-
-      const panels = Array.from(document.querySelectorAll(
-        '.metric-card, .comfort-card, .device-card, .compare-card, .weather-card, .insights-card, .history-card, .details, .ac-session-card'
-      ));
-      panels.forEach((panel, panelIndex) => {
-        panel.classList.add('motion-panel');
-        panel.dataset.sceneIndex = String(panelIndex);
-
-        if (!panel.querySelector(':scope > .scene-rail')) {
-          const rail = document.createElement('span');
-          rail.className = 'scene-rail';
-          rail.setAttribute('aria-hidden', 'true');
-          panel.prepend(rail);
-        }
-
-        Array.from(panel.children).forEach((child, childIndex) => {
-          if (child.classList.contains('scene-rail')) return;
-          child.classList.add('motion-depth');
-          child.style.setProperty('--motion-delay', `${Math.min(childIndex, 6) * 52}ms`);
-        });
-      });
-      scenicPanels = panels;
-
-      if ('IntersectionObserver' in window) {
-        const panelObserver = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              visiblePanels.add(entry.target);
-              if (!entry.target.classList.contains('scene-seen')) {
-                entry.target.classList.add('scene-seen');
-                if (entry.target.contains(els.historyChart)) animateHistoryChart();
-              }
-            } else {
-              visiblePanels.delete(entry.target);
-            }
-          });
-          requestScrollMotion();
-        }, { threshold: 0.06, rootMargin: '28% 0px 28% 0px' });
-        panels.forEach((panel) => panelObserver.observe(panel));
-      } else {
-        panels.forEach((panel) => panel.classList.add('scene-seen'));
-      }
-
-      setTimeout(() => panels.forEach((panel) => panel.classList.add('scene-seen')), 1600);
-
-      const finePointer = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-      if (finePointer) {
-        panels.forEach((panel) => {
-          let tiltFrame = 0;
-          let lastPointer = null;
-          panel.addEventListener('pointermove', (event) => {
-            lastPointer = { x: event.clientX, y: event.clientY };
-            if (tiltFrame) return;
-            tiltFrame = requestAnimationFrame(() => {
-              tiltFrame = 0;
-              if (!lastPointer) return;
-              const rect = panel.getBoundingClientRect();
-              const px = clamp((lastPointer.x - rect.left) / Math.max(1, rect.width), 0, 1) - 0.5;
-              const py = clamp((lastPointer.y - rect.top) / Math.max(1, rect.height), 0, 1) - 0.5;
-              panel.style.setProperty('--mx', `${Math.round(lastPointer.x - rect.left)}px`);
-              panel.style.setProperty('--my', `${Math.round(lastPointer.y - rect.top)}px`);
-              panel.style.setProperty('--tilt-x', `${(-py * 4.5).toFixed(2)}deg`);
-              panel.style.setProperty('--tilt-y', `${(px * 5.5).toFixed(2)}deg`);
-              panel.classList.add('pointer-live');
+        if (reduced || !('IntersectionObserver' in window)) {
+          blocks.forEach(reveal);
+        } else {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              reveal(entry.target);
+              observer.unobserve(entry.target);
             });
-          }, { passive: true });
-          panel.addEventListener('pointerleave', () => {
-            if (tiltFrame) {
-              cancelAnimationFrame(tiltFrame);
-              tiltFrame = 0;
-            }
-            lastPointer = null;
-            panel.classList.remove('pointer-live');
-            panel.style.setProperty('--tilt-x', '0deg');
-            panel.style.setProperty('--tilt-y', '0deg');
-          }, { passive: true });
-        });
-      } else {
-        panels.forEach((panel) => {
-          panel.addEventListener('pointerdown', () => {
-            panel.classList.add('touch-pop');
-            setTimeout(() => panel.classList.remove('touch-pop'), 180);
-          }, { passive: true });
-        });
+          }, { threshold: 0.08, rootMargin: '0px 0px -5% 0px' });
+          blocks.forEach((element) => observer.observe(element));
+          requestAnimationFrame(() => {
+            blocks.filter((element) => !element.hidden).forEach(reveal);
+          });
+        }
       }
-
-      if (!('IntersectionObserver' in window)) {
-        blocks.forEach((el) => el.classList.add('in'));
-        return;
-      }
-
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('in');
-            io.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.16, rootMargin: '0px 0px -10% 0px' });
-
-      blocks.forEach((el) => io.observe(el));
-      // Safety net: never leave a block hidden
-      setTimeout(() => blocks.forEach((el) => el.classList.add('in')), 1400);
     })();
 
     /* ===================== SETTINGS PANEL ===================== */
@@ -5758,8 +6312,19 @@
     });
 
     const dashboardShell = document.querySelector('.dashboard');
+    const dashboardNav = document.querySelector('.dashboard-nav');
     const dashboardTabs = Array.from(document.querySelectorAll('[data-dashboard-tab]'));
     const dashboardViews = Array.from(document.querySelectorAll('[data-dashboard-view]'));
+    const dashboardTabOffsets = {
+      overview: '0px',
+      ac: 'calc(100% + 4px)',
+      data: 'calc(200% + 8px)'
+    };
+
+    function setDashboardTabIndicator(view) {
+      if (dashboardNav) dashboardNav.style.setProperty('--tab-offset', dashboardTabOffsets[view] || '0px');
+    }
+
     const dashboardReadingOrder = [
       '.grid[data-dashboard-view="overview"]',
       '.comfort-card[data-dashboard-view="overview"]',
@@ -5779,9 +6344,10 @@
       if (section) dashboardShell.appendChild(section);
     });
 
-    function setDashboardView(view, shouldScroll = true) {
+    function applyDashboardView(view) {
       const nextView = ['overview', 'ac', 'data'].includes(view) ? view : 'overview';
       dashboardShell.dataset.activeView = nextView;
+      setDashboardTabIndicator(nextView);
 
       dashboardTabs.forEach(tab => {
         const active = tab.dataset.dashboardTab === nextView;
@@ -5790,32 +6356,114 @@
       });
 
       dashboardViews.forEach(section => {
-        section.hidden = section.dataset.dashboardView !== nextView;
+        const active = section.dataset.dashboardView === nextView;
+        section.hidden = !active;
+        section.setAttribute('aria-hidden', String(!active));
+        section.classList.toggle('view-entering', active);
+        if (active) section.classList.add('ui-visible');
       });
 
       requestAnimationFrame(() => {
-        if (nextView === 'overview') {
-          drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
-          drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
-        } else if (nextView === 'data') {
-          updateHistorySummary(buildHistoryStats());
-          animateHistoryChart();
-          drawChipChart();
-        }
-        window.dispatchEvent(new Event('resize'));
+        requestAnimationFrame(() => {
+          if (nextView === 'overview') {
+            drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
+            drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+          } else if (nextView === 'data') {
+            updateHistorySummary(buildHistoryStats());
+            animateHistoryChart();
+            drawChipChart();
+          }
+          window.dispatchEvent(new Event('resize'));
+        });
       });
 
-      if (shouldScroll && window.matchMedia('(max-width: 720px)').matches) {
+      window.setTimeout(() => {
+        dashboardViews.forEach(section => section.classList.remove('view-entering'));
+      }, 340);
+
+    }
+
+    function scrollDashboardToTop() {
+      if (window.matchMedia('(max-width: 720px)').matches) {
         const top = dashboardShell.getBoundingClientRect().top + window.scrollY - 12;
         window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
       }
     }
 
+    function setDashboardView(view, shouldScroll = true, allowTransition = true) {
+      const nextView = ['overview', 'ac', 'data'].includes(view) ? view : 'overview';
+      const currentView = dashboardShell.dataset.activeView || 'overview';
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const commit = () => applyDashboardView(nextView);
+      let transition = null;
+
+      if (allowTransition && nextView !== currentView && document.startViewTransition && !reducedMotion) {
+        try {
+          transition = document.startViewTransition(commit);
+        } catch (error) {
+          commit();
+        }
+      } else {
+        commit();
+      }
+
+      if (shouldScroll) {
+        if (transition && transition.finished) transition.finished.finally(scrollDashboardToTop);
+        else scrollDashboardToTop();
+      }
+    }
+
+    const dashboardTabPressTimers = new WeakMap();
     dashboardTabs.forEach(tab => {
-      tab.addEventListener('click', () => setDashboardView(tab.dataset.dashboardTab));
+      tab.addEventListener('pointermove', (event) => {
+        const rect = tab.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const x = Math.max(0, Math.min(100, ((event.clientX - rect.left) / rect.width) * 100));
+        const y = Math.max(0, Math.min(100, ((event.clientY - rect.top) / rect.height) * 100));
+        tab.style.setProperty('--hover-x', `${x}%`);
+        tab.style.setProperty('--hover-y', `${y}%`);
+      });
+
+      tab.addEventListener('click', (event) => {
+        const rect = tab.getBoundingClientRect();
+        const keyboardClick = event.detail === 0;
+        tab.style.setProperty('--press-x', `${keyboardClick ? rect.width / 2 : event.clientX - rect.left}px`);
+        tab.style.setProperty('--press-y', `${keyboardClick ? rect.height / 2 : event.clientY - rect.top}px`);
+        tab.classList.remove('tab-press');
+        void tab.offsetWidth;
+        tab.classList.add('tab-press');
+        window.clearTimeout(dashboardTabPressTimers.get(tab));
+        dashboardTabPressTimers.set(tab, window.setTimeout(() => tab.classList.remove('tab-press'), 520));
+        hapticFeedback(10);
+        const nextView = tab.dataset.dashboardTab;
+        setDashboardTabIndicator(nextView);
+        requestAnimationFrame(() => setDashboardView(nextView));
+      });
     });
 
-    setDashboardView('overview', false);
+    document.addEventListener('visibilitychange', () => {
+      document.documentElement.classList.toggle('page-hidden', document.hidden);
+    });
+
+    if ('IntersectionObserver' in window) {
+      const motionObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => entry.target.classList.toggle('motion-paused', !entry.isIntersecting));
+      }, { rootMargin: '120px 0px' });
+      document.querySelectorAll('.weather-card, .ac-session-card').forEach(card => motionObserver.observe(card));
+    }
+
+    const colorSchemeQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    if (colorSchemeQuery && colorSchemeQuery.addEventListener) {
+      colorSchemeQuery.addEventListener('change', () => {
+        if (settings.theme !== 'auto') return;
+        applyTheme();
+        drawChart(els.tempChart, 'temperatureC', getComputedStyle(document.documentElement).getPropertyValue('--warm').trim());
+        drawChart(els.humidityChart, 'humidity', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+        drawHistoryChart();
+      });
+    }
+
+    setDashboardView('overview', false, false);
 
     tick();
     restartTimer();
