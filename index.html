@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cảm biến phòng của Long</title>
   <meta name="theme-color" content="#0b0e15">
+  <meta name="autohome-build" content="20260714.2">
   <meta name="application-name" content="Phòng của Long">
   <meta name="apple-mobile-web-app-title" content="Phòng của Long">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="./manifest.webmanifest?v=20260713">
+  <link rel="manifest" href="./manifest.webmanifest?v=20260714.2">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260713">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260713">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3448,6 +3449,47 @@
   </div>
 
   <script>
+    const APP_BUILD = document.querySelector('meta[name="autohome-build"]')?.content || 'dev';
+    const PWA_UPDATE_CHECK_MS = 5 * 60 * 1000;
+
+    function isStandaloneApp() {
+      return Boolean(
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true
+      );
+    }
+
+    let standaloneUpdateCheckedAt = 0;
+    let standaloneUpdateCheckInFlight = false;
+
+    async function checkStandaloneUpdate(force = false) {
+      if (!isStandaloneApp() || document.hidden || standaloneUpdateCheckInFlight) return;
+      const now = Date.now();
+      if (!force && standaloneUpdateCheckedAt && now - standaloneUpdateCheckedAt < PWA_UPDATE_CHECK_MS) return;
+
+      standaloneUpdateCheckedAt = now;
+      standaloneUpdateCheckInFlight = true;
+      try {
+        const checkUrl = new URL('./index.html', location.href);
+        checkUrl.searchParams.set('_pwa_check', String(now));
+        const response = await fetch(checkUrl, { cache: 'no-store' });
+        if (!response.ok) return;
+        const source = await response.text();
+        const match = source.match(/<meta\s+name=["']autohome-build["']\s+content=["']([^"']+)["']/i);
+        const remoteBuild = match ? match[1] : '';
+        if (!remoteBuild || remoteBuild === APP_BUILD) return;
+
+        const nextUrl = new URL('./', location.href);
+        nextUrl.searchParams.set('pwa', remoteBuild);
+        nextUrl.searchParams.set('updated', String(Date.now()));
+        location.replace(nextUrl.href);
+      } catch (error) {
+        // Offline is expected sometimes; retry when the app becomes visible again.
+      } finally {
+        standaloneUpdateCheckInFlight = false;
+      }
+    }
+
     const SUPABASE_URL = 'https://ucgbvsmxljilmgrdfazk.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_HRYudnWYxKH7VKEqJMGVXQ_FjR311MO';
     const SUPABASE_ROOM_ID = 'main-room';
@@ -6476,6 +6518,7 @@
 
     document.addEventListener('visibilitychange', () => {
       document.documentElement.classList.toggle('page-hidden', document.hidden);
+      if (!document.hidden) checkStandaloneUpdate();
     });
 
     if ('IntersectionObserver' in window) {
@@ -6499,6 +6542,7 @@
       });
     }
 
+    window.setTimeout(() => checkStandaloneUpdate(true), 1200);
     setDashboardView('overview', false);
 
     tick();
