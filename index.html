@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cảm biến phòng của Long</title>
   <meta name="theme-color" content="#0b0e15">
-  <meta name="autohome-build" content="20260714.2">
+  <meta name="autohome-build" content="20260717.2">
   <meta name="application-name" content="Phòng của Long">
   <meta name="apple-mobile-web-app-title" content="Phòng của Long">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="./manifest.webmanifest?v=20260714.2">
+  <link rel="manifest" href="./manifest.webmanifest?v=20260717.2">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260713">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260713">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,6 +32,11 @@
       --cool: #2d7fb8;
       --chip: #6d5ef0;
       --shadow: rgba(16, 24, 40, 0.10);
+      --ease-standard: cubic-bezier(.2, .8, .2, 1);
+      --ease-emphasized: cubic-bezier(.16, .72, .28, 1);
+      --ease-spring: cubic-bezier(.175, .885, .32, 1.18);
+      --weather-cycle-main: 6.4s;
+      --weather-cycle-compact: 7.2s;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -53,6 +58,7 @@
 
     * {
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
     html {
@@ -70,6 +76,16 @@
       letter-spacing: 0;
       overflow-x: hidden;
       overscroll-behavior-y: contain;
+    }
+
+    :where(a, button, summary, [role="button"]) {
+      touch-action: manipulation;
+    }
+
+    @media (hover: none), (pointer: coarse) {
+      :where(a, button, summary, [role="button"]):active {
+        opacity: 0.82;
+      }
     }
 
     .app {
@@ -494,6 +510,92 @@
       font-weight: 700;
     }
 
+    .history-series-toggle {
+      width: max-content;
+      max-width: 100%;
+      margin: 0 0 12px;
+      display: inline-grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid color-mix(in srgb, var(--line), transparent 24%);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 34%);
+      box-shadow: inset 0 1px 0 var(--card-edge);
+    }
+
+    .series-toggle {
+      appearance: none;
+      position: relative;
+      min-height: 36px;
+      padding: 7px 12px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition:
+        color 220ms ease,
+        background 220ms ease,
+        box-shadow 260ms var(--ease-standard),
+        transform 220ms var(--ease-standard);
+    }
+
+    .series-toggle:hover {
+      color: var(--text);
+      background: color-mix(in srgb, var(--panel), transparent 42%);
+      transform: translateY(-1px);
+    }
+
+    .series-toggle:active {
+      transform: scale(.97);
+    }
+
+    .series-toggle.active {
+      color: var(--text);
+      background: var(--panel);
+      box-shadow:
+        0 7px 18px color-mix(in srgb, var(--shadow), transparent 26%),
+        inset 0 0 0 1px color-mix(in srgb, var(--line), transparent 35%);
+    }
+
+    .series-toggle[data-series-mode="temperature"].active {
+      color: var(--warm);
+    }
+
+    .series-toggle[data-series-mode="humidity"].active {
+      color: var(--accent);
+    }
+
+    .series-swatch {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent), transparent 84%);
+    }
+
+    .series-swatch.warm {
+      background: var(--warm);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--warm), transparent 84%);
+    }
+
+    .series-swatch.dual {
+      width: 18px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--warm) 0 45%, transparent 45% 55%, var(--accent) 55% 100%);
+      box-shadow: none;
+    }
+
     .legend-item {
       display: inline-flex;
       align-items: center;
@@ -506,24 +608,10 @@
       color: var(--muted);
       font: inherit;
       cursor: default;
-      transition: transform 220ms cubic-bezier(.2,.7,.2,1),
+      transition: transform 220ms var(--ease-standard),
                   opacity 220ms ease,
                   background 220ms ease,
                   border-color 220ms ease;
-    }
-
-    button.legend-item {
-      cursor: pointer;
-    }
-
-    button.legend-item:hover {
-      transform: translateY(-1px);
-      border-color: var(--line);
-      background: color-mix(in srgb, var(--panel), var(--bg) 34%);
-    }
-
-    .legend-item.off {
-      opacity: 0.42;
     }
 
     .legend-line {
@@ -574,7 +662,7 @@
       font-size: 11px;
       font-weight: 760;
       cursor: pointer;
-      transition: transform 220ms cubic-bezier(.2,.7,.2,1), color 220ms ease, border-color 220ms ease;
+      transition: transform 220ms var(--ease-standard), color 220ms ease, border-color 220ms ease;
     }
 
     .chart-reset:hover {
@@ -741,7 +829,7 @@
       flex: 0 0 44px;
     }
     .meteo-icon {
-      --weather-cycle: 6.4s;
+      --weather-cycle: var(--weather-cycle-main);
       --weather-delay: 0s;
       --weather-lift: -1.4px;
       position: relative;
@@ -758,7 +846,7 @@
       animation-delay: var(--weather-delay);
     }
     .meteo-icon.small {
-      --weather-cycle: 7.2s;
+      --weather-cycle: var(--weather-cycle-compact);
       --weather-lift: -0.8px;
       width: 27px;
       height: 27px;
@@ -1041,6 +1129,15 @@
     @media (max-width: 720px) {
       .chart-hint-desktop { display: none; }
       .chart-hint-touch { display: inline; }
+
+      .history-series-toggle {
+        width: 100%;
+      }
+
+      .series-toggle {
+        min-width: 0;
+        padding-inline: 8px;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1159,7 +1256,7 @@
       margin-top: 8px; height: 6px; border-radius: 4px;
       background: color-mix(in srgb, var(--line), transparent 15%); overflow: hidden;
     }
-    .score-bar > span { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--accent); transition: width 600ms cubic-bezier(.2,.7,.2,1); }
+    .score-bar > span { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--accent); transition: width 600ms var(--ease-standard); }
     .digest { margin-top: 14px; font-size: 14.5px; line-height: 1.5; color: var(--text); }
 
     /* ===================== SETTINGS BUTTON + PANEL ===================== */
@@ -1273,7 +1370,7 @@
       box-shadow: 0 18px 40px var(--shadow);
       position: relative;
       overflow: hidden;
-      transition: transform 360ms cubic-bezier(.2,.7,.2,1),
+      transition: transform 360ms var(--ease-standard),
                   box-shadow 360ms ease,
                   border-color 360ms ease;
     }
@@ -1577,7 +1674,7 @@
         0 8px 22px color-mix(in srgb, var(--accent), transparent 72%),
         inset 0 1px 0 color-mix(in srgb, #ffffff, transparent 68%);
       transform: translate3d(var(--tab-offset), 0, 0);
-      transition: transform 430ms cubic-bezier(.22, .82, .2, 1), box-shadow 240ms ease;
+      transition: transform 430ms var(--ease-standard), box-shadow 240ms ease;
       pointer-events: none;
     }
 
@@ -1601,7 +1698,7 @@
       gap: 7px;
       overflow: hidden;
       isolation: isolate;
-      transition: color 220ms ease, transform 260ms cubic-bezier(.2, .8, .2, 1), filter 220ms ease;
+      transition: color 220ms ease, transform 260ms var(--ease-standard), filter 220ms ease;
     }
 
     .dashboard-tab::before {
@@ -1632,7 +1729,7 @@
       );
       opacity: 0;
       transform: scale(.86);
-      transition: opacity 220ms ease, transform 320ms cubic-bezier(.2, .8, .2, 1);
+      transition: opacity 220ms ease, transform 320ms var(--ease-standard);
       pointer-events: none;
     }
 
@@ -1672,7 +1769,7 @@
     }
 
     .dashboard-tab.tab-press::before {
-      animation: dashboardTabRipple 480ms cubic-bezier(.16, .72, .28, 1) both;
+      animation: dashboardTabRipple 480ms var(--ease-emphasized) both;
     }
 
     .dashboard-tab:focus-visible,
@@ -1686,7 +1783,7 @@
       height: 20px;
       display: inline-grid;
       place-items: center;
-      transition: transform 280ms cubic-bezier(.2, .8, .2, 1);
+      transition: transform 280ms var(--ease-standard);
     }
 
     .dashboard-tab:hover .dashboard-tab-icon {
@@ -1694,7 +1791,7 @@
     }
 
     .dashboard-tab.active .dashboard-tab-icon {
-      animation: dashboardTabIconPop 430ms cubic-bezier(.2, .8, .2, 1) both;
+      animation: dashboardTabIconPop 430ms var(--ease-standard) both;
     }
 
     @keyframes dashboardTabRipple {
@@ -1713,7 +1810,7 @@
     }
 
     .dashboard > .view-entering {
-      animation: dashboardViewEnter 300ms cubic-bezier(.2, .75, .2, 1) both;
+      animation: dashboardViewEnter 300ms var(--ease-standard) both;
     }
 
     @keyframes dashboardViewEnter {
@@ -2081,7 +2178,7 @@
     .ui-reveal {
       opacity: 0;
       transform: translateY(10px);
-      transition: opacity 460ms cubic-bezier(.2,.7,.2,1), transform 460ms cubic-bezier(.2,.7,.2,1);
+      transition: opacity 460ms var(--ease-standard), transform 460ms var(--ease-standard);
     }
 
     .ui-reveal.ui-visible {
@@ -2455,11 +2552,11 @@
       width: fit-content;
       border-radius: 999px;
       transition:
-        max-width 360ms cubic-bezier(.2, .8, .2, 1),
-        padding 360ms cubic-bezier(.2, .8, .2, 1),
+        max-width 360ms var(--ease-standard),
+        padding 360ms var(--ease-standard),
         background 260ms ease,
         box-shadow 260ms ease,
-        transform 360ms cubic-bezier(.175, .885, .32, 1.18);
+        transform 360ms var(--ease-spring);
     }
 
     .status.status-live {
@@ -2524,7 +2621,7 @@
 
     .gauge-progress {
       stroke-dasharray: 0 100;
-      transition: stroke-dasharray 700ms cubic-bezier(.2, .8, .2, 1), stroke 240ms ease;
+      transition: stroke-dasharray 700ms var(--ease-standard), stroke 240ms ease;
       filter: drop-shadow(0 4px 7px color-mix(in srgb, currentColor, transparent 78%));
     }
 
@@ -2763,8 +2860,8 @@
       .ac-session-card,
       .system-status {
         transition:
-          box-shadow 420ms cubic-bezier(.175, .885, .32, 1.18),
-          translate 420ms cubic-bezier(.175, .885, .32, 1.18),
+          box-shadow 420ms var(--ease-spring),
+          translate 420ms var(--ease-spring),
           border-color 240ms ease;
       }
 
@@ -2824,7 +2921,14 @@
     html.page-hidden .airflow-visual::before,
     html.page-hidden .airflow-stream,
     html.page-hidden .cooling-wave,
-    html.page-hidden .ac-live-badge {
+    html.page-hidden .ac-live-badge,
+    html.page-hidden body.is-loading #statusText,
+    html.page-hidden body.is-loading .value,
+    html.page-hidden body.is-loading .device-value,
+    html.page-hidden body.is-loading .pill-value,
+    html.page-hidden body.is-loading .stat-value,
+    html.page-hidden body.is-loading .insight-value,
+    html.page-hidden body.is-loading .detail-value {
       animation-play-state: paused !important;
     }
 
@@ -3340,13 +3444,23 @@
             </div>
           </div>
         </div>
+        <div class="history-legend history-series-toggle" role="group" aria-label="Chọn dữ liệu hiển thị trên biểu đồ">
+          <button class="series-toggle active" type="button" data-series-mode="both" aria-pressed="true">
+            <span class="series-swatch dual" aria-hidden="true"></span>
+            <span>Cả hai</span>
+          </button>
+          <button class="series-toggle" type="button" data-series-mode="temperature" aria-pressed="false">
+            <span class="series-swatch warm" aria-hidden="true"></span>
+            <span>Nhiệt độ</span>
+          </button>
+          <button class="series-toggle" type="button" data-series-mode="humidity" aria-pressed="false">
+            <span class="series-swatch" aria-hidden="true"></span>
+            <span>Độ ẩm</span>
+          </button>
+        </div>
         <div id="historyChartWrap" class="history-chart-wrap">
           <canvas id="historyChart" width="860" height="130"></canvas>
           <div id="historyTooltip" class="history-tooltip" hidden></div>
-        </div>
-        <div class="history-legend" aria-label="Bật tắt lớp dữ liệu lịch sử">
-          <button class="legend-item" type="button" data-series="temperatureC" aria-pressed="true"><span class="legend-line warm"></span>Nhiệt độ</button>
-          <button class="legend-item" type="button" data-series="humidity" aria-pressed="true"><span class="legend-line"></span>Độ ẩm</button>
         </div>
       </section>
 
@@ -3601,6 +3715,7 @@
       historyError: false,
       historyHoverPoint: null,
       historyChartModel: null,
+      historySeriesMode: 'both',
       historyVisible: { temperatureC: true, humidity: true },
       historyZoom: null,
       historyDrag: null,
@@ -3676,7 +3791,7 @@
       historyChartWrap: document.getElementById('historyChartWrap'),
       historyTooltip: document.getElementById('historyTooltip'),
       rangeTabs: Array.from(document.querySelectorAll('[data-range]')),
-      historyLegendButtons: Array.from(document.querySelectorAll('[data-series]')),
+      historySeriesButtons: Array.from(document.querySelectorAll('[data-series-mode]')),
       historyResetZoom: document.getElementById('historyResetZoom'),
       updatedAt: document.getElementById('updatedAt'),
       source: document.getElementById('source'),
@@ -4503,25 +4618,35 @@
 
     function animateHistoryChart() {
       if (state.historyAnimFrame) cancelAnimationFrame(state.historyAnimFrame);
-      if (window.matchMedia('(max-width: 720px), (prefers-reduced-motion: reduce)').matches) {
+      const reduceMotion = Boolean(window.matchMedia
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      if (document.hidden || reduceMotion) {
         state.historyAnimFrame = 0;
         state.historyDrawProgress = 1;
         drawHistoryChart();
         return;
       }
 
+      const compactViewport = Boolean(window.matchMedia
+        && window.matchMedia('(max-width: 720px)').matches);
+      const duration = compactViewport ? 320 : 680;
+      const minFrameGap = compactViewport ? 1000 / 30 : 0;
       const start = performance.now();
+      let lastDrawAt = 0;
       state.historyDrawProgress = 0;
       function step(now) {
-        const t = Math.min(1, (now - start) / 680);
-        state.historyDrawProgress = 1 - Math.pow(1 - t, 3);
-        drawHistoryChart();
+        const t = Math.max(0, Math.min(1, (now - start) / duration));
+        const shouldDraw = !compactViewport || now - lastDrawAt >= minFrameGap || t >= 1;
+        if (shouldDraw) {
+          state.historyDrawProgress = 1 - Math.pow(1 - t, 3);
+          drawHistoryChart();
+          lastDrawAt = now;
+        }
         if (t < 1) {
           state.historyAnimFrame = requestAnimationFrame(step);
         } else {
           state.historyDrawProgress = 1;
           state.historyAnimFrame = 0;
-          drawHistoryChart();
         }
       }
       state.historyAnimFrame = requestAnimationFrame(step);
@@ -4680,6 +4805,8 @@
 
     function drawHistoryZones(ctx, model) {
       if (!model || model.points.length < 2) return;
+      const showTemperature = !state.historyVisible || state.historyVisible.temperatureC !== false;
+      const showHumidity = !state.historyVisible || state.historyVisible.humidity !== false;
       const top = model.pad;
       const height = model.height - model.pad * 2;
       for (let i = 0; i < model.points.length - 1; i++) {
@@ -4691,10 +4818,10 @@
         const humidity = finiteNumber(point.humidity);
         const x1 = historyPointX(point, model);
         const x2 = historyPointX(next, model);
-        if (temp !== null && temp >= settings.hotAbove) {
+        if (showTemperature && temp !== null && temp >= settings.hotAbove) {
           ctx.fillStyle = 'rgba(232, 148, 86, 0.10)';
           ctx.fillRect(x1, top, Math.max(1, x2 - x1), height);
-        } else if (humidity !== null && humidity >= settings.humidHigh) {
+        } else if (showHumidity && humidity !== null && humidity >= settings.humidHigh) {
           ctx.fillStyle = 'rgba(58, 209, 201, 0.08)';
           ctx.fillRect(x1, top, Math.max(1, x2 - x1), height);
         }
@@ -4710,11 +4837,10 @@
       const max = extremaPoint(candidates, 'temperatureC', 'max');
       const ratio = window.devicePixelRatio || 1;
       const warm = getComputedStyle(document.documentElement).getPropertyValue('--warm').trim();
-      const cool = getComputedStyle(document.documentElement).getPropertyValue('--cool').trim();
 
       [
         [max, warm, 'Max'],
-        [min, cool, 'Min']
+        [min, warm, 'Min']
       ].forEach(([point, color, label]) => {
         if (!point) return;
         const x = historyPointX(point, model);
@@ -4973,13 +5099,21 @@
       drawHistoryChart();
     }
 
-    function updateHistoryLegendUi() {
-      els.historyLegendButtons.forEach(button => {
-        const key = button.dataset.series;
-        const isOn = !state.historyVisible || state.historyVisible[key] !== false;
-        button.classList.toggle('off', !isOn);
-        button.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+    function setHistorySeriesMode(mode, redraw = true) {
+      const nextMode = ['temperature', 'humidity'].includes(mode) ? mode : 'both';
+      const modeChanged = state.historySeriesMode !== nextMode;
+      state.historySeriesMode = nextMode;
+      state.historyVisible.temperatureC = nextMode !== 'humidity';
+      state.historyVisible.humidity = nextMode !== 'temperature';
+
+      els.historySeriesButtons.forEach(button => {
+        const isActive = button.dataset.seriesMode === nextMode;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
       });
+
+      hideHistoryTooltip();
+      if (redraw && modeChanged) animateHistoryChart();
     }
 
     function setHistoryZoomWindow(startMs, endMs) {
@@ -5467,19 +5601,13 @@
       });
     });
 
-    els.historyLegendButtons.forEach(button => {
+    els.historySeriesButtons.forEach(button => {
       button.addEventListener('click', () => {
-        const key = button.dataset.series;
-        if (!key || !(key in state.historyVisible)) return;
-        const activeCount = Object.values(state.historyVisible).filter(Boolean).length;
-        if (state.historyVisible[key] && activeCount <= 1) return;
-        state.historyVisible[key] = !state.historyVisible[key];
-        updateHistoryLegendUi();
-        hideHistoryTooltip();
-        animateHistoryChart();
+        hapticFeedback(8);
+        setHistorySeriesMode(button.dataset.seriesMode);
       });
     });
-    updateHistoryLegendUi();
+    setHistorySeriesMode(state.historySeriesMode, false);
 
     if (els.historyResetZoom) {
       els.historyResetZoom.addEventListener('click', () => {
@@ -6240,7 +6368,7 @@
 
       const start = performance.now();
       function frame(now) {
-        const t = Math.min(1, (now - start) / duration);
+        const t = Math.max(0, Math.min(1, (now - start) / duration));
         const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
         el.textContent = (from + (target - from) * eased).toFixed(decimals);
         if (t < 1) requestAnimationFrame(frame);
@@ -6516,6 +6644,7 @@
       });
     });
 
+    document.documentElement.classList.toggle('page-hidden', document.hidden);
     document.addEventListener('visibilitychange', () => {
       document.documentElement.classList.toggle('page-hidden', document.hidden);
       if (!document.hidden) checkStandaloneUpdate();
@@ -6524,7 +6653,7 @@
     if ('IntersectionObserver' in window) {
       const motionObserver = new IntersectionObserver(entries => {
         entries.forEach(entry => entry.target.classList.toggle('motion-paused', !entry.isIntersecting));
-      }, { rootMargin: '120px 0px' });
+      }, { rootMargin: '80px 0px', threshold: 0.01 });
       document.querySelectorAll('.weather-card, .ac-session-card').forEach(card => motionObserver.observe(card));
     }
 
