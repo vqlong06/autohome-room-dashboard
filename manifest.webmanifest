@@ -4,7 +4,7 @@
   "description": "Cảm biến nhiệt độ & độ ẩm phòng theo thời gian thực",
   "id": "./",
   "lang": "vi",
-  "start_url": "./?pwa=20260714.2",
+  "start_url": "./?pwa=20260717.2",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
