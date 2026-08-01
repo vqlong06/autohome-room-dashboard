@@ -17,23 +17,43 @@ add column if not exists chip_temperature_c numeric;
 
 create schema if not exists extensions;
 create extension if not exists pgcrypto with schema extensions;
+create extension if not exists pg_cron;
+grant usage on schema extensions to anon;
+grant execute on function extensions.digest(text, text) to anon;
+
+revoke create on schema public from public, anon, authenticated, service_role;
+
+create schema if not exists longos_private;
+revoke all on schema longos_private from public, anon, authenticated, service_role;
+grant usage on schema longos_private to anon;
+
+alter default privileges for role postgres
+revoke execute on functions from public;
+
+alter default privileges for role postgres in schema public
+revoke execute on functions from public, anon, authenticated, service_role;
 
 create index if not exists room_readings_room_time_idx
 on public.room_readings (room_id, recorded_at desc);
 
 alter table public.room_readings enable row level security;
 
-create or replace function public.valid_room_device_token()
+create or replace function longos_private.valid_room_device_token()
 returns boolean
 language sql
 stable
-set search_path = public, extensions
+security invoker
+set search_path = ''
 as $$
-  select encode(extensions.digest(coalesce(
-    nullif(current_setting('request.headers', true), '')::json ->> 'x-device-token',
+  select pg_catalog.encode(extensions.digest(coalesce(
+    nullif(pg_catalog.current_setting('request.headers', true), '')::pg_catalog.json ->> 'x-device-token',
     ''
   ), 'sha256'), 'hex') = '3e3d040c85243da01de6bee6ea1193fdee6c0c61cdd9e5ca34a886c490255f9f';
 $$;
+
+revoke all on function longos_private.valid_room_device_token()
+from public, anon, authenticated, service_role;
+grant execute on function longos_private.valid_room_device_token() to anon;
 
 drop policy if exists room_readings_read on public.room_readings;
 create policy room_readings_read
@@ -47,9 +67,22 @@ create policy room_readings_insert_device
 on public.room_readings
 for insert
 to anon
-with check (room_id = 'main-room' and public.valid_room_device_token());
+with check (room_id = 'main-room' and longos_private.valid_room_device_token());
 
-grant select, insert on public.room_readings to anon;
-grant usage, select on sequence public.room_readings_id_seq to anon;
+revoke all on table public.room_readings from public, anon, authenticated;
+grant select, insert on table public.room_readings to anon;
+revoke all on sequence public.room_readings_id_seq from public, anon, authenticated;
+grant usage on sequence public.room_readings_id_seq to anon;
+
+-- Current firmware writes history; pg_cron only enforces 90-day retention.
+select cron.unschedule(jobid)
+from cron.job
+where jobname = 'autohome-cleanup';
+
+select cron.schedule(
+  'autohome-cleanup',
+  '17 3 * * *',
+  $$ delete from public.room_readings where recorded_at < now() - interval '90 days'; $$
+);
 
 select pg_notify('pgrst', 'reload schema');
