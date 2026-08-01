@@ -3,9 +3,15 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  DEFAULT_HISTORY_CADENCE_WINDOW_MS,
+  DEFAULT_HISTORY_BOOT_TOLERANCE_MS,
+  DEFAULT_HISTORY_MAX_ROWS,
   DEFAULT_HISTORY_MAX_AGE_MS,
+  DEFAULT_HISTORY_MIN_GAP_MS,
+  DEFAULT_HISTORY_MIN_SAMPLES,
   DEFAULT_LATEST_MAX_AGE_MS,
-  validateCloudHealth
+  validateCloudHealth,
+  validateHistoryCadence
 } from './lib/cloud-health.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -22,19 +28,26 @@ Options:
   --retry-ms <ms>           Delay between attempts (default: 5000)
   --require-cloud           Verify anonymous Supabase reads without exposing telemetry
   --require-cloud-health    Also require fresh heartbeat/history and online device/sensor
+  --expected-cloud-version <ver> Require latest/history to use this exact firmware version
+  --require-history-cadence Require >=3 same-boot, exact-version samples without short gaps
   --latest-max-age-ms <ms>  Maximum heartbeat age (default: ${DEFAULT_LATEST_MAX_AGE_MS})
   --history-max-age-ms <ms> Maximum history age (default: ${DEFAULT_HISTORY_MAX_AGE_MS})
+  --history-cadence-window-ms <ms> Cadence observation window (default: ${DEFAULT_HISTORY_CADENCE_WINDOW_MS})
+  --history-min-samples <n> Minimum cadence samples (default: ${DEFAULT_HISTORY_MIN_SAMPLES})
+  --history-min-gap-ms <ms> Minimum adjacent history gap (default: ${DEFAULT_HISTORY_MIN_GAP_MS})
   -h, --help                Show this help
 
 Environment overrides: LONGOS_PAGES_URL, LONGOS_PAGES_EXPECTED_BUILD,
 LONGOS_PAGES_TIMEOUT_MS, LONGOS_PAGES_ATTEMPTS, LONGOS_PAGES_RETRY_MS,
-LONGOS_CLOUD_LATEST_MAX_AGE_MS, LONGOS_CLOUD_HISTORY_MAX_AGE_MS`);
+LONGOS_CLOUD_LATEST_MAX_AGE_MS, LONGOS_CLOUD_HISTORY_MAX_AGE_MS,
+LONGOS_CLOUD_EXPECTED_VERSION, LONGOS_HISTORY_CADENCE_WINDOW_MS,
+LONGOS_HISTORY_MIN_SAMPLES, LONGOS_HISTORY_MIN_GAP_MS`);
 }
 
 function positiveInteger(value, label) {
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    throw new Error(`${label} must be a positive integer`);
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be a positive safe integer`);
   }
   return parsed;
 }
@@ -48,6 +61,8 @@ function parseArgs(argv) {
     retryMs: positiveInteger(process.env.LONGOS_PAGES_RETRY_MS || '5000', 'retry delay'),
     requireCloud: false,
     requireCloudHealth: false,
+    requireHistoryCadence: false,
+    expectedCloudVersion: process.env.LONGOS_CLOUD_EXPECTED_VERSION || '',
     latestMaxAgeMs: positiveInteger(
       process.env.LONGOS_CLOUD_LATEST_MAX_AGE_MS || String(DEFAULT_LATEST_MAX_AGE_MS),
       'latest maximum age'
@@ -55,6 +70,18 @@ function parseArgs(argv) {
     historyMaxAgeMs: positiveInteger(
       process.env.LONGOS_CLOUD_HISTORY_MAX_AGE_MS || String(DEFAULT_HISTORY_MAX_AGE_MS),
       'history maximum age'
+    ),
+    historyCadenceWindowMs: positiveInteger(
+      process.env.LONGOS_HISTORY_CADENCE_WINDOW_MS || String(DEFAULT_HISTORY_CADENCE_WINDOW_MS),
+      'history cadence window'
+    ),
+    historyMinSamples: positiveInteger(
+      process.env.LONGOS_HISTORY_MIN_SAMPLES || String(DEFAULT_HISTORY_MIN_SAMPLES),
+      'history minimum samples'
+    ),
+    historyMinGapMs: positiveInteger(
+      process.env.LONGOS_HISTORY_MIN_GAP_MS || String(DEFAULT_HISTORY_MIN_GAP_MS),
+      'history minimum gap'
     )
   };
 
@@ -73,10 +100,18 @@ function parseArgs(argv) {
     else if (argument === '--retry-ms') options.retryMs = positiveInteger(nextValue(), 'retry delay');
     else if (argument === '--require-cloud') options.requireCloud = true;
     else if (argument === '--require-cloud-health') options.requireCloudHealth = true;
+    else if (argument === '--expected-cloud-version') options.expectedCloudVersion = nextValue();
+    else if (argument === '--require-history-cadence') options.requireHistoryCadence = true;
     else if (argument === '--latest-max-age-ms') {
       options.latestMaxAgeMs = positiveInteger(nextValue(), 'latest maximum age');
     } else if (argument === '--history-max-age-ms') {
       options.historyMaxAgeMs = positiveInteger(nextValue(), 'history maximum age');
+    } else if (argument === '--history-cadence-window-ms') {
+      options.historyCadenceWindowMs = positiveInteger(nextValue(), 'history cadence window');
+    } else if (argument === '--history-min-samples') {
+      options.historyMinSamples = positiveInteger(nextValue(), 'history minimum samples');
+    } else if (argument === '--history-min-gap-ms') {
+      options.historyMinGapMs = positiveInteger(nextValue(), 'history minimum gap');
     } else if (argument === '--help' || argument === '-h') {
       usage();
       process.exit(0);
@@ -85,6 +120,27 @@ function parseArgs(argv) {
     }
   }
 
+  if (options.expectedCloudVersion) {
+    assert.match(
+      options.expectedCloudVersion,
+      /^longos-sensor-[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*$/,
+      '--expected-cloud-version must use the longos-sensor- format'
+    );
+    options.requireCloudHealth = true;
+  }
+  if (options.requireHistoryCadence) {
+    assert.ok(options.expectedCloudVersion, '--require-history-cadence requires --expected-cloud-version');
+    assert.ok(
+      options.historyMinSamples < DEFAULT_HISTORY_MAX_ROWS,
+      `--history-min-samples must be below ${DEFAULT_HISTORY_MAX_ROWS}`
+    );
+    const requiredSpanMs = (options.historyMinSamples - 1) * options.historyMinGapMs;
+    assert.ok(
+      Number.isSafeInteger(requiredSpanMs) && options.historyCadenceWindowMs >= requiredSpanMs,
+      '--history-cadence-window-ms cannot contain the requested samples and minimum gaps'
+    );
+    options.requireCloudHealth = true;
+  }
   if (options.requireCloudHealth) options.requireCloud = true;
   return options;
 }
@@ -225,6 +281,7 @@ for (const path of forbiddenPaths) {
 }
 
 let cloudHealth = null;
+let cloudCadence = null;
 if (options.requireCloud) {
   const supabaseUrl = new URL(javascriptConstant(html, 'SUPABASE_URL'));
   assert.equal(supabaseUrl.protocol, 'https:', 'Supabase URL must use HTTPS');
@@ -245,7 +302,7 @@ if (options.requireCloud) {
         'select',
         options.requireCloudHealth
           ? table === 'room_latest'
-            ? 'room_id,updated_at,app_version,device_online,wifi_connected,sensor_online'
+            ? 'room_id,updated_at,app_version,device_online,wifi_connected,sensor_online,uptime_ms'
             : 'room_id,recorded_at,app_version,sensor_online'
           : 'room_id'
       );
@@ -296,7 +353,49 @@ if (options.requireCloud) {
       history: cloudRows.room_readings,
       nowMs: Date.now(),
       latestMaxAgeMs: options.latestMaxAgeMs,
-      historyMaxAgeMs: options.historyMaxAgeMs
+      historyMaxAgeMs: options.historyMaxAgeMs,
+      expectedAppVersion: options.expectedCloudVersion
+    });
+  }
+
+  if (options.requireHistoryCadence) {
+    const latestTimestampMs = Date.parse(cloudRows.room_latest.updated_at);
+    const latestUptimeMs = cloudRows.room_latest.uptime_ms;
+    assert.ok(Number.isSafeInteger(latestUptimeMs) && latestUptimeMs >= 0, 'room_latest.uptime_ms must be a non-negative safe integer');
+    const expectedBootEpochMs = latestTimestampMs - latestUptimeMs;
+    assert.ok(expectedBootEpochMs >= 0, 'room_latest uptime produces an invalid device boot time');
+    await retry('Supabase history cadence', async () => {
+      const cadenceNowMs = Date.now();
+      const cadenceCutoffMs = Math.max(
+        cadenceNowMs - options.historyCadenceWindowMs,
+        expectedBootEpochMs - DEFAULT_HISTORY_BOOT_TOLERANCE_MS
+      );
+      const endpoint = new URL('/rest/v1/room_readings', supabaseUrl);
+      endpoint.searchParams.set('room_id', `eq.${roomId}`);
+      endpoint.searchParams.set('app_version', `eq.${options.expectedCloudVersion}`);
+      endpoint.searchParams.set(
+        'recorded_at',
+        `gte.${new Date(cadenceCutoffMs).toISOString()}`
+      );
+      endpoint.searchParams.set('select', 'room_id,recorded_at,app_version,sensor_online,uptime_ms');
+      endpoint.searchParams.set('order', 'recorded_at.desc');
+      endpoint.searchParams.set('limit', String(DEFAULT_HISTORY_MAX_ROWS));
+      const { response, body } = await fetchResource(endpoint, { headers: cloudHeaders });
+      const allowOrigin = response.headers.get('access-control-allow-origin');
+      assert.ok(allowOrigin === '*' || allowOrigin === baseUrl.origin, 'room_readings cadence CORS does not allow the Pages origin');
+      const rows = JSON.parse(body);
+      cloudCadence = validateHistoryCadence({
+        roomId,
+        rows,
+        expectedAppVersion: options.expectedCloudVersion,
+        nowMs: cadenceNowMs,
+        windowMs: options.historyCadenceWindowMs,
+        minGapMs: options.historyMinGapMs,
+        minSamples: options.historyMinSamples,
+        maxRows: DEFAULT_HISTORY_MAX_ROWS,
+        expectedBootEpochMs,
+        bootEpochToleranceMs: DEFAULT_HISTORY_BOOT_TOLERANCE_MS
+      });
     });
   }
 }
@@ -310,5 +409,10 @@ console.log(`Cloud private schema: ${options.requireCloud ? 'hidden' : 'skipped'
 console.log(
   `Cloud health: ${cloudHealth
     ? `OK (heartbeat ${Math.round(cloudHealth.latestAgeMs / 1000)}s, history ${Math.round(cloudHealth.historyAgeMs / 60000)}m, ${cloudHealth.appVersion})`
+    : 'skipped'}`
+);
+console.log(
+  `Cloud history cadence: ${cloudCadence
+    ? `OK (${cloudCadence.sampleCount} samples, minimum gap ${Math.round(cloudCadence.minimumGapMs / 60000)}m, ${cloudCadence.appVersion})`
     : 'skipped'}`
 );

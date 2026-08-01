@@ -12,6 +12,9 @@ const [
   pagesWorkflow,
   productionWorkflow,
   pagesSmokeTest,
+  deviceSoak,
+  deviceSoakValidator,
+  deviceSoakTest,
   platformio,
   gitignore,
   packageJsonSource,
@@ -21,6 +24,9 @@ const [
   read('.github/workflows/pages.yml'),
   read('.github/workflows/production-smoke.yml'),
   read('tools/test-pages-smoke.mjs'),
+  read('tools/device-soak.mjs'),
+  read('tools/lib/device-soak.mjs'),
+  read('tools/test-device-soak.mjs'),
   read('platformio.ini'),
   read('.gitignore'),
   read('package.json'),
@@ -78,8 +84,30 @@ assert.match(ciWorkflow, /install -m 600 include\/secrets\.example\.h include\/s
 assert.match(ciWorkflow, /pio run -e esp32dev/);
 assert.match(ciWorkflow, /node tools\/test-brand-migration\.mjs/);
 assert.match(ciWorkflow, /node --check tools\/lib\/cloud-health\.mjs/);
+assert.match(ciWorkflow, /node --check tools\/lib\/device-soak\.mjs/);
+assert.match(ciWorkflow, /node --check tools\/device-soak\.mjs/);
 assert.match(ciWorkflow, /node --check tools\/test-cloud-health\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-cloud-health\.mjs/);
+assert.match(ciWorkflow, /node --check tools\/test-device-soak\.mjs/);
+assert.match(ciWorkflow, /node tools\/test-device-soak\.mjs/);
+assert.match(ciWorkflow, /node tools\/device-soak\.mjs --help/);
+for (const command of [
+  'node --check tools/lib/device-soak.mjs',
+  'node --check tools/device-soak.mjs',
+  'node --check tools/test-device-soak.mjs',
+  'node tools/test-device-soak.mjs',
+  'node tools/device-soak.mjs --help'
+]) {
+  const exactCommand = new RegExp(`^\\s+${command.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\s*$`, 'gm');
+  assert.equal((ciWorkflow.match(exactCommand) || []).length, 1, `CI must run exactly one ${command}`);
+}
+const deviceSoakCiCommands = [...ciWorkflow.matchAll(/^\s+node tools\/device-soak\.mjs(?:\s+[^\n]*)?$/gm)]
+  .map((match) => match[0].trim());
+assert.deepEqual(
+  deviceSoakCiCommands,
+  ['node tools/device-soak.mjs --help'],
+  'CI must never contact physical hardware through the device soak CLI'
+);
 assert.match(ciWorkflow, /^\s+node --check tools\/test-firmware-reliability\.mjs\s*$/m);
 assert.match(ciWorkflow, /^\s+node tools\/test-firmware-reliability\.mjs\s*$/m);
 assert.match(
@@ -137,7 +165,7 @@ assert.match(verifyJob, /\$\{\{ needs\.deploy\.outputs\.page_url \}\}/);
 assert.match(verifyJob, /--require-cloud(?:\s|$)/m);
 assert.doesNotMatch(
   verifyJob,
-  /--require-cloud-health/,
+  /--require-cloud-health|--expected-cloud-version|--require-history-cadence/,
   'Pages post-deploy verification must check the cloud contract without depending on device health'
 );
 assert.match(pagesWorkflow, /path:\s+\$\{\{ runner\.temp \}\}\/longos-pages/);
@@ -158,6 +186,11 @@ assert.match(productionWorkflow, /https:\/\/vqlong06\.github\.io\/autohome-room-
 assert.match(productionWorkflow, /--expected-build live/);
 assert.match(productionWorkflow, /--attempts 1/);
 assert.match(productionWorkflow, /--require-cloud-health/);
+assert.doesNotMatch(
+  productionWorkflow,
+  /--expected-cloud-version|--require-history-cadence/,
+  'Scheduled production health must stay firmware-compatible until a board release is explicitly promoted'
+);
 assert.match(productionWorkflow, /shell:\s+bash/);
 assert.match(productionWorkflow, /for attempt in 1 2 3/);
 assert.match(productionWorkflow, /sleep 20/);
@@ -172,13 +205,20 @@ assert.match(pagesSmokeTest, /'\.github\/workflows\/pages\.yml'/);
 assert.match(pagesSmokeTest, /verifyPng\('\.\/icon-192\.png', 192/);
 assert.match(pagesSmokeTest, /verifyPng\('\.\/icon-512\.png', 512/);
 assert.match(pagesSmokeTest, /--require-cloud-health/);
+assert.match(pagesSmokeTest, /--expected-cloud-version/);
+assert.match(pagesSmokeTest, /--require-history-cadence/);
 assert.match(pagesSmokeTest, /--latest-max-age-ms/);
 assert.match(pagesSmokeTest, /--history-max-age-ms/);
 assert.match(pagesSmokeTest, /LONGOS_CLOUD_LATEST_MAX_AGE_MS/);
 assert.match(pagesSmokeTest, /LONGOS_CLOUD_HISTORY_MAX_AGE_MS/);
+assert.match(pagesSmokeTest, /LONGOS_CLOUD_EXPECTED_VERSION/);
+assert.match(pagesSmokeTest, /LONGOS_HISTORY_CADENCE_WINDOW_MS/);
+assert.match(pagesSmokeTest, /LONGOS_HISTORY_MIN_SAMPLES/);
+assert.match(pagesSmokeTest, /LONGOS_HISTORY_MIN_GAP_MS/);
 assert.match(pagesSmokeTest, /DEFAULT_LATEST_MAX_AGE_MS/);
 assert.match(pagesSmokeTest, /DEFAULT_HISTORY_MAX_AGE_MS/);
 assert.match(pagesSmokeTest, /validateCloudHealth/);
+assert.match(pagesSmokeTest, /validateHistoryCadence/);
 assert.match(pagesSmokeTest, /from '\.\/lib\/cloud-health\.mjs'/);
 assert.match(pagesSmokeTest, /if \(options\.requireCloudHealth\) options\.requireCloud = true/);
 assert.match(pagesSmokeTest, /if \(options\.requireCloudHealth\)/);
@@ -191,8 +231,59 @@ assert.match(pagesSmokeTest, /PGRST106/);
 assert.match(pagesSmokeTest, /validateCloudHealth\(\{/);
 assert.match(pagesSmokeTest, /latestMaxAgeMs:\s*options\.latestMaxAgeMs/);
 assert.match(pagesSmokeTest, /historyMaxAgeMs:\s*options\.historyMaxAgeMs/);
+assert.match(pagesSmokeTest, /expectedAppVersion:\s*options\.expectedCloudVersion/);
+assert.match(pagesSmokeTest, /endpoint\.searchParams\.set\('app_version', `eq\.\$\{options\.expectedCloudVersion\}`\)/);
+assert.match(pagesSmokeTest, /endpoint\.searchParams\.set\('limit', String\(DEFAULT_HISTORY_MAX_ROWS\)\)/);
 assert.match(pagesSmokeTest, /rows\.length > 0/);
 assert.match(pagesSmokeTest, /access-control-allow-origin/);
+const cadenceBlockStart = pagesSmokeTest.lastIndexOf('  if (options.requireHistoryCadence) {');
+const cadenceBlock = pagesSmokeTest.slice(
+  cadenceBlockStart,
+  pagesSmokeTest.indexOf('\n  }\n}\n\nconsole.log', cadenceBlockStart)
+);
+assert.match(cadenceBlock, /room_id,recorded_at,app_version,sensor_online,uptime_ms/);
+assert.match(cadenceBlock, /expectedBootEpochMs/);
+assert.match(cadenceBlock, /DEFAULT_HISTORY_BOOT_TOLERANCE_MS/);
+assert.doesNotMatch(cadenceBlock, /temperature|humidity|SUPABASE_PUBLISHABLE_KEY|x-device-token/i);
+
+assert.match(deviceSoak, /from '\.\/lib\/device-soak\.mjs'/);
+assert.match(deviceSoak, /--expected-version/);
+assert.match(deviceSoak, /--require-wifi/);
+assert.match(deviceSoak, /--require-ap/);
+assert.match(deviceSoak, /--require-sensor/);
+assert.match(deviceSoak, /--require-cloud/);
+assert.match(deviceSoak, /--require-time-synced/);
+assert.match(deviceSoak, /--write-checkpoint/);
+assert.match(deviceSoak, /--resume-checkpoint/);
+assert.match(deviceSoak, /Promise\.all\(\[/);
+assert.match(deviceSoak, /fetchJson\(options\.baseUrl, '\/health'/);
+assert.match(deviceSoak, /fetchJson\(options\.baseUrl, '\/api\/readings'/);
+assert.match(deviceSoak, /const requireSampleGrowth = options\.requireSensor && options\.requireTimeSynced/);
+assert.match(deviceSoak, /Transient soak request failure/);
+assert.match(deviceSoak, /certifiedDeviceVersion\(sourceAppVersion, options\.expectedVersion\)/);
+assert.match(deviceSoak, /monotonicNow:\s*\(\) => performance\.now\(\)/);
+assert.match(deviceSoak, /runDeviceSoak\(\{/);
+assert.match(deviceSoak, /validateCheckpointContinuity\(\{/);
+assert.match(deviceSoak, /createDeviceSoakCheckpoint\(lastEvidence\)/);
+assert.match(deviceSoak, /writeFile\(options\.writeCheckpoint/);
+assert.match(deviceSoak, /chmod\(options\.writeCheckpoint, 0o600\)/);
+assert.doesNotMatch(deviceSoak, /include\/secrets\.h|WIFI_PASSWORD|SUPABASE_DEVICE_TOKEN/);
+
+assert.match(deviceSoakValidator, /health\.appVersion does not match expectedVersion/);
+assert.match(deviceSoakValidator, /readings\.appVersion does not match expectedVersion/);
+assert.match(deviceSoakValidator, /certified device soak version must match APP_VERSION/);
+assert.match(deviceSoakValidator, /station-only Wi-Fi after reconnect/);
+assert.match(deviceSoakValidator, /fallback AP at 192\.168\.4\.1/);
+assert.match(deviceSoakValidator, /device uptime must increase without reboot or stall/);
+assert.match(deviceSoakValidator, /local history sample count stalled during soak/);
+assert.match(deviceSoakValidator, /minimumSampleCoverage/);
+assert.match(deviceSoakValidator, /verified local day rollover/);
+assert.match(deviceSoakValidator, /longos-device-soak-checkpoint-v1/);
+assert.match(deviceSoakValidator, /device uptime diverged across the checkpoint and may have rebooted/);
+assert.match(deviceSoakValidator, /today sample count decreased across the reconnect checkpoint/);
+assert.match(deviceSoakValidator, /successful device observations did not cover the configured soak duration/);
+assert.match(deviceSoakValidator, /history status codes must be 2xx|latest\/history status codes must be 2xx/);
+assert.match(deviceSoakTest, /LongOS device soak validator tests: OK/);
 
 assert.match(platformio, /^platform\s*=\s*espressif32@6\.10\.0$/m);
 assert.match(gitignore, /^include\/secrets\.h$/m);
