@@ -10,6 +10,7 @@
 #include <math.h>
 #include <time.h>
 #include "longos_config.h"
+#include "longos_retry_policy.h"
 #include "supabase_ca.h"
 #include "web_assets.h"
 
@@ -20,7 +21,7 @@ const char *MDNS_NAME = "longos-sensor";
 const char *AP_SSID = "LongOS-Sensor";
 const char *AP_PASSWORD = LONGOS_AP_PASSWORD;
 const char *TIME_ZONE = "ICT-7";
-const char *APP_VERSION = "longos-sensor-2026-08-01.3";
+const char *APP_VERSION = "longos-sensor-2026-08-02.1";
 const char *SUPABASE_URL = LONGOS_SUPABASE_URL;
 const char *SUPABASE_PUBLISHABLE_KEY = LONGOS_SUPABASE_PUBLISHABLE_KEY;
 const char *SUPABASE_ROOM_ID = LONGOS_SUPABASE_ROOM_ID;
@@ -33,10 +34,14 @@ const int SCL_PIN = 22;
 const unsigned long SAMPLE_INTERVAL_MS = 1000;
 const unsigned long CLOUD_UPLOAD_INTERVAL_MS = 30UL * 1000UL;
 const unsigned long CLOUD_HISTORY_INTERVAL_MS = 10UL * 60UL * 1000UL;
+const unsigned long CLOUD_HISTORY_RETRY_INTERVAL_MS = 30UL * 1000UL;
+const unsigned long CLOUD_HISTORY_RETRY_MAX_MS = 5UL * 60UL * 1000UL;
 const unsigned long WIFI_TIMEOUT_MS = 15000;
 const unsigned long WIFI_RETRY_INTERVAL_MS = 30UL * 1000UL;
 const unsigned long HISTORY_SAVE_INTERVAL_MS = 15UL * 60UL * 1000UL;
-const unsigned long TIME_CHECK_INTERVAL_MS = 60UL * 1000UL;
+const unsigned long HISTORY_SAVE_RETRY_INTERVAL_MS = 30UL * 1000UL;
+const unsigned long HISTORY_SAVE_RETRY_MAX_MS = 5UL * 60UL * 1000UL;
+const unsigned long TIME_PENDING_CHECK_INTERVAL_MS = 1000;
 const unsigned long TREND_SAMPLE_INTERVAL_MS = 60UL * 1000UL;
 const unsigned long TREND_HORIZON_MS = 60UL * 60UL * 1000UL;
 const unsigned long TREND_MIN_AGE_MS = 50UL * 60UL * 1000UL;
@@ -56,8 +61,6 @@ struct Reading {
 Reading lastReading;
 unsigned long lastSampleMs = 0;
 unsigned long lastCloudUploadMs = 0;
-unsigned long lastCloudHistoryMs = 0;
-unsigned long lastHistorySaveMs = 0;
 unsigned long lastTimeCheckMs = 0;
 uint64_t lastSensorOkMs = 0;
 uint64_t uptimeHighMs = 0;
@@ -70,10 +73,13 @@ int lastCloudHistoryStatusCode = 0;
 bool historyDirty = false;
 bool historyReady = false;
 bool timeReady = false;
+bool timeCheckStarted = false;
 bool accessPointStarted = false;
 bool mdnsStarted = false;
 bool timeSyncConfigured = false;
 bool stationWasConnected = false;
+longos::PeriodicRetryTimer cloudHistoryRetryTimer;
+longos::PeriodicRetryTimer historySaveRetryTimer;
 
 struct DayStat {
   uint32_t day = 0;
@@ -215,6 +221,7 @@ void loadHistory() {
       resetDayStat(i, 0);
     }
   }
+  historySaveRetryTimer.defer(millis());
 }
 
 void saveHistory(bool force = false) {
@@ -222,13 +229,30 @@ void saveHistory(bool force = false) {
     return;
   }
 
-  if (!force && millis() - lastHistorySaveMs < HISTORY_SAVE_INTERVAL_MS) {
+  unsigned long now = millis();
+  if (!historySaveRetryTimer.due(
+        now,
+        force,
+        HISTORY_SAVE_INTERVAL_MS,
+        HISTORY_SAVE_RETRY_INTERVAL_MS,
+        HISTORY_SAVE_RETRY_MAX_MS
+      )) {
     return;
   }
 
-  preferences.putBytes("daily", history, sizeof(history));
+  size_t bytesWritten = preferences.putBytes("daily", history, sizeof(history));
+  if (bytesWritten != sizeof(history)) {
+    historySaveRetryTimer.recordResult(millis(), false);
+    Serial.printf(
+      "History save failed: wrote %u of %u bytes.\n",
+      (unsigned int)bytesWritten,
+      (unsigned int)sizeof(history)
+    );
+    return;
+  }
+
+  historySaveRetryTimer.recordResult(millis(), true);
   historyDirty = false;
-  lastHistorySaveMs = millis();
 }
 
 int historySlotForDay(uint32_t day) {
@@ -497,18 +521,20 @@ void appendStatsJson(String &json) {
 }
 
 void refreshTimeStatus() {
-  if (!stationConnected()) {
-    timeReady = false;
+  if (timeReady) {
     return;
   }
 
-  if (timeReady && millis() - lastTimeCheckMs < TIME_CHECK_INTERVAL_MS) {
+  unsigned long now = millis();
+  if (timeCheckStarted && now - lastTimeCheckMs < TIME_PENDING_CHECK_INTERVAL_MS) {
     return;
   }
 
-  lastTimeCheckMs = millis();
-  uint32_t localDay = currentLocalDay();
-  timeReady = localDay > 0;
+  timeCheckStarted = true;
+  lastTimeCheckMs = now;
+  if (currentLocalDay() > 0) {
+    timeReady = true;
+  }
 }
 
 void sampleSensor() {
@@ -683,10 +709,15 @@ void uploadHistoryToSupabase(bool force = false) {
   }
 
   unsigned long now = millis();
-  if (!force && lastCloudHistoryMs != 0 && now - lastCloudHistoryMs < CLOUD_HISTORY_INTERVAL_MS) {
+  if (!cloudHistoryRetryTimer.due(
+        now,
+        force,
+        CLOUD_HISTORY_INTERVAL_MS,
+        CLOUD_HISTORY_RETRY_INTERVAL_MS,
+        CLOUD_HISTORY_RETRY_MAX_MS
+      )) {
     return;
   }
-  lastCloudHistoryMs = now;
 
   WiFiClientSecure client;
   client.setCACert(SUPABASE_ROOT_CA);
@@ -695,6 +726,7 @@ void uploadHistoryToSupabase(bool force = false) {
   String endpoint = String(SUPABASE_URL) + "/rest/v1/room_readings";
   if (!https.begin(client, endpoint)) {
     lastCloudHistoryOk = false;
+    cloudHistoryRetryTimer.recordResult(millis(), false);
     lastCloudHistoryStatusCode = -1;
     Serial.println("Supabase history failed: HTTPS begin failed.");
     return;
@@ -708,6 +740,13 @@ void uploadHistoryToSupabase(bool force = false) {
   int code = https.POST(buildHistoryPayload());
   lastCloudHistoryStatusCode = code;
   lastCloudHistoryOk = code >= 200 && code < 300;
+  if (lastCloudHistoryOk) {
+    cloudHistoryRetryTimer.recordResult(millis(), true);
+  } else {
+    // A missing/error response after POST is ambiguous: Supabase may already
+    // have committed the row. Preserve the normal cadence to avoid duplicates.
+    cloudHistoryRetryTimer.defer(millis());
+  }
 
   if (!lastCloudHistoryOk) {
     String body = https.getString();
@@ -852,8 +891,6 @@ void startAccessPoint() {
   Serial.println("WiFi fallback AP started");
   Serial.print("SSID: ");
   Serial.println(AP_SSID);
-  Serial.print("Password: ");
-  Serial.println(AP_PASSWORD);
   Serial.print("Open: http://");
   Serial.println(WiFi.softAPIP());
 }
@@ -958,7 +995,6 @@ void maintainNetwork() {
       }
       setupMdns();
       lastCloudUploadMs = 0;
-      lastCloudHistoryMs = 0;
       uploadLatestToSupabase(true);
     }
     stationWasConnected = true;
@@ -973,7 +1009,6 @@ void maintainNetwork() {
     }
   }
   stationWasConnected = false;
-  timeReady = false;
   timeSyncConfigured = false;
 
   if (strlen(WIFI_SSID) == 0) {

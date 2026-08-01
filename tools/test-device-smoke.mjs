@@ -11,7 +11,8 @@ function parseOptions(args) {
     expectedVersion: process.env.LONGOS_EXPECTED_VERSION || '',
     timeoutMs: Number(process.env.LONGOS_DEVICE_TIMEOUT_MS || 8000),
     requireSensor: false,
-    requireCloud: false
+    requireCloud: false,
+    requireTimeSynced: false
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -26,6 +27,8 @@ function parseOptions(args) {
       options.requireSensor = true;
     } else if (argument === '--require-cloud') {
       options.requireCloud = true;
+    } else if (argument === '--require-time-synced') {
+      options.requireTimeSynced = true;
     } else if (argument === '--help' || argument === '-h') {
       console.log(`Usage: node tools/test-device-smoke.mjs [options]
 
@@ -35,6 +38,7 @@ Options:
   --timeout-ms <ms>         Timeout for each request (default: 8000)
   --require-sensor          Require an online sensor with valid readings
   --require-cloud           Require successful latest/history cloud uploads
+  --require-time-synced     Require a valid local clock/history day
   -h, --help                Show this help
 
 Environment overrides: LONGOS_DEVICE_URL, LONGOS_EXPECTED_VERSION,
@@ -203,6 +207,9 @@ function validateReadings(readings, expectedVersion, options) {
 
   assert.ok(readings.stats && typeof readings.stats === 'object' && !Array.isArray(readings.stats), 'stats must be an object');
   assertBoolean(readings.stats.timeSynced, 'stats.timeSynced');
+  if (options.requireTimeSynced) {
+    assert.equal(readings.stats.timeSynced, true, 'a synchronized local clock is required');
+  }
   assertNonNegativeInteger(readings.stats.daysStored, 'stats.daysStored');
 
   for (const name of [
@@ -248,4 +255,5 @@ console.log(`Firmware: ${readings.appVersion}`);
 console.log(`Wi-Fi: ${readings.wifiMode}, RSSI ${readings.wifiRssi ?? 'n/a'} dBm`);
 console.log(`Sensor: ${readings.sensorOnline ? `${readings.temperatureC} C, ${readings.humidity}%` : 'offline'}`);
 console.log(`Cloud: latest ${readings.cloudStatusCode}, history ${readings.cloudHistoryStatusCode}`);
+console.log(`Local history: time ${readings.stats.timeSynced ? 'synced' : 'pending'}, today ${readings.stats.todaySamples} samples, ${readings.stats.daysStored} days stored`);
 console.log('Web assets: gzip HTML/SVG and PNG OK');

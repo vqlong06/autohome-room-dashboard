@@ -121,7 +121,7 @@ assert.equal(rootManifest.start_url, './?pwa=20260801.3');
 assert.match(publicHtml, /name="longos-build" content="20260801\.3"/);
 assert.match(publicHtml, /name="autohome-build" content="20260801\.3"/);
 assert.match(publicHtml, /manifest\.webmanifest\?v=20260801\.3/);
-assert.match(firmware, /longos-sensor-2026-08-01\.3/);
+assert.match(firmware, /longos-sensor-2026-08-02\.1/);
 
 assert.match(publicHtml, /const CLOUD_POLL_INTERVAL_MS = 30 \* 1000;/);
 assert.match(publicHtml, /const CLOUD_REQUEST_TIMEOUT_MS = 8 \* 1000;/);
