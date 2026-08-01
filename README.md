@@ -51,6 +51,8 @@ Mặc định trang preview sẽ hiện trạng thái chưa có dữ liệu vì 
 http://127.0.0.1:9876/public/index.html?demo=1
 ```
 
+`index_v1.html` chỉ là trang tương thích để chuyển URL cũ sang dashboard hiện tại. Mã dashboard cũ vẫn nằm trong Git history, không được phục vụ như một ứng dụng riêng. Các file `public/index_v*.html` nếu có chỉ là snapshot cục bộ đã bị Git bỏ qua; không đưa chúng vào bản deploy.
+
 ## Upload bằng Arduino IDE
 
 1. Cài ESP32 board package trong Arduino IDE.
@@ -116,7 +118,7 @@ Dashboard có chế độ cloud để xem khi không ở cùng Wi-Fi. ESP32 gử
 2. Cài mới: chạy `supabase/room_latest.sql`, rồi `supabase/add_history.sql`.
 3. Với database đang chạy từ bản cũ: chạy một lần `supabase/security_hardening.sql` để thêm migration còn thiếu và bảo vệ quyền ghi bằng token ESP32.
 4. Upload lại firmware cho ESP32 sau khi SQL chạy thành công.
-5. Upload `public/index.html` lên GitHub Pages.
+5. Deploy toàn bộ các file được Git theo dõi trong thư mục `public/` lên GitHub Pages để có đủ HTML, manifest và icon.
 6. Mở dashboard cloud bằng:
 
 ```text

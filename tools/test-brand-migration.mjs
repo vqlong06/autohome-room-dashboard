@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import vm from 'node:vm';
@@ -12,6 +13,7 @@ const readBytes = (path) => readFile(resolve(root, path));
 const [
   rootHtml,
   publicHtml,
+  retiredHtml,
   rootManifestSource,
   publicManifestSource,
   webHtml,
@@ -25,6 +27,7 @@ const [
 ] = await Promise.all([
   read('index.html'),
   read('public/index.html'),
+  read('index_v1.html'),
   read('manifest.webmanifest'),
   read('public/manifest.webmanifest'),
   read('web/index.html'),
@@ -76,6 +79,40 @@ function createStorage(initial = {}) {
 
 assert.equal(rootHtml, publicHtml, 'Root HTML must match public HTML');
 assert.equal(rootManifestSource, publicManifestSource, 'Root manifest must match public manifest');
+
+const trackedPublicFiles = execFileSync('git', ['ls-files', 'public'], {
+  cwd: root,
+  encoding: 'utf8'
+}).trim().split('\n');
+assert.deepEqual(trackedPublicFiles, [
+  'public/.nojekyll',
+  'public/apple-touch-icon.png',
+  'public/favicon.svg',
+  'public/icon-192.png',
+  'public/icon-512.png',
+  'public/index.html',
+  'public/manifest.webmanifest'
+], 'Tracked public deploy files must match the release allowlist');
+
+assert.doesNotMatch(retiredHtml, /AutoHome|Phòng của Long|autohome\./i, 'Retired entry page must not expose legacy branding or storage keys');
+assert.match(retiredHtml, /<meta name="robots" content="noindex">/);
+assert.match(retiredHtml, /<link rel="canonical" href="\.\/index\.html">/);
+assert.match(retiredHtml, /window\.location\.replace\(target\.href\)/);
+assert.ok(Buffer.byteLength(retiredHtml) < 5000, 'Retired entry page must stay a small redirect');
+
+const redirectScriptMatch = retiredHtml.match(/<script>\s*([\s\S]*?)\s*<\/script>/);
+assert.ok(redirectScriptMatch, 'Retired entry redirect script is missing');
+let redirectedTo = '';
+const redirectLocation = {
+  href: 'https://example.com/LongOS/index_v1.html?source=cloud#history',
+  search: '?source=cloud',
+  hash: '#history',
+  replace(value) {
+    redirectedTo = value;
+  }
+};
+vm.runInNewContext(redirectScriptMatch[1], { URL, window: { location: redirectLocation } });
+assert.equal(redirectedTo, 'https://example.com/LongOS/index.html?source=cloud#history');
 
 const rootManifest = JSON.parse(rootManifestSource);
 assert.equal(rootManifest.name, 'LongOS');
