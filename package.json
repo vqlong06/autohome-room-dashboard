@@ -1,0 +1,11 @@
+{
+  "name": "longos",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:supabase-semantic": "node tools/test-supabase-migrations.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.4"
+  }
+}

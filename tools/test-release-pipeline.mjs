@@ -7,14 +7,28 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFile(resolve(root, path), 'utf8');
 
-const [ciWorkflow, pagesWorkflow, productionWorkflow, pagesSmokeTest, platformio, gitignore] = await Promise.all([
+const [
+  ciWorkflow,
+  pagesWorkflow,
+  productionWorkflow,
+  pagesSmokeTest,
+  platformio,
+  gitignore,
+  packageJsonSource,
+  packageLockSource
+] = await Promise.all([
   read('.github/workflows/ci.yml'),
   read('.github/workflows/pages.yml'),
   read('.github/workflows/production-smoke.yml'),
   read('tools/test-pages-smoke.mjs'),
   read('platformio.ini'),
-  read('.gitignore')
+  read('.gitignore'),
+  read('package.json'),
+  read('package-lock.json')
 ]);
+
+const packageJson = JSON.parse(packageJsonSource);
+const packageLock = JSON.parse(packageLockSource);
 
 function assertUses(source, action) {
   assert.ok(source.includes(`uses: ${action}`), `Workflow must use ${action}`);
@@ -71,6 +85,9 @@ assert.match(ciWorkflow, /node --check tools\/test-pages-smoke\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-pages-smoke\.mjs --help/);
 assert.match(ciWorkflow, /node --check tools\/test-pages-smoke-integration\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-pages-smoke-integration\.mjs/);
+assert.match(ciWorkflow, /npm ci --ignore-scripts --no-audit --no-fund/);
+assert.match(ciWorkflow, /node --check tools\/test-supabase-migrations\.mjs/);
+assert.match(ciWorkflow, /npm run test:supabase-semantic/);
 assert.match(ciWorkflow, /node --check tools\/test-supabase-security\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-supabase-security\.mjs/);
 assert.match(ciWorkflow, /python-3\.11-platformio-6\.1\.19-/);
@@ -162,6 +179,37 @@ assert.match(pagesSmokeTest, /access-control-allow-origin/);
 assert.match(platformio, /^platform\s*=\s*espressif32@6\.10\.0$/m);
 assert.match(gitignore, /^include\/secrets\.h$/m);
 assert.match(gitignore, /^public\/index_v\*\.html$/m);
+assert.match(gitignore, /^node_modules\/$/m);
+
+const pglitePackage = packageLock.packages?.['node_modules/@electric-sql/pglite'];
+assert.equal(
+  packageJson.scripts?.['test:supabase-semantic'],
+  'node tools/test-supabase-migrations.mjs',
+  'Semantic Supabase test command must remain explicit'
+);
+assert.equal(
+  packageJson.devDependencies?.['@electric-sql/pglite'],
+  '0.5.4',
+  'PGlite must use an exact version pin'
+);
+assert.equal(packageLock.lockfileVersion, 3, 'npm lockfile version must remain reproducible');
+assert.equal(
+  packageLock.packages?.['']?.devDependencies?.['@electric-sql/pglite'],
+  '0.5.4',
+  'Lockfile root must preserve the exact PGlite pin'
+);
+assert.equal(pglitePackage?.version, '0.5.4', 'Lockfile must resolve PGlite 0.5.4');
+assert.equal(
+  pglitePackage?.resolved,
+  'https://registry.npmjs.org/@electric-sql/pglite/-/pglite-0.5.4.tgz',
+  'Lockfile must resolve the expected PGlite artifact'
+);
+assert.equal(
+  pglitePackage?.integrity,
+  'sha512-yYZUyyXrHU7tPlCjwZQJ6hIG9DscdCCn7Uk0mYKwC1FeHX286AbcmFveMiRBEak8e9iPupjsoVImN3yJZVed2g==',
+  'Lockfile must preserve the verified PGlite integrity hash'
+);
+assert.equal(pglitePackage?.dev, true, 'PGlite must remain a development-only dependency');
 
 const trackedFiles = execFileSync('git', ['ls-files'], {
   cwd: root,

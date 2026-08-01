@@ -17,6 +17,7 @@ compile_commands.json
 .env
 .env.*
 !.env.example
+node_modules/
 
 # Supabase CLI local state
 supabase/.temp/

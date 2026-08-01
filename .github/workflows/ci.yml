@@ -30,6 +30,9 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
+      - name: Install Node.js dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Check Node.js scripts
         run: |
           node --check tools/embed-web.mjs
@@ -40,6 +43,7 @@ jobs:
           node --check tools/test-pages-smoke.mjs
           node --check tools/test-pages-smoke-integration.mjs
           node --check tools/test-release-pipeline.mjs
+          node --check tools/test-supabase-migrations.mjs
           node --check tools/test-supabase-security.mjs
 
       - name: Run repository tests
@@ -50,6 +54,7 @@ jobs:
           node tools/test-device-smoke.mjs --help
           node tools/test-pages-smoke.mjs --help
           node tools/test-pages-smoke-integration.mjs
+          npm run test:supabase-semantic
           node tools/test-supabase-security.mjs
 
   firmware:
