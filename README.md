@@ -103,20 +103,39 @@ Kiểm tra tương đương trên máy:
 
 ```bash
 node tools/test-brand-migration.mjs
+node tools/test-cloud-health.mjs
+node tools/test-pages-smoke-integration.mjs
 node tools/test-release-pipeline.mjs
+node tools/test-supabase-security.mjs
 test -e include/secrets.h || install -m 600 include/secrets.example.h include/secrets.h
 pio run -e esp32dev
 ```
 
 Lệnh `install` chỉ tạo cấu hình mẫu khi `include/secrets.h` chưa tồn tại, không ghi đè cấu hình thật. Workflow `Deploy LongOS Pages` sao chép đúng allowlist 7 file public vào một thư mục staging riêng; `src/`, `include/`, `web/`, SQL, secrets và snapshot cục bộ không nằm trong Pages artifact. Workflow chỉ deploy từ branch `main`.
 
-Sau mỗi deployment, một job không có quyền deploy sẽ kiểm tra build marker, manifest, favicon, Apple touch icon, `.nojekyll`, xác nhận source/secrets trả `404` và thử quyền đọc ẩn danh của hai bảng Supabase mà không in dữ liệu cảm biến. Có thể chạy lại cùng kiểm tra với bản đã deploy bằng:
+Sau mỗi deployment, một job không có quyền deploy chạy kiểm tra contract: đối chiếu build marker, manifest, favicon, Apple touch icon, `.nojekyll`, xác nhận source/secrets trả `404`, thử quyền đọc ẩn danh của hai bảng Supabase và xác nhận schema riêng `longos_private` không được public qua REST. Kiểm tra này không yêu cầu ESP32 đang online nên một lần mất điện hoặc mất Wi-Fi không làm deployment hợp lệ bị báo hỏng. Có thể chạy lại cùng kiểm tra contract với bản đã deploy bằng:
 
 ```bash
 node tools/test-pages-smoke.mjs --require-cloud
 ```
 
-Workflow `LongOS Production Smoke` chạy bộ kiểm tra này với phiên bản đang live mỗi ngày lúc 09:17 theo giờ Việt Nam và có thể chạy thủ công trong tab **Actions**. Job ngay sau deployment vẫn đối chiếu build marker chính xác với commit vừa phát hành.
+Workflow `LongOS Production Smoke` chạy kiểm tra health đầy đủ trên phiên bản đang live mỗi 15 phút, lệch vào phút 07/22/37/52 để tránh giờ tròn đông tải, và có thể chạy thủ công trong tab **Actions**. Mỗi lượt thử lại tối đa 3 lần khi có lỗi mạng tạm thời. Ngoài toàn bộ contract ở trên, job yêu cầu heartbeat `room_latest` không cũ quá 3 phút, mẫu history mới nhất không cũ quá 20 phút và các trạng thái ESP32, Wi-Fi, SHT30 đều online. Job ngay sau deployment vẫn chỉ kiểm tra contract và đối chiếu build marker chính xác với commit vừa phát hành; lỗi thiết bị sẽ do production health báo riêng.
+
+Chạy production health tương đương trên máy:
+
+```bash
+node tools/test-pages-smoke.mjs --require-cloud-health
+```
+
+`--require-cloud-health` ngầm bật `--require-cloud`. Có thể đổi ngưỡng bằng CLI `--latest-max-age-ms`, `--history-max-age-ms` hoặc hai biến môi trường `LONGOS_CLOUD_LATEST_MAX_AGE_MS`, `LONGOS_CLOUD_HISTORY_MAX_AGE_MS`; mặc định lần lượt là `180000` và `1200000` mili giây. Ví dụ:
+
+```bash
+LONGOS_CLOUD_LATEST_MAX_AGE_MS=240000 \
+LONGOS_CLOUD_HISTORY_MAX_AGE_MS=1500000 \
+node tools/test-pages-smoke.mjs --require-cloud-health
+```
+
+Cả hai chế độ chỉ đọc dữ liệu và không cần GitHub secret. Log chỉ ghi kết quả contract, trạng thái cùng độ trễ heartbeat/history; script không in nhiệt độ, độ ẩm, khóa Supabase hoặc nội dung telemetry thô.
 
 **Lưu ý riêng tư:** GitHub Pages và dữ liệu `main-room` theo cấu hình Supabase hiện tại đều công khai cho người có URL. Nếu dữ liệu phòng cần riêng tư, chưa bật Pages cho đến khi bổ sung đăng nhập và RLS tương ứng.
 
