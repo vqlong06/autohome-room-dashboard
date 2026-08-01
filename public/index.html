@@ -5,13 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LongOS — Không gian của Long</title>
   <meta name="theme-color" content="#0b0e15">
-  <meta name="autohome-build" content="20260801.1">
+  <meta name="longos-build" content="20260801.2">
+  <!-- Legacy marker lets already-installed AutoHome builds discover this update. -->
+  <meta name="autohome-build" content="20260801.2">
   <meta name="application-name" content="LongOS">
   <meta name="apple-mobile-web-app-title" content="LongOS">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="./manifest.webmanifest?v=20260801.1">
+  <link rel="manifest" href="./manifest.webmanifest?v=20260801.2">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260713">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260713">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3563,7 +3565,9 @@
   </div>
 
   <script>
-    const APP_BUILD = document.querySelector('meta[name="autohome-build"]')?.content || 'dev';
+    const APP_BUILD = document.querySelector('meta[name="longos-build"]')?.content
+      || document.querySelector('meta[name="autohome-build"]')?.content
+      || 'dev';
     const PWA_UPDATE_CHECK_MS = 5 * 60 * 1000;
 
     function isStandaloneApp() {
@@ -3589,7 +3593,8 @@
         const response = await fetch(checkUrl, { cache: 'no-store' });
         if (!response.ok) return;
         const source = await response.text();
-        const match = source.match(/<meta\s+name=["']autohome-build["']\s+content=["']([^"']+)["']/i);
+        const match = source.match(/<meta\s+name=["']longos-build["']\s+content=["']([^"']+)["']/i)
+          || source.match(/<meta\s+name=["']autohome-build["']\s+content=["']([^"']+)["']/i);
         const remoteBuild = match ? match[1] : '';
         if (!remoteBuild || remoteBuild === APP_BUILD) return;
 
@@ -3627,7 +3632,8 @@
     const EVN_VAT_RATE = 0.08;
 
     /* ===== Cài đặt người dùng (lưu localStorage) ===== */
-    const SETTINGS_KEY = 'autohome.settings.v1';
+    const SETTINGS_KEY = 'longos.settings.v1';
+    const LEGACY_SETTINGS_KEY = 'autohome.settings.v1';
     const DEFAULT_SETTINGS = {
       locLabel: 'Hà Nội',
       lat: 21.0285,
@@ -3641,13 +3647,29 @@
       theme: 'auto',   // auto | light | dark
       refreshSec: 1
     };
+    function parseStoredSettings(raw) {
+      if (!raw) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+        return Object.assign({}, DEFAULT_SETTINGS, parsed);
+      } catch (e) {
+        return null;
+      }
+    }
     function loadSettings() {
       try {
-        const raw = localStorage.getItem(SETTINGS_KEY);
-        return raw ? Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw)) : Object.assign({}, DEFAULT_SETTINGS);
-      } catch (e) {
-        return Object.assign({}, DEFAULT_SETTINGS);
-      }
+        const current = parseStoredSettings(localStorage.getItem(SETTINGS_KEY));
+        if (current) return current;
+
+        const legacyRaw = localStorage.getItem(LEGACY_SETTINGS_KEY);
+        const legacy = parseStoredSettings(legacyRaw);
+        if (legacy) {
+          localStorage.setItem(SETTINGS_KEY, legacyRaw);
+          return legacy;
+        }
+      } catch (e) {}
+      return Object.assign({}, DEFAULT_SETTINGS);
     }
     function saveSettings() {
       try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}

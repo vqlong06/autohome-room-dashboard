@@ -729,7 +729,8 @@
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
-    const CLOUD_ACCESS_STORAGE_KEY = 'autohome.cloudAccessToken.v1';
+    const CLOUD_ACCESS_STORAGE_KEY = 'longos.cloudAccessToken.v1';
+    const LEGACY_CLOUD_ACCESS_STORAGE_KEY = 'autohome.cloudAccessToken.v1';
     const HISTORY_PAGE_SIZE = 1000;
     const HISTORY_INITIAL_LIMIT = 30000;
     const HISTORY_INCREMENTAL_LIMIT = 8000;
@@ -764,12 +765,27 @@
     };
 
     if (params.get('reset_access') === '1') {
-      try { localStorage.removeItem(CLOUD_ACCESS_STORAGE_KEY); } catch (error) {}
+      try {
+        localStorage.removeItem(CLOUD_ACCESS_STORAGE_KEY);
+        localStorage.removeItem(LEGACY_CLOUD_ACCESS_STORAGE_KEY);
+      } catch (error) {}
     }
 
     function readCloudAccessToken() {
-      try { return (localStorage.getItem(CLOUD_ACCESS_STORAGE_KEY) || '').trim(); }
-      catch (error) { return ''; }
+      try {
+        const current = (localStorage.getItem(CLOUD_ACCESS_STORAGE_KEY) || '').trim();
+        if (current) return current;
+
+        const legacy = (localStorage.getItem(LEGACY_CLOUD_ACCESS_STORAGE_KEY) || '').trim();
+        if (legacy) localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, legacy);
+        return legacy;
+      } catch (error) {
+        return '';
+      }
+    }
+
+    function saveCloudAccessToken(token) {
+      try { localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, token); } catch (error) {}
     }
 
     function getCloudAccessToken() {
@@ -778,9 +794,7 @@
       state.cloudAccessPrompted = true;
       const entered = window.prompt('Nhập mã truy cập cloud LongOS (chỉ cần nhập một lần trên thiết bị này):');
       const token = (entered || '').trim();
-      if (token) {
-        try { localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, token); } catch (error) {}
-      }
+      if (token) saveCloudAccessToken(token);
       return token;
     }
 

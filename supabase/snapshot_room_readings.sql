@@ -1,5 +1,6 @@
 -- ============================================================
--- AutoHome - Snapshot room_latest sang room_readings bằng pg_cron
+-- LongOS - Snapshot room_latest sang room_readings bằng pg_cron
+-- Giữ tên job autohome-* để không tạo cron job trùng trên database đang chạy.
 -- Paste vào Supabase -> SQL Editor -> Run.
 --
 -- Mục tiêu: không cần đổi firmware ESP32. ESP32 chỉ cần tiếp tục

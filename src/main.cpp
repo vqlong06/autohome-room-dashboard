@@ -9,21 +9,22 @@
 #include <limits.h>
 #include <math.h>
 #include <time.h>
-#include "secrets.h"
+#include "longos_config.h"
 #include "supabase_ca.h"
 
-const char *WIFI_SSID = AUTOHOME_WIFI_SSID;
-const char *WIFI_PASSWORD = AUTOHOME_WIFI_PASSWORD;
+const char *WIFI_SSID = LONGOS_WIFI_SSID;
+const char *WIFI_PASSWORD = LONGOS_WIFI_PASSWORD;
 
 const char *MDNS_NAME = "longos-sensor";
 const char *AP_SSID = "LongOS-Sensor";
-const char *AP_PASSWORD = AUTOHOME_AP_PASSWORD;
+const char *AP_PASSWORD = LONGOS_AP_PASSWORD;
 const char *TIME_ZONE = "ICT-7";
-const char *APP_VERSION = "longos-sensor-2026-08-01.1";
-const char *SUPABASE_URL = AUTOHOME_SUPABASE_URL;
-const char *SUPABASE_PUBLISHABLE_KEY = AUTOHOME_SUPABASE_PUBLISHABLE_KEY;
-const char *SUPABASE_ROOM_ID = AUTOHOME_SUPABASE_ROOM_ID;
-const char *SUPABASE_DEVICE_TOKEN = AUTOHOME_SUPABASE_DEVICE_TOKEN;
+const char *APP_VERSION = "longos-sensor-2026-08-01.2";
+const char *SUPABASE_URL = LONGOS_SUPABASE_URL;
+const char *SUPABASE_PUBLISHABLE_KEY = LONGOS_SUPABASE_PUBLISHABLE_KEY;
+const char *SUPABASE_ROOM_ID = LONGOS_SUPABASE_ROOM_ID;
+const char *SUPABASE_DEVICE_TOKEN = LONGOS_SUPABASE_DEVICE_TOKEN;
+const char *LEGACY_HISTORY_NAMESPACE = "autohome";
 
 const uint8_t SHT3X_ADDRESS = 0x44;
 const int SDA_PIN = 21;
@@ -839,7 +840,8 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
-    const CLOUD_ACCESS_STORAGE_KEY = 'autohome.cloudAccessToken.v1';
+    const CLOUD_ACCESS_STORAGE_KEY = 'longos.cloudAccessToken.v1';
+    const LEGACY_CLOUD_ACCESS_STORAGE_KEY = 'autohome.cloudAccessToken.v1';
     const HISTORY_PAGE_SIZE = 1000;
     const HISTORY_INITIAL_LIMIT = 30000;
     const HISTORY_INCREMENTAL_LIMIT = 8000;
@@ -874,12 +876,27 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
     };
 
     if (params.get('reset_access') === '1') {
-      try { localStorage.removeItem(CLOUD_ACCESS_STORAGE_KEY); } catch (error) {}
+      try {
+        localStorage.removeItem(CLOUD_ACCESS_STORAGE_KEY);
+        localStorage.removeItem(LEGACY_CLOUD_ACCESS_STORAGE_KEY);
+      } catch (error) {}
     }
 
     function readCloudAccessToken() {
-      try { return (localStorage.getItem(CLOUD_ACCESS_STORAGE_KEY) || '').trim(); }
-      catch (error) { return ''; }
+      try {
+        const current = (localStorage.getItem(CLOUD_ACCESS_STORAGE_KEY) || '').trim();
+        if (current) return current;
+
+        const legacy = (localStorage.getItem(LEGACY_CLOUD_ACCESS_STORAGE_KEY) || '').trim();
+        if (legacy) localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, legacy);
+        return legacy;
+      } catch (error) {
+        return '';
+      }
+    }
+
+    function saveCloudAccessToken(token) {
+      try { localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, token); } catch (error) {}
     }
 
     function getCloudAccessToken() {
@@ -888,9 +905,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       state.cloudAccessPrompted = true;
       const entered = window.prompt('Nhập mã truy cập cloud LongOS (chỉ cần nhập một lần trên thiết bị này):');
       const token = (entered || '').trim();
-      if (token) {
-        try { localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, token); } catch (error) {}
-      }
+      if (token) saveCloudAccessToken(token);
       return token;
     }
 
@@ -1981,7 +1996,8 @@ void resetDayStat(int slot, uint32_t day) {
 }
 
 void loadHistory() {
-  historyReady = preferences.begin("autohome", false);
+  // Keep the legacy namespace so existing devices retain their 21-day history.
+  historyReady = preferences.begin(LEGACY_HISTORY_NAMESPACE, false);
   if (!historyReady) {
     Serial.println("History storage unavailable.");
     return;

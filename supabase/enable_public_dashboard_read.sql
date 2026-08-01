@@ -1,4 +1,4 @@
--- AutoHome public dashboard migration.
+-- LongOS public dashboard migration.
 -- Anyone with the dashboard URL can read main-room telemetry.
 -- Insert and update policies remain protected by the ESP32 device token.
 

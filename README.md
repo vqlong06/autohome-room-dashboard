@@ -65,11 +65,11 @@ Nếu để `WIFI_SSID` rỗng, ESP32 sẽ phát Wi-Fi riêng:
 
 ```text
 SSID: LongOS-Sensor
-Password: giá trị AUTOHOME_AP_PASSWORD trong include/secrets.h
+Password: giá trị LONGOS_AP_PASSWORD trong include/secrets.h
 URL: http://192.168.4.1
 ```
 
-Khi ESP32 đã kết nối Wi-Fi nhà, có thể thử mở `http://longos-sensor.local`. Tên macro `AUTOHOME_AP_PASSWORD` được giữ lại để firmware mới tiếp tục dùng được file `include/secrets.h` hiện tại.
+Khi ESP32 đã kết nối Wi-Fi nhà, có thể thử mở `http://longos-sensor.local`. Cấu hình mới dùng các macro `LONGOS_*`; firmware vẫn chấp nhận các macro `AUTOHOME_*` trong file `include/secrets.h` cũ để nâng cấp không bị gián đoạn.
 
 ## Lịch sử và so sánh
 

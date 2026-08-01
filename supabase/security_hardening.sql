@@ -1,5 +1,5 @@
 -- ============================================================
--- AutoHome - one-time database setup
+-- LongOS - one-time database setup
 -- Run this in Supabase SQL Editor before uploading the new firmware/web.
 -- Public read access is enabled for main-room; writes still require the ESP32 token.
 -- ============================================================
