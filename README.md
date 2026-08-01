@@ -71,6 +71,28 @@ URL: http://192.168.4.1
 
 Khi ESP32 đã kết nối Wi-Fi nhà, có thể thử mở `http://longos-sensor.local`. Cấu hình mới dùng các macro `LONGOS_*`; firmware vẫn chấp nhận các macro `AUTOHOME_*` trong file `include/secrets.h` cũ để nâng cấp không bị gián đoạn.
 
+## Smoke test ESP32 thật
+
+Khi ESP32 đang online cùng mạng với máy và máy có Node.js 18 trở lên, chạy kiểm tra nhanh hai endpoint `/health` và `/api/readings`:
+
+```bash
+node tools/test-device-smoke.mjs
+```
+
+Script mặc định dùng `http://longos-sensor.local`, tự lấy phiên bản mong đợi từ `APP_VERSION` trong `src/main.cpp`, có timeout cho từng request và kiểm tra schema phản hồi. Để yêu cầu cả SHT30 và Supabase hoạt động thành công:
+
+```bash
+node tools/test-device-smoke.mjs --require-sensor --require-cloud
+```
+
+Nếu mDNS không phân giải được, truyền IP được in trong Serial Monitor:
+
+```bash
+node tools/test-device-smoke.mjs --url http://192.168.1.50 --require-sensor --require-cloud
+```
+
+Xem toàn bộ tùy chọn bằng `node tools/test-device-smoke.mjs --help`.
+
 ## Lịch sử và so sánh
 
 - ESP32 đồng bộ giờ bằng NTP khi kết nối Wi-Fi.
