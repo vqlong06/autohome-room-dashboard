@@ -1,6 +1,6 @@
-# LongOS Sensor
+# LongOS
 
-Dashboard cảm biến phòng chạy trên ESP32. Web hiển thị nhiệt độ/độ ẩm realtime, trạng thái phòng, min/max hôm nay, trend 1 giờ, lịch sử cloud, so sánh nhiệt độ trung bình hôm nay với hôm qua, tuần này với tuần trước, và tháng này với tháng trước.
+LongOS là dashboard cảm biến phòng chạy trên ESP32. Web hiển thị nhiệt độ/độ ẩm realtime, trạng thái phòng, min/max hôm nay, trend 1 giờ, lịch sử cloud, so sánh nhiệt độ trung bình hôm nay với hôm qua, tuần này với tuần trước, và tháng này với tháng trước.
 
 ## Cần chuẩn bị
 
@@ -24,31 +24,31 @@ SCL       ->  GPIO 22
 
 Nên để cảm biến cách ESP32 một đoạn ngắn để nhiệt từ ESP32 không làm sai số.
 
-## Mở demo web trên Mac
+## Mở LongOS trên Mac
 
 Mở trực tiếp:
 
 ```text
-web/index.html
+public/index.html
 ```
 
 Hoặc chạy localhost:
 
 ```bash
-cd /Users/voquoclong/Downloads/AutoHome
+cd "/Users/voquoclong/Downloads/My projects/LongOS"
 python3 -m http.server 9876
 ```
 
 Sau đó mở:
 
 ```text
-http://127.0.0.1:9876/web/index.html
+http://127.0.0.1:9876/public/index.html
 ```
 
 Mặc định trang preview sẽ hiện trạng thái chưa có dữ liệu vì không có ESP32 ở phía sau. Nếu chỉ muốn test giao diện bằng dữ liệu giả, mở:
 
 ```text
-http://127.0.0.1:9876/web/index.html?demo=1
+http://127.0.0.1:9876/public/index.html?demo=1
 ```
 
 ## Upload bằng Arduino IDE
@@ -61,7 +61,7 @@ http://127.0.0.1:9876/web/index.html?demo=1
 6. Mở Serial Monitor ở `115200` baud.
 7. Mở URL được in ra bằng phone hoặc Mac.
 
-Nếu để `WIFI_SSID` rỗng, ESP32 sẽ phát Wi-Fi riêng:
+Nếu để `WIFI_SSID` rỗng, ESP32 sẽ phát Wi-Fi riêng. Để tương thích với firmware đang triển khai, thông tin AP hiện vẫn giữ nguyên:
 
 ```text
 SSID: AutoHome-Sensor
@@ -96,7 +96,7 @@ Dashboard có chế độ cloud để xem khi không ở cùng Wi-Fi. ESP32 gử
 6. Mở dashboard cloud bằng:
 
 ```text
-web/index.html?source=cloud
+public/index.html?source=cloud
 ```
 
 Khi deploy `public/index.html` lên static hosting miễn phí như GitHub Pages, trang sẽ tự dùng Supabase nếu hostname không phải IP nội bộ. Dashboard không yêu cầu mật khẩu; bất kỳ ai có URL đều đọc được dữ liệu `main-room`. Quyền ghi và cập nhật vẫn chỉ dành cho ESP32 có device token hợp lệ. Nếu `updated_at` trên cloud cũ hơn 2 phút, dashboard sẽ báo `ESP32 offline`.
