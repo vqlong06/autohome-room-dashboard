@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cảm biến phòng AutoHome</title>
+  <title>LongOS — Cảm biến phòng</title>
   <meta name="theme-color" content="#0b1420">
-  <meta name="application-name" content="AutoHome">
-  <meta name="apple-mobile-web-app-title" content="AutoHome">
+  <meta name="application-name" content="LongOS">
+  <meta name="apple-mobile-web-app-title" content="LongOS">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260528">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260528">
   <style>
@@ -539,10 +539,10 @@
 </head>
 <body>
   <main class="app">
-    <section class="dashboard" aria-label="Bảng điều khiển cảm biến phòng">
+    <section class="dashboard" aria-label="Bảng điều khiển LongOS">
       <div class="topbar">
         <div>
-          <h1>Phòng AutoHome</h1>
+          <h1>LongOS</h1>
           <p class="subtitle">Nhiệt độ và độ ẩm theo thời gian thực</p>
         </div>
         <div class="status">
@@ -776,7 +776,7 @@
       const stored = readCloudAccessToken();
       if (stored || state.cloudAccessPrompted || !state.cloudMode || state.demoMode) return stored;
       state.cloudAccessPrompted = true;
-      const entered = window.prompt('Nhập mã truy cập cloud AutoHome (chỉ cần nhập một lần trên thiết bị này):');
+      const entered = window.prompt('Nhập mã truy cập cloud LongOS (chỉ cần nhập một lần trên thiết bị này):');
       const token = (entered || '').trim();
       if (token) {
         try { localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, token); } catch (error) {}

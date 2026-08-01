@@ -61,13 +61,15 @@ http://127.0.0.1:9876/public/index.html?demo=1
 6. Mở Serial Monitor ở `115200` baud.
 7. Mở URL được in ra bằng phone hoặc Mac.
 
-Nếu để `WIFI_SSID` rỗng, ESP32 sẽ phát Wi-Fi riêng. Để tương thích với firmware đang triển khai, thông tin AP hiện vẫn giữ nguyên:
+Nếu để `WIFI_SSID` rỗng, ESP32 sẽ phát Wi-Fi riêng:
 
 ```text
-SSID: AutoHome-Sensor
-Password: autohome123
+SSID: LongOS-Sensor
+Password: giá trị AUTOHOME_AP_PASSWORD trong include/secrets.h
 URL: http://192.168.4.1
 ```
+
+Khi ESP32 đã kết nối Wi-Fi nhà, có thể thử mở `http://longos-sensor.local`. Tên macro `AUTOHOME_AP_PASSWORD` được giữ lại để firmware mới tiếp tục dùng được file `include/secrets.h` hiện tại.
 
 ## Lịch sử và so sánh
 

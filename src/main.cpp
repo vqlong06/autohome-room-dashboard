@@ -15,11 +15,11 @@
 const char *WIFI_SSID = AUTOHOME_WIFI_SSID;
 const char *WIFI_PASSWORD = AUTOHOME_WIFI_PASSWORD;
 
-const char *MDNS_NAME = "autohome-sensor";
-const char *AP_SSID = "AutoHome-Sensor";
+const char *MDNS_NAME = "longos-sensor";
+const char *AP_SSID = "LongOS-Sensor";
 const char *AP_PASSWORD = AUTOHOME_AP_PASSWORD;
 const char *TIME_ZONE = "ICT-7";
-const char *APP_VERSION = "autohome-status-2026-07-10.1";
+const char *APP_VERSION = "longos-sensor-2026-08-01.1";
 const char *SUPABASE_URL = AUTOHOME_SUPABASE_URL;
 const char *SUPABASE_PUBLISHABLE_KEY = AUTOHOME_SUPABASE_PUBLISHABLE_KEY;
 const char *SUPABASE_ROOM_ID = AUTOHOME_SUPABASE_ROOM_ID;
@@ -113,10 +113,10 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cảm biến phòng AutoHome</title>
+  <title>LongOS — Cảm biến phòng</title>
   <meta name="theme-color" content="#0b1420">
-  <meta name="application-name" content="AutoHome">
-  <meta name="apple-mobile-web-app-title" content="AutoHome">
+  <meta name="application-name" content="LongOS">
+  <meta name="apple-mobile-web-app-title" content="LongOS">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260528">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260528">
   <style>
@@ -649,10 +649,10 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
 </head>
 <body>
   <main class="app">
-    <section class="dashboard" aria-label="Bảng điều khiển cảm biến phòng">
+    <section class="dashboard" aria-label="Bảng điều khiển LongOS">
       <div class="topbar">
         <div>
-          <h1>Phòng AutoHome</h1>
+          <h1>LongOS</h1>
           <p class="subtitle">Nhiệt độ và độ ẩm theo thời gian thực</p>
         </div>
         <div class="status">
@@ -886,7 +886,7 @@ const char INDEX_HTML[] PROGMEM = R"HTML(
       const stored = readCloudAccessToken();
       if (stored || state.cloudAccessPrompted || !state.cloudMode || state.demoMode) return stored;
       state.cloudAccessPrompted = true;
-      const entered = window.prompt('Nhập mã truy cập cloud AutoHome (chỉ cần nhập một lần trên thiết bị này):');
+      const entered = window.prompt('Nhập mã truy cập cloud LongOS (chỉ cần nhập một lần trên thiết bị này):');
       const token = (entered || '').trim();
       if (token) {
         try { localStorage.setItem(CLOUD_ACCESS_STORAGE_KEY, token); } catch (error) {}
