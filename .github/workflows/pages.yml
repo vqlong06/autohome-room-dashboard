@@ -1,0 +1,82 @@
+name: Deploy LongOS Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: longos-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Validate and package site
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Validate release files
+        run: |
+          node tools/test-brand-migration.mjs
+          node tools/test-release-pipeline.mjs
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+
+      - name: Stage public release allowlist
+        run: |
+          release_dir="${RUNNER_TEMP}/longos-pages"
+          install -d -m 0755 "${release_dir}"
+          install -m 0644 \
+            public/.nojekyll \
+            public/apple-touch-icon.png \
+            public/favicon.svg \
+            public/icon-192.png \
+            public/icon-512.png \
+            public/index.html \
+            public/manifest.webmanifest \
+            "${release_dir}/"
+          test "$(find "${release_dir}" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')" = 7
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: ${{ runner.temp }}/longos-pages
+          include-hidden-files: true
+
+  deploy:
+    name: Deploy site
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
