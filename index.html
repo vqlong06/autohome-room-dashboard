@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cảm biến phòng của Long</title>
+  <title>LongOS — Không gian của Long</title>
   <meta name="theme-color" content="#0b0e15">
-  <meta name="autohome-build" content="20260717.2">
-  <meta name="application-name" content="Phòng của Long">
-  <meta name="apple-mobile-web-app-title" content="Phòng của Long">
+  <meta name="autohome-build" content="20260801.1">
+  <meta name="application-name" content="LongOS">
+  <meta name="apple-mobile-web-app-title" content="LongOS">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="./manifest.webmanifest?v=20260717.2">
+  <link rel="manifest" href="./manifest.webmanifest?v=20260801.1">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260713">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260713">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1499,7 +1499,7 @@
       }
     }
 
-    /* ===================== AUTOHOME APP SHELL ===================== */
+    /* ===================== LONGOS APP SHELL ===================== */
     :root {
       --surface-soft: color-mix(in srgb, var(--panel), var(--bg) 46%);
       --surface-raised: color-mix(in srgb, var(--panel), #ffffff 3%);
@@ -3082,11 +3082,11 @@
 <body class="is-loading">
   <div class="environment-layer" aria-hidden="true"></div>
   <main class="app">
-    <section class="dashboard" data-active-view="overview" aria-label="Bảng điều khiển cảm biến phòng">
+    <section class="dashboard" data-active-view="overview" aria-label="Bảng điều khiển LongOS">
       <div class="topbar">
         <div>
-          <p class="brand-kicker">AutoHome / Trực tiếp</p>
-          <h1>Phòng của Long</h1>
+          <p class="brand-kicker">LongOS / Trực tiếp</p>
+          <h1>Không gian của Long</h1>
           <p class="subtitle">Nhiệt độ và độ ẩm theo thời gian thực</p>
         </div>
         <div id="statusPill" class="status status-loading">
@@ -3716,7 +3716,6 @@
       historyHoverPoint: null,
       historyChartModel: null,
       historySeriesMode: 'both',
-      historyVisible: { temperatureC: true, humidity: true },
       historyZoom: null,
       historyDrag: null,
       historyPinch: null,
@@ -4652,12 +4651,41 @@
       state.historyAnimFrame = requestAnimationFrame(step);
     }
 
-    // Nếu 2 mẫu liên tiếp cách nhau quá lâu -> coi là mất dữ liệu, NGẮT nét (không kẻ thẳng bắc cầu).
-    function historyGapBreakMs() {
-      if (state.historyRange === 'six') return 20 * 60 * 1000;
-      if (state.historyRange === 'week') return 90 * 60 * 1000;
-      if (state.historyRange === 'month') return 4 * MS_HOUR;
-      return 30 * 60 * 1000; // day
+    function historySeriesIsVisible(key) {
+      if (key === 'temperatureC') return state.historySeriesMode !== 'humidity';
+      if (key === 'humidity') return state.historySeriesMode !== 'temperature';
+      return true;
+    }
+
+    // Giữ nét liền theo nhịp lấy mẫu thực tế, nhưng vẫn ngắt ở một đợt mất dữ liệu rõ ràng.
+    function historyGapBreakMs(points = []) {
+      let baseGap = 30 * 60 * 1000;
+      let maximumGap = 6 * MS_HOUR;
+      if (state.historyRange === 'six') {
+        baseGap = 20 * 60 * 1000;
+        maximumGap = 2 * MS_HOUR;
+      } else if (state.historyRange === 'week') {
+        baseGap = 90 * 60 * 1000;
+        maximumGap = MS_DAY;
+      } else if (state.historyRange === 'month') {
+        baseGap = 4 * MS_HOUR;
+        maximumGap = 3 * MS_DAY;
+      }
+
+      const times = points
+        .map(point => Number(point.recordedAtMs))
+        .filter(Number.isFinite)
+        .sort((a, b) => a - b);
+      const gaps = [];
+      for (let index = 1; index < times.length; index += 1) {
+        const gap = times[index] - times[index - 1];
+        if (gap > 0) gaps.push(gap);
+      }
+      if (gaps.length === 0) return baseGap;
+
+      gaps.sort((a, b) => a - b);
+      const medianGap = gaps[Math.floor((gaps.length - 1) / 2)];
+      return clamp(medianGap * 3, baseGap, maximumGap);
     }
 
     function historyValueScale(points, key) {
@@ -4683,10 +4711,10 @@
     }
 
     function drawHistoryLine(ctx, model, key, color, scale) {
-      if (state.historyVisible && state.historyVisible[key] === false) return;
+      if (!historySeriesIsVisible(key)) return;
       if (model.points.length < 1 || !scale) return;
       const ratio = window.devicePixelRatio || 1;
-      const gapBreak = historyGapBreakMs();
+      const gapBreak = model.gapBreakMs || historyGapBreakMs(model.points);
 
       // Lọc điểm có giá trị hợp lệ
       const pts = [];
@@ -4793,7 +4821,7 @@
       [
         ['temperatureC', model.tempScale, getComputedStyle(document.documentElement).getPropertyValue('--warm').trim()],
         ['humidity', model.humidityScale, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()]
-      ].filter(([key]) => !state.historyVisible || state.historyVisible[key] !== false).forEach(([key, scale, color]) => {
+      ].filter(([key]) => historySeriesIsVisible(key)).forEach(([key, scale, color]) => {
         const y = historyPointY(point, key, scale, model);
         if (y === null) return;
         ctx.fillStyle = color;
@@ -4805,15 +4833,15 @@
 
     function drawHistoryZones(ctx, model) {
       if (!model || model.points.length < 2) return;
-      const showTemperature = !state.historyVisible || state.historyVisible.temperatureC !== false;
-      const showHumidity = !state.historyVisible || state.historyVisible.humidity !== false;
+      const showTemperature = historySeriesIsVisible('temperatureC');
+      const showHumidity = historySeriesIsVisible('humidity');
       const top = model.pad;
       const height = model.height - model.pad * 2;
       for (let i = 0; i < model.points.length - 1; i++) {
         const point = model.points[i];
         const next = model.points[i + 1];
         const dt = next.recordedAtMs - point.recordedAtMs;
-        if (dt <= 0 || dt > historyGapBreakMs()) continue;
+        if (dt <= 0 || dt > model.gapBreakMs) continue;
         const temp = finiteNumber(point.temperatureC);
         const humidity = finiteNumber(point.humidity);
         const x1 = historyPointX(point, model);
@@ -4829,7 +4857,7 @@
     }
 
     function drawHistoryExtrema(ctx, model) {
-      if (state.historyVisible && state.historyVisible.temperatureC === false) return;
+      if (!historySeriesIsVisible('temperatureC')) return;
       if (!model || model.points.length < 2 || !model.tempScale) return;
       const candidates = model.points.filter(point => finiteNumber(point.temperatureC) !== null);
       if (candidates.length < 2) return;
@@ -4945,6 +4973,7 @@
         endMs,
         rangeMs: Math.max(1, endMs - startMs),
         drawProgress: state.historyDrawProgress,
+        gapBreakMs: historyGapBreakMs(points),
         tempScale: historyValueScale(points, 'temperatureC'),
         humidityScale: historyValueScale(points, 'humidity')
       };
@@ -4985,6 +5014,7 @@
         points, width, height, pad, startMs, endMs: chipEndMs,
         rangeMs: Math.max(1, chipEndMs - startMs),
         drawProgress: state.historyDrawProgress,
+        gapBreakMs: historyGapBreakMs(points),
         chipScale: historyValueScale(points, 'chipTemperatureC')
       };
       state.chipChartModel = model;
@@ -5070,10 +5100,10 @@
       els.historyTooltip.style.left = `${left}px`;
       els.historyTooltip.style.top = `${top}px`;
       const lines = [`<strong>${formatHistoryTooltipTime(point.recordedAtMs)}</strong>`];
-      if (!state.historyVisible || state.historyVisible.temperatureC !== false) {
+      if (historySeriesIsVisible('temperatureC')) {
         lines.push(`Nhiệt ${formatTemperature(point.temperatureC)}`);
       }
-      if (!state.historyVisible || state.historyVisible.humidity !== false) {
+      if (historySeriesIsVisible('humidity')) {
         lines.push(`Ẩm ${formatHumidity(point.humidity)}`);
       }
       els.historyTooltip.innerHTML = lines.join('<br>');
@@ -5103,8 +5133,6 @@
       const nextMode = ['temperature', 'humidity'].includes(mode) ? mode : 'both';
       const modeChanged = state.historySeriesMode !== nextMode;
       state.historySeriesMode = nextMode;
-      state.historyVisible.temperatureC = nextMode !== 'humidity';
-      state.historyVisible.humidity = nextMode !== 'temperature';
 
       els.historySeriesButtons.forEach(button => {
         const isActive = button.dataset.seriesMode === nextMode;
