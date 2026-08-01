@@ -35,6 +35,7 @@ jobs:
           node --check tools/embed-web.mjs
           node --check tools/test-brand-migration.mjs
           node --check tools/test-device-smoke.mjs
+          node --check tools/test-pages-smoke.mjs
           node --check tools/test-release-pipeline.mjs
 
       - name: Run repository tests
@@ -42,6 +43,7 @@ jobs:
           node tools/test-brand-migration.mjs
           node tools/test-release-pipeline.mjs
           node tools/test-device-smoke.mjs --help
+          node tools/test-pages-smoke.mjs --help
 
   firmware:
     name: ESP32 firmware build

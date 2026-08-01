@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LongOS — Không gian của Long</title>
   <meta name="theme-color" content="#0b0e15">
-  <meta name="longos-build" content="20260801.2">
+  <meta name="longos-build" content="20260801.3">
   <!-- Legacy marker lets already-installed AutoHome builds discover this update. -->
-  <meta name="autohome-build" content="20260801.2">
+  <meta name="autohome-build" content="20260801.3">
   <meta name="application-name" content="LongOS">
   <meta name="apple-mobile-web-app-title" content="LongOS">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="./manifest.webmanifest?v=20260801.2">
+  <link rel="manifest" href="./manifest.webmanifest?v=20260801.3">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260713">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260713">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3614,6 +3614,8 @@
     const SUPABASE_ROOM_ID = 'main-room';
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
+    const CLOUD_POLL_INTERVAL_MS = 30 * 1000;
+    const CLOUD_REQUEST_TIMEOUT_MS = 8 * 1000;
     const HISTORY_PAGE_SIZE = 1000;     // Supabase REST thường giới hạn 1000 dòng mỗi request
     const HISTORY_INITIAL_LIMIT = 30000; // đủ hai tháng lịch kể cả khi có cả cron và firmware cùng ghi
     const HISTORY_INCREMENTAL_LIMIT = 8000; // mẫu mới mỗi lần poll (đủ để bắt kịp sau khi treo tab)
@@ -3728,6 +3730,18 @@
       };
     }
 
+    async function fetchJsonWithTimeout(url, options = {}) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), CLOUD_REQUEST_TIMEOUT_MS);
+      try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        const data = response.ok ? await response.json() : null;
+        return { response, data };
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+
     const state = {
       points: [],
       historyPoints: [],
@@ -3735,6 +3749,7 @@
       historyAttemptedAt: 0,
       historyLoadedAt: 0,
       historyError: false,
+      historyFetchPromise: null,
       historyHoverPoint: null,
       historyChartModel: null,
       historySeriesMode: 'both',
@@ -3756,6 +3771,8 @@
       acMonthlyAt: 0,
       acNow: false,
       environmentTone: 'normal',
+      latestReading: null,
+      tickInFlight: false,
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
@@ -3998,12 +4015,11 @@
       const headers = cloudHeaders();
 
       try {
-        const response = await fetch(endpoint, {
+        const { response, data: rows } = await fetchJsonWithTimeout(endpoint, {
           cache: 'no-store',
           headers
         });
         if (!response.ok) throw new Error('Cloud endpoint unavailable');
-        const rows = await response.json();
         if (!Array.isArray(rows) || rows.length === 0) {
           return makeNoDataReading('Chưa có dữ liệu cloud');
         }
@@ -4027,12 +4043,12 @@
 
     async function fetchHistoryRows(url) {
       const headers = cloudHeaders();
-      const response = await fetch(url, {
+      const { response, data: rows } = await fetchJsonWithTimeout(url, {
         cache: 'no-store',
         headers
       });
       if (!response.ok) throw new Error('History endpoint unavailable');
-      return mapHistoryRows(await response.json());
+      return mapHistoryRows(rows);
     }
 
     async function fetchHistoryRowsPaged(baseUrl, maxRows) {
@@ -4079,16 +4095,29 @@
         }
         state.historyLoadedAt = Date.now();
         state.historyError = false;
+        return true;
       } catch (error) {
         state.historyError = true;
+        return false;
       }
     }
 
-    async function maybeFetchCloudHistory(force = false) {
-      if (state.demoMode || !state.cloudMode) return;
+    function maybeFetchCloudHistory(force = false) {
+      if (state.demoMode || !state.cloudMode || state.historyFetchPromise) return null;
       const ageMs = Date.now() - state.historyAttemptedAt;
-      if (!force && ageMs < CLOUD_HISTORY_REFRESH_MS) return;
-      await fetchCloudHistory();
+      if (!force && ageMs < CLOUD_HISTORY_REFRESH_MS) return null;
+      state.historyFetchPromise = fetchCloudHistory()
+        .then((historyUpdated) => {
+          if (historyUpdated) {
+            computeAcMonthly();
+            if (state.latestReading) render(state.latestReading, false);
+          }
+          return historyUpdated;
+        })
+        .finally(() => {
+          state.historyFetchPromise = null;
+        });
+      return state.historyFetchPromise;
     }
 
     async function fetchReading() {
@@ -4101,9 +4130,12 @@
       }
 
       try {
-        const response = await fetch('/api/readings?ts=' + Date.now(), { cache: 'no-store' });
+        const { response, data: reading } = await fetchJsonWithTimeout(
+          '/api/readings?ts=' + Date.now(),
+          { cache: 'no-store' }
+        );
         if (!response.ok) throw new Error('No reading endpoint');
-        const reading = await response.json();
+        if (!reading || typeof reading !== 'object') throw new Error('Invalid reading payload');
         reading.deviceOnline = true;
         return reading;
       } catch (error) {
@@ -5555,7 +5587,7 @@
       drawChart(els.humidityChart, 'humidity', styles.getPropertyValue('--accent').trim());
     }
 
-    function render(reading) {
+    function render(reading, recordPoint = true) {
       const temperature = finiteNumber(reading.temperatureC);
       const humidity = finiteNumber(reading.humidity);
       if (Boolean(reading.deviceOnline) && Boolean(reading.sensorOnline) && temperature !== null && humidity !== null) {
@@ -5603,8 +5635,10 @@
         return;
       }
 
-      state.points.push({ temperatureC: temperature, humidity });
-      state.points = state.points.slice(-90);
+      if (recordPoint) {
+        state.points.push({ temperatureC: temperature, humidity });
+        state.points = state.points.slice(-90);
+      }
 
       animateValue(els.temperature, temperature, 1);
       animateValue(els.humidity, humidity, 0);
@@ -5616,13 +5650,22 @@
     }
 
     async function tick() {
-      maybeFetchOutdoorWeather();
-      await maybeFetchCloudHistory();
-      if (!state.acMonthlyAt || Date.now() - state.acMonthlyAt > 60000) {
-        state.acMonthlyAt = Date.now();
-        computeAcMonthly();
+      if (state.tickInFlight || document.hidden) return;
+      state.tickInFlight = true;
+      try {
+        maybeFetchOutdoorWeather();
+        if (!state.acMonthlyAt || Date.now() - state.acMonthlyAt > 60000) {
+          state.acMonthlyAt = Date.now();
+          computeAcMonthly();
+        }
+
+        const reading = await fetchReading();
+        state.latestReading = reading;
+        render(reading);
+        void maybeFetchCloudHistory();
+      } finally {
+        state.tickInFlight = false;
       }
-      render(await fetchReading());
     }
 
     let dashboardResizeTimer = 0;
@@ -6538,7 +6581,11 @@
     let pollTimer = null;
     function restartTimer() {
       if (pollTimer) clearInterval(pollTimer);
-      pollTimer = setInterval(tick, Math.max(1, settings.refreshSec) * 1000);
+      const requestedMs = Math.max(1, settings.refreshSec) * 1000;
+      const intervalMs = state.cloudMode && !state.demoMode
+        ? Math.max(CLOUD_POLL_INTERVAL_MS, requestedMs)
+        : requestedMs;
+      pollTimer = setInterval(() => { void tick(); }, intervalMs);
     }
 
     document.getElementById('settingsBtn').addEventListener('click', openSettings);
@@ -6697,7 +6744,10 @@
     document.documentElement.classList.toggle('page-hidden', document.hidden);
     document.addEventListener('visibilitychange', () => {
       document.documentElement.classList.toggle('page-hidden', document.hidden);
-      if (!document.hidden) checkStandaloneUpdate();
+      if (!document.hidden) {
+        checkStandaloneUpdate();
+        void tick();
+      }
     });
 
     if ('IntersectionObserver' in window) {
@@ -6724,7 +6774,7 @@
     window.setTimeout(() => checkStandaloneUpdate(true), 1200);
     setDashboardView('overview', false);
 
-    tick();
+    void tick();
     restartTimer();
   </script>
 </body>
