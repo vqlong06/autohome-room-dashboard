@@ -110,6 +110,14 @@ pio run -e esp32dev
 
 Lệnh `install` chỉ tạo cấu hình mẫu khi `include/secrets.h` chưa tồn tại, không ghi đè cấu hình thật. Workflow `Deploy LongOS Pages` sao chép đúng allowlist 7 file public vào một thư mục staging riêng; `src/`, `include/`, `web/`, SQL, secrets và snapshot cục bộ không nằm trong Pages artifact. Workflow chỉ deploy từ branch `main`.
 
+Sau mỗi deployment, một job không có quyền deploy sẽ kiểm tra build marker, manifest, favicon, Apple touch icon, `.nojekyll`, xác nhận source/secrets trả `404` và thử quyền đọc ẩn danh của hai bảng Supabase mà không in dữ liệu cảm biến. Có thể chạy lại cùng kiểm tra với bản đã deploy bằng:
+
+```bash
+node tools/test-pages-smoke.mjs --require-cloud
+```
+
+Workflow `LongOS Production Smoke` chạy bộ kiểm tra này với phiên bản đang live mỗi ngày lúc 09:17 theo giờ Việt Nam và có thể chạy thủ công trong tab **Actions**. Job ngay sau deployment vẫn đối chiếu build marker chính xác với commit vừa phát hành.
+
 **Lưu ý riêng tư:** GitHub Pages và dữ liệu `main-room` theo cấu hình Supabase hiện tại đều công khai cho người có URL. Nếu dữ liệu phòng cần riêng tư, chưa bật Pages cho đến khi bổ sung đăng nhập và RLS tương ứng.
 
 Thiết lập một lần trên GitHub sau khi workflow đã được merge vào `main`:
@@ -142,6 +150,8 @@ Không chọn `Deploy from a branch` với thư mục root vì cách đó có th
 ## Xem ngoài mạng bằng Supabase Free
 
 Dashboard có chế độ cloud để xem khi không ở cùng Wi-Fi. ESP32 gửi heartbeat lên Supabase mỗi 30 giây vào `room_latest`, đồng thời ghi lịch sử thưa hơn mỗi 10 phút vào `room_readings` để giữ dữ liệu nhẹ và vẫn đủ so sánh ngày/tuần/tháng.
+
+Dashboard Pages đọc `room_latest` định kỳ 30 giây khi tab hiển thị, tương ứng nhịp heartbeat của ESP32, và đọc ngay khi người dùng quay lại tab; tùy chọn làm mới 1 giây vẫn được giữ cho dashboard chạy trực tiếp trong mạng LAN và chế độ demo. Request có timeout 8 giây, các lượt đọc số mới nhất không chạy chồng nhau, polling tạm dừng khi tab bị ẩn và lịch sử được tải ở nền sau khi số mới nhất đã hiển thị.
 
 1. Mở Supabase project và vào SQL Editor.
 2. Cài mới: chạy `supabase/room_latest.sql`, rồi `supabase/add_history.sql`.

@@ -117,11 +117,73 @@ assert.equal(redirectedTo, 'https://example.com/LongOS/index.html?source=cloud#h
 const rootManifest = JSON.parse(rootManifestSource);
 assert.equal(rootManifest.name, 'LongOS');
 assert.equal(rootManifest.short_name, 'LongOS');
-assert.equal(rootManifest.start_url, './?pwa=20260801.2');
-assert.match(publicHtml, /name="longos-build" content="20260801\.2"/);
-assert.match(publicHtml, /name="autohome-build" content="20260801\.2"/);
-assert.match(publicHtml, /manifest\.webmanifest\?v=20260801\.2/);
+assert.equal(rootManifest.start_url, './?pwa=20260801.3');
+assert.match(publicHtml, /name="longos-build" content="20260801\.3"/);
+assert.match(publicHtml, /name="autohome-build" content="20260801\.3"/);
+assert.match(publicHtml, /manifest\.webmanifest\?v=20260801\.3/);
 assert.match(firmware, /longos-sensor-2026-08-01\.3/);
+
+assert.match(publicHtml, /const CLOUD_POLL_INTERVAL_MS = 30 \* 1000;/);
+assert.match(publicHtml, /const CLOUD_REQUEST_TIMEOUT_MS = 8 \* 1000;/);
+assert.doesNotMatch(publicHtml, /x-dashboard-token|CLOUD_ACCESS_STORAGE_KEY|Nhập mã truy cập cloud/);
+
+const cloudRequestBlock = sliceBetween(
+  publicHtml,
+  '    async function fetchJsonWithTimeout(url, options = {}) {',
+  '\n\n    const state = {'
+);
+assert.match(cloudRequestBlock, /new AbortController\(\)/);
+assert.match(cloudRequestBlock, /controller\.abort\(\)/);
+assert.match(cloudRequestBlock, /signal: controller\.signal/);
+assert.ok(
+  cloudRequestBlock.indexOf('await response.json()') < cloudRequestBlock.indexOf('clearTimeout(timeout)'),
+  'Cloud response body must be read before clearing the timeout'
+);
+assert.match(cloudRequestBlock, /clearTimeout\(timeout\)/);
+
+const publicScriptMatch = publicHtml.match(/<script>\s*([\s\S]*?)\s*<\/script>/);
+assert.ok(publicScriptMatch, 'Public dashboard script is missing');
+new vm.Script(publicScriptMatch[1], { filename: 'public/index.html' });
+
+const historyRefreshBlock = sliceBetween(
+  publicHtml,
+  '    function maybeFetchCloudHistory(force = false) {',
+  '\n\n    async function fetchReading() {'
+);
+assert.match(historyRefreshBlock, /state\.historyFetchPromise/);
+assert.match(historyRefreshBlock, /finally\(\(\) =>\s*{\s*state\.historyFetchPromise = null;/);
+assert.match(historyRefreshBlock, /render\(state\.latestReading, false\)/);
+
+const tickBlock = sliceBetween(
+  publicHtml,
+  '    async function tick() {',
+  '\n\n    let dashboardResizeTimer'
+);
+assert.match(tickBlock, /state\.tickInFlight \|\| document\.hidden/);
+assert.match(tickBlock, /finally\s*{\s*state\.tickInFlight = false;/);
+assert.ok(
+  tickBlock.indexOf('const reading = await fetchReading();') < tickBlock.indexOf('void maybeFetchCloudHistory();'),
+  'Latest cloud reading must render before the heavier history request'
+);
+assert.match(tickBlock, /state\.latestReading = reading;\s*render\(reading\);\s*void maybeFetchCloudHistory\(\);/);
+assert.doesNotMatch(tickBlock, /await maybeFetchCloudHistory/);
+
+const localReadingBlock = sliceBetween(
+  publicHtml,
+  '    async function fetchReading() {',
+  '\n\n    function clamp(value, min, max) {'
+);
+assert.match(localReadingBlock, /fetchJsonWithTimeout\(/);
+assert.doesNotMatch(localReadingBlock, /await fetch\(/);
+
+const pollingBlock = sliceBetween(
+  publicHtml,
+  '    let pollTimer = null;',
+  "\n\n    document.getElementById('settingsBtn')"
+);
+assert.match(pollingBlock, /state\.cloudMode && !state\.demoMode/);
+assert.match(pollingBlock, /Math\.max\(CLOUD_POLL_INTERVAL_MS, requestedMs\)/);
+assert.match(pollingBlock, /setInterval\(\(\) => { void tick\(\); }, intervalMs\)/);
 
 const firmwareVersionMatch = firmware.match(/const char \*APP_VERSION = "longos-sensor-(\d{4})-(\d{2})-(\d{2}\.\d+)";/);
 assert.ok(firmwareVersionMatch, 'Firmware APP_VERSION format is invalid');

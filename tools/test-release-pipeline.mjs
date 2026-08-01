@@ -7,9 +7,11 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFile(resolve(root, path), 'utf8');
 
-const [ciWorkflow, pagesWorkflow, platformio, gitignore] = await Promise.all([
+const [ciWorkflow, pagesWorkflow, productionWorkflow, pagesSmokeTest, platformio, gitignore] = await Promise.all([
   read('.github/workflows/ci.yml'),
   read('.github/workflows/pages.yml'),
+  read('.github/workflows/production-smoke.yml'),
+  read('tools/test-pages-smoke.mjs'),
   read('platformio.ini'),
   read('.gitignore')
 ]);
@@ -31,6 +33,7 @@ const pinnedActions = {
 for (const action of [pinnedActions.checkout, pinnedActions.setupNode]) {
   assertUses(ciWorkflow, action);
   assertUses(pagesWorkflow, action);
+  assertUses(productionWorkflow, action);
 }
 
 for (const action of [pinnedActions.cache, pinnedActions.setupPython]) {
@@ -45,7 +48,7 @@ for (const action of [
   assertUses(pagesWorkflow, action);
 }
 
-for (const workflow of [ciWorkflow, pagesWorkflow]) {
+for (const workflow of [ciWorkflow, pagesWorkflow, productionWorkflow]) {
   const actionReferences = [...workflow.matchAll(/uses:\s+([^\s#]+)/g)].map((match) => match[1]);
   assert.ok(actionReferences.length > 0, 'Workflow must contain actions');
   for (const action of actionReferences) {
@@ -61,6 +64,8 @@ assert.match(ciWorkflow, /install -m 600 include\/secrets\.example\.h include\/s
 assert.match(ciWorkflow, /pio run -e esp32dev/);
 assert.match(ciWorkflow, /node tools\/test-brand-migration\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-release-pipeline\.mjs/);
+assert.match(ciWorkflow, /node --check tools\/test-pages-smoke\.mjs/);
+assert.match(ciWorkflow, /node tools\/test-pages-smoke\.mjs --help/);
 assert.match(ciWorkflow, /python-3\.11-platformio-6\.1\.19-/);
 assert.equal((ciWorkflow.match(/persist-credentials:\s+false/g) || []).length, 2, 'CI checkouts must not persist credentials');
 
@@ -70,19 +75,54 @@ const buildJob = pagesWorkflow.slice(
   pagesWorkflow.indexOf('  build:'),
   pagesWorkflow.indexOf('\n  deploy:')
 );
-const deployJob = pagesWorkflow.slice(pagesWorkflow.indexOf('  deploy:'));
+const deployJob = pagesWorkflow.slice(
+  pagesWorkflow.indexOf('  deploy:'),
+  pagesWorkflow.indexOf('\n  verify:')
+);
+const verifyJob = pagesWorkflow.slice(pagesWorkflow.indexOf('  verify:'));
 assert.match(buildJob, /contents:\s+read/);
 assert.match(buildJob, /pages:\s+read/);
 assert.doesNotMatch(buildJob, /pages:\s+write|id-token:/, 'Pages build job must not receive deployment permissions');
 assert.match(deployJob, /pages:\s+write/);
 assert.match(deployJob, /id-token:\s+write/);
 assert.doesNotMatch(deployJob, /contents:\s+write/, 'Pages deploy job must not receive content write access');
+assert.match(deployJob, /page_url:\s+\$\{\{ steps\.deployment\.outputs\.page_url \}\}/);
+assert.match(verifyJob, /needs:\s+deploy/);
+assert.match(verifyJob, /contents:\s+read/);
+assert.doesNotMatch(verifyJob, /pages:\s+write|id-token:/, 'Pages verify job must not receive deployment permissions');
+assert.match(verifyJob, /node tools\/test-pages-smoke\.mjs/);
+assert.match(verifyJob, /\$\{\{ needs\.deploy\.outputs\.page_url \}\}/);
+assert.match(verifyJob, /--require-cloud/);
 assert.match(pagesWorkflow, /path:\s+\$\{\{ runner\.temp \}\}\/longos-pages/);
 assert.match(pagesWorkflow, /include-hidden-files:\s+true/);
 assert.match(pagesWorkflow, /environment:\s*\n\s+name:\s+github-pages/);
 assert.match(pagesWorkflow, /needs:\s+build/);
-assert.match(pagesWorkflow, /persist-credentials:\s+false/);
+assert.equal((pagesWorkflow.match(/persist-credentials:\s+false/g) || []).length, 2, 'Pages checkouts must not persist credentials');
 assert.doesNotMatch(pagesWorkflow, /^\s*path:\s*(?:['"]?\.['"]?|public)\s*$/m, 'Pages must never upload the repository root or public directly');
+
+assert.match(productionWorkflow, /cron:\s+'17 2 \* \* \*'/);
+assert.match(productionWorkflow, /workflow_dispatch:/);
+assert.match(productionWorkflow, /group:\s+longos-production-smoke/);
+assert.match(productionWorkflow, /cancel-in-progress:\s+true/);
+assert.match(productionWorkflow, /contents:\s+read/);
+assert.doesNotMatch(productionWorkflow, /contents:\s+write|pages:\s+write|id-token:/);
+assert.match(productionWorkflow, /node tools\/test-pages-smoke\.mjs/);
+assert.match(productionWorkflow, /https:\/\/vqlong06\.github\.io\/autohome-room-dashboard\//);
+assert.match(productionWorkflow, /--expected-build live/);
+assert.match(productionWorkflow, /--require-cloud/);
+assert.match(productionWorkflow, /ref:\s+main/);
+assert.equal((productionWorkflow.match(/persist-credentials:\s+false/g) || []).length, 1, 'Production checkout must not persist credentials');
+
+assert.match(pagesSmokeTest, /const forbiddenPaths = \[/);
+assert.match(pagesSmokeTest, /'include\/secrets\.h'/);
+assert.match(pagesSmokeTest, /'include\/secrets\.example\.h'/);
+assert.match(pagesSmokeTest, /'\.github\/workflows\/pages\.yml'/);
+assert.match(pagesSmokeTest, /verifyPng\('\.\/icon-192\.png', 192/);
+assert.match(pagesSmokeTest, /verifyPng\('\.\/icon-512\.png', 512/);
+assert.match(pagesSmokeTest, /for \(const table of \['room_latest', 'room_readings'\]\)/);
+assert.match(pagesSmokeTest, /if \(table === 'room_latest'\)/);
+assert.match(pagesSmokeTest, /rows\.length > 0/);
+assert.match(pagesSmokeTest, /access-control-allow-origin/);
 
 assert.match(platformio, /^platform\s*=\s*espressif32@6\.10\.0$/m);
 assert.match(gitignore, /^include\/secrets\.h$/m);
