@@ -154,11 +154,12 @@ Dashboard có chế độ cloud để xem khi không ở cùng Wi-Fi. ESP32 gử
 Dashboard Pages đọc `room_latest` định kỳ 30 giây khi tab hiển thị, tương ứng nhịp heartbeat của ESP32, và đọc ngay khi người dùng quay lại tab; tùy chọn làm mới 1 giây vẫn được giữ cho dashboard chạy trực tiếp trong mạng LAN và chế độ demo. Request có timeout 8 giây, các lượt đọc số mới nhất không chạy chồng nhau, polling tạm dừng khi tab bị ẩn và lịch sử được tải ở nền sau khi số mới nhất đã hiển thị.
 
 1. Mở Supabase project và vào SQL Editor.
-2. Cài mới: chạy `supabase/room_latest.sql`, rồi `supabase/add_history.sql`.
-3. Với database đang chạy từ bản cũ: chạy một lần `supabase/security_hardening.sql` để thêm migration còn thiếu và bảo vệ quyền ghi bằng token ESP32.
-4. Upload lại firmware cho ESP32 sau khi SQL chạy thành công.
-5. Bật workflow Pages theo mục **CI và phát hành GitHub Pages**; workflow sẽ deploy đủ HTML, manifest và icon từ `public/`.
-6. Mở dashboard cloud bằng:
+2. Cài mới: chạy `supabase/room_latest.sql`, rồi `supabase/add_history.sql`. Hai file tạo helper xác thực trong schema `longos_private`; `add_history.sql` chỉ lên lịch dọn history quá 90 ngày, không tạo snapshot trùng với firmware. Không thêm schema `longos_private` vào **Exposed schemas** trong Supabase API Settings.
+3. Với database đang chạy từ bản cũ: giữ ESP32 hoạt động và chạy toàn bộ `supabase/security_hardening.sql` một lần. Migration nằm trong một transaction, giữ nguyên device-token hash và dữ liệu, khóa RPC cũ, tắt job `autohome-snapshot` bị trùng nguồn ghi, đồng thời giữ hoặc khôi phục `autohome-cleanup` 90 ngày.
+4. Với database đang chạy từ bản cũ (đã có `pg_cron`), chạy `supabase/verify_security_hardening.sql`; cột `longos_security_result` phải là `PASS`. Sau đó chờ 30–60 giây để xác nhận heartbeat cloud tiếp tục cập nhật và tối đa 10–11 phút để thấy một mẫu history mới từ firmware.
+5. Firmware `longos-sensor-2026-08-01.3` hiện tại không cần flash lại cho migration này. Chỉ upload firmware nếu board còn chạy bản cũ chưa tự ghi `room_readings`.
+6. Bật workflow Pages theo mục **CI và phát hành GitHub Pages**; workflow sẽ deploy đủ HTML, manifest và icon từ `public/`.
+7. Mở dashboard cloud bằng:
 
 ```text
 https://vqlong06.github.io/autohome-room-dashboard/?source=cloud
@@ -168,7 +169,11 @@ Khi deploy `public/index.html` lên static hosting miễn phí như GitHub Pages
 
 Với database đã bật mã dashboard từ bản trước, chạy `supabase/enable_public_dashboard_read.sql` một lần để mở quyền đọc công khai. `include/secrets.h` vẫn bị Git bỏ qua và không được upload công khai.
 
-History chỉ bắt đầu có dữ liệu từ lúc ESP32 chạy firmware mới và bảng `room_readings` đã được tạo. So sánh hôm qua/tuần trước/tháng trước sẽ hiện `Cần thêm dữ liệu lịch sử` cho đến khi đủ mẫu.
+History chỉ bắt đầu có dữ liệu từ lúc ESP32 chạy firmware mới và bảng `room_readings` đã được tạo. Firmware là nguồn ghi history chính, mỗi 10 phút; không chạy `supabase/snapshot_room_readings.sql` cùng firmware hiện tại vì job 5 phút trong file đó là fallback cho firmware legacy và sẽ tạo nguồn ghi thứ hai. So sánh hôm qua/tuần trước/tháng trước sẽ hiện `Cần thêm dữ liệu lịch sử` cho đến khi đủ mẫu.
+
+Nếu `security_hardening.sql` báo lỗi, transaction sẽ không commit: dừng lại và giữ nguyên toàn bộ thông báo lỗi để kiểm tra, không chạy riêng từng đoạn. Nếu SQL Editor còn báo `current transaction is aborted`, chạy riêng `rollback;` một lần để đóng transaction lỗi. Chỉ dùng `supabase/security_hardening_rollback.sql` nếu migration đã báo thành công nhưng `room_latest.updated_at` ngừng tăng dù ESP32 và Wi-Fi vẫn khỏe. RPC cũ trả `401`, `403` hoặc `404` sau migration là kết quả mong muốn, không phải lý do rollback. File rollback vẫn giữ RLS, không mở lại RPC public, không xóa telemetry và không tự bật lại cron snapshot. Sau rollback, không chạy lại verifier chuẩn (nó được thiết kế để báo `FAIL` khi private helper đã được gỡ); hãy xác nhận heartbeat tăng trở lại rồi gửi toàn bộ kết quả rollback để xử lý tiếp.
+
+Các script hardening cũng đổi default privilege của role `postgres` trong database LongOS: mọi function tạo mới sau đó đều cần được cấp `EXECUTE` tường minh. Quy tắc này áp dụng cho function mới ở mọi schema do `postgres` tạo (không đổi quyền function đã tồn tại); emergency rollback cố ý không mở lại mặc định public này.
 
 Dashboard cũng hiển thị nhiệt độ nội bộ của chip ESP32. Chỉ số này dùng để theo dõi board có nóng bất thường không, không dùng thay cho nhiệt độ phòng vì bị ảnh hưởng bởi Wi-Fi, CPU và vị trí đặt board.
 

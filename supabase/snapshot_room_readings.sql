@@ -1,19 +1,29 @@
 -- ============================================================
--- LongOS - Snapshot room_latest sang room_readings bằng pg_cron
--- Giữ tên job autohome-* để không tạo cron job trùng trên database đang chạy.
--- Paste vào Supabase -> SQL Editor -> Run.
+-- LongOS - LEGACY history snapshot fallback
 --
--- Mục tiêu: không cần đổi firmware ESP32. ESP32 chỉ cần tiếp tục
--- cập nhật room_latest. Supabase tự ghi lịch sử mỗi 5 phút.
+-- Do not run this with current LongOS firmware: the ESP32 already writes
+-- room_readings every 10 minutes, so enabling this job creates a second
+-- history stream. Use only when deliberately running firmware that updates
+-- room_latest but cannot write room_readings.
+--
+-- The legacy autohome-* job names are retained to replace old jobs safely.
 -- ============================================================
+
+begin;
 
 create extension if not exists pg_cron;
 
-create or replace function public.snapshot_room_reading()
+create schema if not exists longos_private;
+revoke all on schema longos_private from public, anon, authenticated, service_role;
+-- Keep the existing device-token RLS helper reachable by anon. Without this,
+-- enabling the legacy snapshot fallback would also stop ESP32 writes.
+grant usage on schema longos_private to anon;
+
+create or replace function longos_private.snapshot_room_reading()
 returns void
 language sql
-security definer
-set search_path = public
+security invoker
+set search_path = ''
 as $$
   insert into public.room_readings (
     room_id,
@@ -29,7 +39,7 @@ as $$
   )
   select
     latest.room_id,
-    now(),
+    pg_catalog.now(),
     latest.app_version,
     latest.sensor_online,
     latest.temperature_c,
@@ -43,15 +53,18 @@ as $$
     and latest.sensor_online = true
     and latest.temperature_c is not null
     and latest.humidity is not null
-    and latest.updated_at > now() - interval '90 seconds'
+    and latest.updated_at > pg_catalog.now() - interval '90 seconds'
     and not exists (
       select 1
       from public.room_readings existing
       where existing.room_id = latest.room_id
         and existing.sensor_online = true
-        and existing.recorded_at > now() - interval '150 seconds'
+        and existing.recorded_at > pg_catalog.now() - interval '150 seconds'
     );
 $$;
+
+revoke all on function longos_private.snapshot_room_reading()
+from public, anon, authenticated, service_role;
 
 select cron.unschedule('autohome-snapshot')
 where exists (
@@ -61,7 +74,7 @@ where exists (
 select cron.schedule(
   'autohome-snapshot',
   '*/5 * * * *',
-  $$ select public.snapshot_room_reading(); $$
+  $$ select longos_private.snapshot_room_reading(); $$
 );
 
 select cron.unschedule('autohome-cleanup')
@@ -75,13 +88,13 @@ select cron.schedule(
   $$ delete from public.room_readings where recorded_at < now() - interval '90 days'; $$
 );
 
--- Chạy thử ngay, không cần đợi 5 phút.
-select public.snapshot_room_reading();
+drop function if exists public.snapshot_room_reading() restrict;
 
--- Kiểm tra job:
--- select * from cron.job;
+-- Run once immediately instead of waiting five minutes.
+select longos_private.snapshot_room_reading();
+
+commit;
+
+-- Inspect jobs:
+-- select jobname, schedule, command, active from cron.job order by jobname;
 -- select * from cron.job_run_details order by start_time desc limit 20;
---
--- Gỡ job nếu cần:
--- select cron.unschedule('autohome-snapshot');
--- select cron.unschedule('autohome-cleanup');

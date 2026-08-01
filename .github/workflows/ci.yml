@@ -37,6 +37,7 @@ jobs:
           node --check tools/test-device-smoke.mjs
           node --check tools/test-pages-smoke.mjs
           node --check tools/test-release-pipeline.mjs
+          node --check tools/test-supabase-security.mjs
 
       - name: Run repository tests
         run: |
@@ -44,6 +45,7 @@ jobs:
           node tools/test-release-pipeline.mjs
           node tools/test-device-smoke.mjs --help
           node tools/test-pages-smoke.mjs --help
+          node tools/test-supabase-security.mjs
 
   firmware:
     name: ESP32 firmware build

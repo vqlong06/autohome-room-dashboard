@@ -66,6 +66,8 @@ assert.match(ciWorkflow, /node tools\/test-brand-migration\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-release-pipeline\.mjs/);
 assert.match(ciWorkflow, /node --check tools\/test-pages-smoke\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-pages-smoke\.mjs --help/);
+assert.match(ciWorkflow, /node --check tools\/test-supabase-security\.mjs/);
+assert.match(ciWorkflow, /node tools\/test-supabase-security\.mjs/);
 assert.match(ciWorkflow, /python-3\.11-platformio-6\.1\.19-/);
 assert.equal((ciWorkflow.match(/persist-credentials:\s+false/g) || []).length, 2, 'CI checkouts must not persist credentials');
 
