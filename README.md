@@ -102,6 +102,8 @@ Mỗi lần push hoặc mở pull request, workflow `LongOS CI` tự kiểm tra 
 Kiểm tra tương đương trên máy:
 
 ```bash
+npm ci
+npm run test:supabase-semantic
 node tools/test-brand-migration.mjs
 node tools/test-cloud-health.mjs
 node tools/test-pages-smoke-integration.mjs
@@ -110,6 +112,10 @@ node tools/test-supabase-security.mjs
 test -e include/secrets.h || install -m 600 include/secrets.example.h include/secrets.h
 pio run -e esp32dev
 ```
+
+`test:supabase-semantic` chạy các migration thật trong một database PGlite tạm thời, không kết nối Supabase production và không đọc secrets hoặc telemetry production. Gate kiểm tra riêng bootstrap fresh hiện tại, sau đó dựng nguyên trạng legacy từ commit `f589e75` rồi xác nhận hardening giữ nguyên fingerprint toàn bộ telemetry; hành vi RLS/ACL, token đúng/sai, giới hạn `main-room`, trigger `updated_at` và luồng cron; contract verifier đúng 21 trường (kết quả `PASS` cùng 20 kiểm tra boolean); đủ 20 mutation bảo mật độc lập phải làm từng trường verifier chuyển sang `false` và mỗi mutation phải rollback sạch về `PASS`. Gate cũng xác nhận hardening chạy lặp lại an toàn, emergency rollback vẫn chặn token sai, không đổi telemetry và có thể harden lại sau rollback.
+
+PGlite chỉ là semantic gate PostgreSQL chạy cục bộ. Test dùng shim cho catalog và hàm điều khiển `pg_cron`, nên không mô phỏng scheduler/extension `pg_cron` thật; nó cũng không mô phỏng lớp PostgREST, schema exposure, HTTP error mapping hoặc tranh chấp từ nhiều kết nối đồng thời. Vì vậy kết quả có thẩm quyền cho production vẫn là `supabase/verify_security_hardening.sql` trả đủ 21 trường hợp lệ trên database thật, kết hợp REST smoke ở bản Pages đang live; semantic gate không thay thế hai kiểm tra đó.
 
 Lệnh `install` chỉ tạo cấu hình mẫu khi `include/secrets.h` chưa tồn tại, không ghi đè cấu hình thật. Workflow `Deploy LongOS Pages` sao chép đúng allowlist 7 file public vào một thư mục staging riêng; `src/`, `include/`, `web/`, SQL, secrets và snapshot cục bộ không nằm trong Pages artifact. Workflow chỉ deploy từ branch `main`.
 

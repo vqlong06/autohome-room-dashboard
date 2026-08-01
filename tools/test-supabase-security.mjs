@@ -13,6 +13,8 @@ const [
   rollback,
   snapshot,
   verification,
+  semanticMigrationTest,
+  legacySemanticFixture,
   firmware,
   readme
 ] = await Promise.all([
@@ -22,6 +24,8 @@ const [
   read('supabase/security_hardening_rollback.sql'),
   read('supabase/snapshot_room_readings.sql'),
   read('supabase/verify_security_hardening.sql'),
+  read('tools/test-supabase-migrations.mjs'),
+  read('tools/fixtures/supabase-legacy-f589e75.sql'),
   read('src/main.cpp'),
   read('README.md')
 ]);
@@ -160,6 +164,29 @@ assert.match(verification, /and cron_state\.cleanup_job_present/u);
 assert.match(verification, /future_untrusted_function_execute_revoked/u);
 assert.match(verification, /defaults\.defaclnamespace in/u);
 assert.match(verification, /token_hash_dependency_acl/u);
+
+assert.match(semanticMigrationTest, /from '@electric-sql\/pglite'/u);
+assert.match(semanticMigrationTest, /from '@electric-sql\/pglite\/contrib\/pgcrypto'/u);
+assert.match(semanticMigrationTest, /const fixtureToken = 'longos-ci-device-token';/u);
+assert.match(semanticMigrationTest, /source\.replaceAll\(productionTokenHash, fixtureTokenHash\)/u);
+assert.match(semanticMigrationTest, /expectedTokenHashOccurrences/u);
+assert.match(semanticMigrationTest, /supabase-legacy-f589e75\.sql/u);
+assert.match(semanticMigrationTest, /set role \$\{role\};/u);
+assert.match(semanticMigrationTest, /await assertVerifierPass\(database/u);
+assert.match(semanticMigrationTest, /runFreshBootstrap/u);
+assert.match(semanticMigrationTest, /runVerifierMutations/u);
+assert.match(semanticMigrationTest, /runPreflightFailure/u);
+assert.match(semanticMigrationTest, /runDependencyPreflightFailure/u);
+assert.match(semanticMigrationTest, /telemetryFingerprint/u);
+assert.doesNotMatch(semanticMigrationTest, /include\/secrets\.h|process\.env|fetch\s*\(/u);
+assert.match(semanticMigrationTest, new RegExp(tokenHash, 'u'));
+
+assert.match(legacySemanticFixture, /captured from commit f589e75/u);
+assert.equal((legacySemanticFixture.match(new RegExp(tokenHash, 'gu')) || []).length, 2);
+assert.match(legacySemanticFixture, /create or replace function public\.valid_room_device_token\(\)/u);
+assert.match(legacySemanticFixture, /security definer/u);
+assert.match(legacySemanticFixture, /grant usage, select on sequence public\.room_readings_id_seq to anon;/u);
+assert.match(legacySemanticFixture, /'autohome-snapshot'/u);
 
 assert.match(firmware, /CLOUD_HISTORY_INTERVAL_MS = 10UL \* 60UL \* 1000UL;/u);
 assert.match(firmware, /uploadHistoryToSupabase\(\);/u);
