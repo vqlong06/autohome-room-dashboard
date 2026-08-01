@@ -100,22 +100,63 @@ Xem toàn bộ tùy chọn bằng `node tools/test-device-smoke.mjs --help`.
 Firmware reliability hiện tại là `longos-sensor-2026-08-02.1`. Khi nạp bản này, không chọn erase flash để giữ namespace NVS legacy `autohome` và lịch sử 21 ngày.
 
 1. Mở Serial Monitor `115200`: phải thấy đúng phiên bản mới, Wi-Fi/NTP kết nối thành công và tuyệt đối không có mật khẩu fallback AP.
-2. Khi Mac và ESP32 cùng Wi-Fi nhà, chạy lệnh dưới đây và ghi lại số `today ... samples` được in ở dòng `Local history`:
+2. Khi Mac và ESP32 cùng Wi-Fi nhà, chạy smoke đầy đủ một lần:
 
 ```bash
 node tools/test-device-smoke.mjs --require-sensor --require-cloud --require-time-synced
 ```
 
-3. Tắt Wi-Fi nhà 2–3 phút. Kết nối Mac vào AP `LongOS-Sensor` bằng mật khẩu trong `include/secrets.h`, rồi chạy:
+3. Chứng minh board ổn định trên Wi-Fi nhà trong 5 phút, uptime không reset/stall và local history không đứng 30 giây, đồng thời tăng ít nhất 50% số mẫu kỳ vọng theo nhịp 1 Hz:
 
 ```bash
-node tools/test-device-smoke.mjs --url http://192.168.4.1 --require-sensor --require-time-synced
+node tools/device-soak.mjs \
+  --duration-ms 300000 \
+  --interval-ms 10000 \
+  --max-consecutive-errors 0 \
+  --require-wifi --require-sensor --require-cloud --require-time-synced
 ```
 
-Kết quả phải vẫn là `time synced`, và `today ... samples` phải lớn hơn lần đo trước; điều này chứng minh local history tiếp tục chạy khi mất Wi-Fi.
+4. Tắt Wi-Fi nhà, kết nối Mac vào AP `LongOS-Sensor` bằng mật khẩu trong `include/secrets.h`, rồi chạy soak offline 3 phút:
 
-4. Bật lại Wi-Fi nhà, nối Mac về Wi-Fi nhà rồi chạy lại lệnh ở bước 2. Heartbeat cloud phải trở lại thành công ngay sau reconnect.
-5. Để board chạy liên tục ít nhất 30 phút. Trong Supabase **Table Editor → room_readings**, lọc `app_version = longos-sensor-2026-08-02.1`, sắp `recorded_at` giảm dần: phải có ít nhất 3 mẫu mới, hai mẫu liền nhau không được cách dưới 9 phút và không có cặp mẫu cách nhau khoảng 30 giây sau reconnect. Xác nhận thêm ít nhất một lượt **LongOS Production Smoke** xanh và log health hiển thị đúng firmware mới.
+```bash
+node tools/device-soak.mjs \
+  --url http://192.168.4.1 \
+  --duration-ms 180000 \
+  --interval-ms 10000 \
+  --max-consecutive-errors 0 \
+  --write-checkpoint /tmp/longos-offline-checkpoint.json \
+  --require-ap --require-sensor --require-time-synced
+```
+
+Kết quả chỉ hợp lệ khi endpoint trả đúng mode `AP`, IP `192.168.4.1`, đồng hồ local vẫn synced và `todaySamples` tiếp tục tăng trong toàn bộ phiên mất Wi-Fi. File checkpoint chỉ chứa schema/version, mốc thời gian và ngày local, uptime cùng bộ đếm local; quyền file được đặt `0600`, không chứa nhiệt độ, độ ẩm, IP, cloud key hoặc Wi-Fi secret.
+
+5. Bật lại Wi-Fi nhà, nối Mac về Wi-Fi nhà rồi chạy soak hậu-reconnect đủ 30 phút. `caffeinate` giữ Mac không ngủ trong lúc đo:
+
+```bash
+caffeinate -dimsu node tools/device-soak.mjs \
+  --duration-ms 1800000 \
+  --interval-ms 10000 \
+  --max-consecutive-errors 0 \
+  --resume-checkpoint /tmp/longos-offline-checkpoint.json \
+  --require-wifi --require-sensor --require-cloud --require-time-synced
+```
+
+Pha này dừng ngay nếu checkpoint thiếu/sai, version đổi, uptime không nối tiếp hoặc bộ đếm local giảm ngoài rollover sang ngày Việt Nam kế tiếp. Vì vậy một reboot xảy ra đúng lúc chuyển từ AP về Wi-Fi nhà không thể bị phiên soak mới che mất.
+
+6. Sau khi đủ ít nhất ba lượt history của boot hiện tại, chạy proof trực tiếp trên Pages/Supabase:
+
+```bash
+node tools/test-pages-smoke.mjs \
+  --expected-build live \
+  --attempts 1 \
+  --require-cloud-health \
+  --expected-cloud-version longos-sensor-2026-08-02.1 \
+  --require-history-cadence
+```
+
+Proof yêu cầu heartbeat và mẫu mới nhất đúng exact version, đồng thời có ít nhất 3 mẫu history của **cùng boot hiện tại** trong cửa sổ 40 phút; khoảng cách hai mẫu liền nhau phải từ 9 phút trở lên. Chạy trước khi đủ khoảng 20–30 phút sẽ `FAIL` đúng thiết kế. Xác nhận thêm ít nhất một lượt **LongOS Production Smoke** xanh trong tab **Actions**.
+
+Soak chỉ chứng minh API uptime và local `todaySamples` tăng trong phiên chạy; nó không đọc Serial, không tự tắt/bật Wi-Fi, không chứng minh mật khẩu AP không bị log và không thay thế kiểm tra NVS qua reboot. Exact `APP_VERSION` cũng không phải attestation binary/git SHA. Cloud cadence xác nhận cùng boot, số mẫu và khoảng cách tối thiểu, không khẳng định mọi khoảng cách phải đúng tuyệt đối 10 phút.
 
 ## CI và phát hành GitHub Pages
 
@@ -128,6 +169,7 @@ npm ci
 npm run test:supabase-semantic
 node tools/test-brand-migration.mjs
 node tools/test-cloud-health.mjs
+node tools/test-device-soak.mjs
 node tools/test-firmware-reliability.mjs
 c++ -std=c++11 -Wall -Wextra -Werror -pedantic -Iinclude tools/test-firmware-retry-policy.cpp -o /tmp/longos-firmware-retry-policy-test
 /tmp/longos-firmware-retry-policy-test
@@ -139,6 +181,8 @@ pio run -e esp32dev
 ```
 
 Gate firmware reliability kiểm tra tích hợp scheduler vào `src/main.cpp` và tự chèn 23 mutation lỗi để chứng minh gate bắt được regression. CI còn biên dịch/chạy riêng policy C++ thuần với cảnh `millis()` bằng 0, rollover 32-bit, cadence thành công 10 phút và backoff lỗi an toàn từ 30 giây đến tối đa 5 phút; bước này không kết nối hoặc nạp ESP32.
+
+CI chỉ chạy unit test của soak validator và kiểm tra `--help`; runner GitHub không kết nối ESP32 thật. Ba pha soak Wi-Fi nhà, AP fallback và hậu-reconnect ở checklist trên vẫn là kiểm thử phần cứng bắt buộc.
 
 `test:supabase-semantic` chạy các migration thật trong một database PGlite tạm thời, không kết nối Supabase production và không đọc secrets hoặc telemetry production. Gate kiểm tra riêng bootstrap fresh hiện tại, sau đó dựng nguyên trạng legacy từ commit `f589e75` rồi xác nhận hardening giữ nguyên fingerprint toàn bộ telemetry; hành vi RLS/ACL, token đúng/sai, giới hạn `main-room`, trigger `updated_at` và luồng cron; contract verifier đúng 21 trường (kết quả `PASS` cùng 20 kiểm tra boolean); đủ 20 mutation bảo mật độc lập phải làm từng trường verifier chuyển sang `false` và mỗi mutation phải rollback sạch về `PASS`. Gate cũng xác nhận hardening chạy lặp lại an toàn, emergency rollback vẫn chặn token sai, không đổi telemetry và có thể harden lại sau rollback.
 
@@ -167,6 +211,8 @@ LONGOS_CLOUD_LATEST_MAX_AGE_MS=240000 \
 LONGOS_CLOUD_HISTORY_MAX_AGE_MS=1500000 \
 node tools/test-pages-smoke.mjs --require-cloud-health
 ```
+
+`--expected-cloud-version` buộc cả heartbeat và history mới nhất khớp exact firmware. `--require-history-cadence` còn buộc các row metadata thuộc cùng boot với heartbeat hiện tại, mặc định tối thiểu 3 mẫu trong 40 phút và không có gap dưới 9 phút. Scheduled production smoke cố ý giữ chế độ generic trong giai đoạn rollout để board chưa flash không tạo known-red; strict proof chỉ chạy sau khi nạp firmware và tích lũy đủ history. Hai flag strict cũng không nằm trong Pages post-deploy verify vì tình trạng thiết bị không được phép chặn một deployment web hợp lệ.
 
 Cả hai chế độ chỉ đọc dữ liệu và không cần GitHub secret. Log chỉ ghi kết quả contract, trạng thái cùng độ trễ heartbeat/history; script không in nhiệt độ, độ ẩm, khóa Supabase hoặc nội dung telemetry thô.
 

@@ -37,8 +37,11 @@ jobs:
         run: |
           node --check tools/embed-web.mjs
           node --check tools/lib/cloud-health.mjs
+          node --check tools/lib/device-soak.mjs
+          node --check tools/device-soak.mjs
           node --check tools/test-brand-migration.mjs
           node --check tools/test-cloud-health.mjs
+          node --check tools/test-device-soak.mjs
           node --check tools/test-device-smoke.mjs
           node --check tools/test-firmware-reliability.mjs
           node --check tools/test-pages-smoke.mjs
@@ -51,8 +54,10 @@ jobs:
         run: |
           node tools/test-brand-migration.mjs
           node tools/test-cloud-health.mjs
+          node tools/test-device-soak.mjs
           node tools/test-firmware-reliability.mjs
           node tools/test-release-pipeline.mjs
+          node tools/device-soak.mjs --help
           node tools/test-device-smoke.mjs --help
           node tools/test-pages-smoke.mjs --help
           node tools/test-pages-smoke-integration.mjs
