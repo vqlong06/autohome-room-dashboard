@@ -95,6 +95,28 @@ node tools/test-device-smoke.mjs --url http://192.168.1.50 --require-sensor --re
 
 Xem toàn bộ tùy chọn bằng `node tools/test-device-smoke.mjs --help`.
 
+### Xác minh bản firmware reliability
+
+Firmware reliability hiện tại là `longos-sensor-2026-08-02.1`. Khi nạp bản này, không chọn erase flash để giữ namespace NVS legacy `autohome` và lịch sử 21 ngày.
+
+1. Mở Serial Monitor `115200`: phải thấy đúng phiên bản mới, Wi-Fi/NTP kết nối thành công và tuyệt đối không có mật khẩu fallback AP.
+2. Khi Mac và ESP32 cùng Wi-Fi nhà, chạy lệnh dưới đây và ghi lại số `today ... samples` được in ở dòng `Local history`:
+
+```bash
+node tools/test-device-smoke.mjs --require-sensor --require-cloud --require-time-synced
+```
+
+3. Tắt Wi-Fi nhà 2–3 phút. Kết nối Mac vào AP `LongOS-Sensor` bằng mật khẩu trong `include/secrets.h`, rồi chạy:
+
+```bash
+node tools/test-device-smoke.mjs --url http://192.168.4.1 --require-sensor --require-time-synced
+```
+
+Kết quả phải vẫn là `time synced`, và `today ... samples` phải lớn hơn lần đo trước; điều này chứng minh local history tiếp tục chạy khi mất Wi-Fi.
+
+4. Bật lại Wi-Fi nhà, nối Mac về Wi-Fi nhà rồi chạy lại lệnh ở bước 2. Heartbeat cloud phải trở lại thành công ngay sau reconnect.
+5. Để board chạy liên tục ít nhất 30 phút. Trong Supabase **Table Editor → room_readings**, lọc `app_version = longos-sensor-2026-08-02.1`, sắp `recorded_at` giảm dần: phải có ít nhất 3 mẫu mới, hai mẫu liền nhau không được cách dưới 9 phút và không có cặp mẫu cách nhau khoảng 30 giây sau reconnect. Xác nhận thêm ít nhất một lượt **LongOS Production Smoke** xanh và log health hiển thị đúng firmware mới.
+
 ## CI và phát hành GitHub Pages
 
 Mỗi lần push hoặc mở pull request, workflow `LongOS CI` tự kiểm tra branding, migration, release allowlist và build firmware ESP32 bằng cấu hình mẫu. CI không đọc `include/secrets.h` thật; bản build CI chỉ dùng để xác nhận biên dịch, không dùng để nạp lên thiết bị.
@@ -106,12 +128,17 @@ npm ci
 npm run test:supabase-semantic
 node tools/test-brand-migration.mjs
 node tools/test-cloud-health.mjs
+node tools/test-firmware-reliability.mjs
+c++ -std=c++11 -Wall -Wextra -Werror -pedantic -Iinclude tools/test-firmware-retry-policy.cpp -o /tmp/longos-firmware-retry-policy-test
+/tmp/longos-firmware-retry-policy-test
 node tools/test-pages-smoke-integration.mjs
 node tools/test-release-pipeline.mjs
 node tools/test-supabase-security.mjs
 test -e include/secrets.h || install -m 600 include/secrets.example.h include/secrets.h
 pio run -e esp32dev
 ```
+
+Gate firmware reliability kiểm tra tích hợp scheduler vào `src/main.cpp` và tự chèn 23 mutation lỗi để chứng minh gate bắt được regression. CI còn biên dịch/chạy riêng policy C++ thuần với cảnh `millis()` bằng 0, rollover 32-bit, cadence thành công 10 phút và backoff lỗi an toàn từ 30 giây đến tối đa 5 phút; bước này không kết nối hoặc nạp ESP32.
 
 `test:supabase-semantic` chạy các migration thật trong một database PGlite tạm thời, không kết nối Supabase production và không đọc secrets hoặc telemetry production. Gate kiểm tra riêng bootstrap fresh hiện tại, sau đó dựng nguyên trạng legacy từ commit `f589e75` rồi xác nhận hardening giữ nguyên fingerprint toàn bộ telemetry; hành vi RLS/ACL, token đúng/sai, giới hạn `main-room`, trigger `updated_at` và luồng cron; contract verifier đúng 21 trường (kết quả `PASS` cùng 20 kiểm tra boolean); đủ 20 mutation bảo mật độc lập phải làm từng trường verifier chuyển sang `false` và mỗi mutation phải rollback sạch về `PASS`. Gate cũng xác nhận hardening chạy lặp lại an toàn, emergency rollback vẫn chặn token sai, không đổi telemetry và có thể harden lại sau rollback.
 
@@ -182,7 +209,7 @@ Dashboard Pages đọc `room_latest` định kỳ 30 giây khi tab hiển thị,
 2. Cài mới: chạy `supabase/room_latest.sql`, rồi `supabase/add_history.sql`. Hai file tạo helper xác thực trong schema `longos_private`; `add_history.sql` chỉ lên lịch dọn history quá 90 ngày, không tạo snapshot trùng với firmware. Không thêm schema `longos_private` vào **Exposed schemas** trong Supabase API Settings.
 3. Với database đang chạy từ bản cũ: giữ ESP32 hoạt động và chạy toàn bộ `supabase/security_hardening.sql` một lần. Migration nằm trong một transaction, giữ nguyên device-token hash và dữ liệu, khóa RPC cũ, tắt job `autohome-snapshot` bị trùng nguồn ghi, đồng thời giữ hoặc khôi phục `autohome-cleanup` 90 ngày.
 4. Với database đang chạy từ bản cũ (đã có `pg_cron`), chạy `supabase/verify_security_hardening.sql`; cột `longos_security_result` phải là `PASS`. Sau đó chờ 30–60 giây để xác nhận heartbeat cloud tiếp tục cập nhật và tối đa 10–11 phút để thấy một mẫu history mới từ firmware.
-5. Firmware `longos-sensor-2026-08-01.3` hiện tại không cần flash lại cho migration này. Chỉ upload firmware nếu board còn chạy bản cũ chưa tự ghi `room_readings`.
+5. Riêng migration này, firmware `longos-sensor-2026-08-01.3` trở lên không cần flash lại. Chỉ upload firmware nếu board còn chạy bản cũ chưa tự ghi `room_readings`; bản reliability `longos-sensor-2026-08-02.1` là một nâng cấp firmware độc lập.
 6. Bật workflow Pages theo mục **CI và phát hành GitHub Pages**; workflow sẽ deploy đủ HTML, manifest và icon từ `public/`.
 7. Mở dashboard cloud bằng:
 
@@ -210,7 +237,7 @@ supabase/add_chip_temperature.sql
 
 Firmware xác thực HTTPS bằng CA thay vì `setInsecure()`. Chứng thư gốc hiện dùng nằm trong `include/supabase_ca.h`; nên kiểm tra lại chuỗi chứng thư Supabase khi bảo trì định kỳ hoặc khi Serial báo lỗi TLS sau một thay đổi hạ tầng phía Supabase.
 
-Nếu Wi-Fi nhà chưa sẵn sàng lúc khởi động hoặc bị rớt sau đó, ESP32 giữ AP fallback và tự thử kết nối lại mỗi 30 giây. Khi Wi-Fi nhà trở lại, board tự thoát AP, khởi động lại mDNS/NTP và gửi heartbeat cloud ngay.
+Nếu Wi-Fi nhà chưa sẵn sàng lúc khởi động hoặc bị rớt sau đó, ESP32 giữ AP fallback và tự thử kết nối lại mỗi 30 giây. Khi Wi-Fi nhà trở lại, board tự thoát AP, khởi động lại mDNS/NTP và gửi heartbeat cloud ngay nhưng vẫn giữ nhịp history 10 phút, không tạo một mẫu sớm chỉ vì reconnect. Sau một lần đồng bộ NTP hợp lệ, local history tiếp tục tích lũy khi Wi-Fi mất. Lỗi thiết lập HTTPS xảy ra trước khi gửi history và lỗi ghi NVS sẽ retry theo backoff từ 30 giây đến tối đa 5 phút. Một lỗi/timeout sau khi POST history đã bắt đầu sẽ chờ nhịp 10 phút tiếp theo vì server có thể đã ghi row dù ESP32 không nhận được response; cách này tránh tạo bản ghi đôi. NVS chỉ xóa cờ dirty sau khi ghi đủ toàn bộ record. Mật khẩu fallback AP không được ghi ra Serial.
 
 ## API
 

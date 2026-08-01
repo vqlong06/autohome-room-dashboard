@@ -80,6 +80,24 @@ assert.match(ciWorkflow, /node tools\/test-brand-migration\.mjs/);
 assert.match(ciWorkflow, /node --check tools\/lib\/cloud-health\.mjs/);
 assert.match(ciWorkflow, /node --check tools\/test-cloud-health\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-cloud-health\.mjs/);
+assert.match(ciWorkflow, /^\s+node --check tools\/test-firmware-reliability\.mjs\s*$/m);
+assert.match(ciWorkflow, /^\s+node tools\/test-firmware-reliability\.mjs\s*$/m);
+assert.match(
+  ciWorkflow,
+  /^\s+c\+\+ -std=c\+\+11 -Wall -Wextra -Werror -pedantic -Iinclude tools\/test-firmware-retry-policy\.cpp -o "\$\{RUNNER_TEMP\}\/longos-firmware-retry-policy-test"\s*$/m
+);
+assert.match(ciWorkflow, /^\s+"\$\{RUNNER_TEMP\}\/longos-firmware-retry-policy-test"\s*$/m);
+assert.doesNotMatch(
+  ciWorkflow,
+  /test-firmware-(?:reliability|retry-policy)[^\n]*(?:\|\||&&|;)\s*true/,
+  'Firmware reliability gates must not suppress failures'
+);
+assert.doesNotMatch(
+  ciWorkflow,
+  /^\s*continue-on-error:\s*(?:true|\$\{\{\s*true\s*\}\})\s*$/m,
+  'CI steps must not suppress failures'
+);
+assert.doesNotMatch(ciWorkflow, /^\s*if:\s*(?:false|\$\{\{\s*false\s*\}\})\s*$/m, 'CI steps must not disable gates');
 assert.match(ciWorkflow, /node tools\/test-release-pipeline\.mjs/);
 assert.match(ciWorkflow, /node --check tools\/test-pages-smoke\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-pages-smoke\.mjs --help/);

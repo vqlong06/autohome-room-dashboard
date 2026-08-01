@@ -40,6 +40,7 @@ jobs:
           node --check tools/test-brand-migration.mjs
           node --check tools/test-cloud-health.mjs
           node --check tools/test-device-smoke.mjs
+          node --check tools/test-firmware-reliability.mjs
           node --check tools/test-pages-smoke.mjs
           node --check tools/test-pages-smoke-integration.mjs
           node --check tools/test-release-pipeline.mjs
@@ -50,12 +51,18 @@ jobs:
         run: |
           node tools/test-brand-migration.mjs
           node tools/test-cloud-health.mjs
+          node tools/test-firmware-reliability.mjs
           node tools/test-release-pipeline.mjs
           node tools/test-device-smoke.mjs --help
           node tools/test-pages-smoke.mjs --help
           node tools/test-pages-smoke-integration.mjs
           npm run test:supabase-semantic
           node tools/test-supabase-security.mjs
+
+      - name: Test firmware retry policy
+        run: |
+          c++ -std=c++11 -Wall -Wextra -Werror -pedantic -Iinclude tools/test-firmware-retry-policy.cpp -o "${RUNNER_TEMP}/longos-firmware-retry-policy-test"
+          "${RUNNER_TEMP}/longos-firmware-retry-policy-test"
 
   firmware:
     name: ESP32 firmware build
