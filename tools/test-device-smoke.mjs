@@ -62,25 +62,19 @@ function endpointUrl(baseUrl, path) {
   return new URL(path.replace(/^\//, ''), normalizedBase);
 }
 
-async function fetchJson(baseUrl, path, timeoutMs) {
+async function fetchResource(baseUrl, path, timeoutMs, accept) {
   const url = endpointUrl(baseUrl, path);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, {
-      headers: { Accept: 'application/json' },
+      headers: { Accept: accept },
       signal: controller.signal
     });
     assert.ok(response.ok, `${path} returned HTTP ${response.status}`);
-    assert.match(response.headers.get('content-type') || '', /^application\/json\b/i, `${path} must return JSON`);
-
-    const body = await response.text();
-    try {
-      return JSON.parse(body);
-    } catch {
-      assert.fail(`${path} returned invalid JSON`);
-    }
+    const body = Buffer.from(await response.arrayBuffer());
+    return { response, body };
   } catch (error) {
     if (error?.name === 'AbortError') {
       assert.fail(`${path} timed out after ${timeoutMs} ms`);
@@ -89,6 +83,54 @@ async function fetchJson(baseUrl, path, timeoutMs) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function fetchJson(baseUrl, path, timeoutMs) {
+  const { response, body } = await fetchResource(baseUrl, path, timeoutMs, 'application/json');
+  assert.match(response.headers.get('content-type') || '', /^application\/json\b/i, `${path} must return JSON`);
+
+  try {
+    return JSON.parse(body.toString('utf8'));
+  } catch {
+    assert.fail(`${path} returned invalid JSON`);
+  }
+}
+
+function contentLength(response, name) {
+  const value = Number(response.headers.get('content-length'));
+  assert.ok(Number.isInteger(value) && value > 0, `${name} must return a positive Content-Length`);
+  return value;
+}
+
+async function validateWebAssets(baseUrl, timeoutMs) {
+  const [expectedHtml, expectedFavicon, expectedAppleTouchIcon] = await Promise.all([
+    readFile(resolve(root, 'web/index.html')),
+    readFile(resolve(root, 'web/favicon.svg')),
+    readFile(resolve(root, 'web/apple-touch-icon.png'))
+  ]);
+
+  const index = await fetchResource(baseUrl, '/', timeoutMs, 'text/html');
+  assert.match(index.response.headers.get('content-type') || '', /^text\/html\b/i, '/ must return HTML');
+  assert.equal(index.response.headers.get('content-encoding'), 'gzip', '/ must use gzip content encoding');
+  assert.match(index.response.headers.get('vary') || '', /\bAccept-Encoding\b/i, '/ must vary by Accept-Encoding');
+  assert.match(index.response.headers.get('cache-control') || '', /\bno-store\b/i, '/ must disable caching');
+  assert.ok(contentLength(index.response, '/') < expectedHtml.length / 2, '/ compressed body must stay below 50% of its source');
+  assert.deepEqual(index.body, expectedHtml, 'served dashboard must match web/index.html');
+
+  const favicon = await fetchResource(baseUrl, '/favicon.svg', timeoutMs, 'image/svg+xml');
+  assert.match(favicon.response.headers.get('content-type') || '', /^image\/svg\+xml\b/i, 'favicon must return SVG');
+  assert.equal(favicon.response.headers.get('content-encoding'), 'gzip', 'favicon must use gzip content encoding');
+  assert.match(favicon.response.headers.get('vary') || '', /\bAccept-Encoding\b/i, 'favicon must vary by Accept-Encoding');
+  assert.match(favicon.response.headers.get('cache-control') || '', /\bimmutable\b/i, 'favicon must be immutable');
+  assert.ok(contentLength(favicon.response, 'favicon') < expectedFavicon.length, 'favicon gzip must be smaller than its source');
+  assert.deepEqual(favicon.body, expectedFavicon, 'served favicon must match web/favicon.svg');
+
+  const appleTouchIcon = await fetchResource(baseUrl, '/apple-touch-icon.png', timeoutMs, 'image/png');
+  assert.match(appleTouchIcon.response.headers.get('content-type') || '', /^image\/png\b/i, 'Apple icon must return PNG');
+  assert.equal(appleTouchIcon.response.headers.get('content-encoding'), null, 'Apple icon must not claim gzip encoding');
+  assert.match(appleTouchIcon.response.headers.get('cache-control') || '', /\bimmutable\b/i, 'Apple icon must be immutable');
+  assert.equal(contentLength(appleTouchIcon.response, 'Apple icon'), expectedAppleTouchIcon.length, 'Apple icon Content-Length is wrong');
+  assert.deepEqual(appleTouchIcon.body, expectedAppleTouchIcon, 'served Apple icon must match web/apple-touch-icon.png');
 }
 
 function assertBoolean(value, name) {
@@ -198,6 +240,7 @@ const [health, readings] = await Promise.all([
 assert.equal(health.ok, true, 'health ok must be true');
 assert.equal(health.appVersion, expectedVersion, 'health appVersion does not match the local firmware');
 validateReadings(readings, expectedVersion, options);
+await validateWebAssets(options.baseUrl, options.timeoutMs);
 
 console.log('LongOS device smoke test: OK');
 console.log(`Device: ${options.baseUrl}`);
@@ -205,3 +248,4 @@ console.log(`Firmware: ${readings.appVersion}`);
 console.log(`Wi-Fi: ${readings.wifiMode}, RSSI ${readings.wifiRssi ?? 'n/a'} dBm`);
 console.log(`Sensor: ${readings.sensorOnline ? `${readings.temperatureC} C, ${readings.humidity}%` : 'offline'}`);
 console.log(`Cloud: latest ${readings.cloudStatusCode}, history ${readings.cloudHistoryStatusCode}`);
+console.log('Web assets: gzip HTML/SVG and PNG OK');

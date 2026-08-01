@@ -3,9 +3,11 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { gunzipSync } from 'node:zlib';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFile(resolve(root, path), 'utf8');
+const readBytes = (path) => readFile(resolve(root, path));
 
 const [
   rootHtml,
@@ -16,7 +18,10 @@ const [
   firmware,
   configHeader,
   secretsExample,
-  snapshotSql
+  snapshotSql,
+  webAssetsHeader,
+  webFavicon,
+  webAppleTouchIcon
 ] = await Promise.all([
   read('index.html'),
   read('public/index.html'),
@@ -26,7 +31,10 @@ const [
   read('src/main.cpp'),
   read('include/longos_config.h'),
   read('include/secrets.example.h'),
-  read('supabase/snapshot_room_readings.sql')
+  read('supabase/snapshot_room_readings.sql'),
+  read('include/web_assets.h'),
+  readBytes('web/favicon.svg'),
+  readBytes('web/apple-touch-icon.png')
 ]);
 
 function sliceBetween(source, startMarker, endMarker) {
@@ -35,6 +43,17 @@ function sliceBetween(source, startMarker, endMarker) {
   assert.notEqual(start, -1, `Missing start marker: ${startMarker}`);
   assert.notEqual(end, -1, `Missing end marker: ${endMarker}`);
   return source.slice(start, end);
+}
+
+function embeddedBytes(source, name) {
+  const match = source.match(new RegExp(
+    `static const uint8_t ${name}\\[\\] PROGMEM = \\{([\\s\\S]*?)\\};`
+  ));
+  assert.ok(match, `Embedded asset ${name} is missing`);
+  const bytes = [...match[1].matchAll(/0x([0-9a-f]{2})/gi)]
+    .map((entry) => Number.parseInt(entry[1], 16));
+  assert.ok(bytes.length > 0, `Embedded asset ${name} is empty`);
+  return Buffer.from(bytes);
 }
 
 function createStorage(initial = {}) {
@@ -65,11 +84,36 @@ assert.equal(rootManifest.start_url, './?pwa=20260801.2');
 assert.match(publicHtml, /name="longos-build" content="20260801\.2"/);
 assert.match(publicHtml, /name="autohome-build" content="20260801\.2"/);
 assert.match(publicHtml, /manifest\.webmanifest\?v=20260801\.2/);
-assert.match(firmware, /longos-sensor-2026-08-01\.2/);
+assert.match(firmware, /longos-sensor-2026-08-01\.3/);
 
-const embeddedMatch = firmware.match(/const char INDEX_HTML\[\] PROGMEM = R"HTML\(\n([\s\S]*?)\n\)HTML";/);
-assert.ok(embeddedMatch, 'Embedded firmware HTML block is missing');
-assert.equal(embeddedMatch[1], webHtml, 'Embedded firmware HTML must match web/index.html');
+const firmwareVersionMatch = firmware.match(/const char \*APP_VERSION = "longos-sensor-(\d{4})-(\d{2})-(\d{2}\.\d+)";/);
+assert.ok(firmwareVersionMatch, 'Firmware APP_VERSION format is invalid');
+const webAssetVersion = `${firmwareVersionMatch[1]}${firmwareVersionMatch[2]}${firmwareVersionMatch[3]}`;
+assert.ok(webHtml.includes(`favicon.svg?v=${webAssetVersion}`), 'Favicon cache version must match APP_VERSION');
+assert.ok(webHtml.includes(`apple-touch-icon.png?v=${webAssetVersion}`), 'Apple icon cache version must match APP_VERSION');
+
+const embeddedHtmlGzip = embeddedBytes(webAssetsHeader, 'INDEX_HTML_GZ');
+const embeddedFaviconGzip = embeddedBytes(webAssetsHeader, 'FAVICON_SVG_GZ');
+const embeddedAppleTouchIcon = embeddedBytes(webAssetsHeader, 'APPLE_TOUCH_ICON_PNG');
+assert.deepEqual([...embeddedHtmlGzip.subarray(0, 3)], [0x1F, 0x8B, 0x08], 'Embedded HTML must have a gzip header');
+assert.deepEqual([...embeddedFaviconGzip.subarray(0, 3)], [0x1F, 0x8B, 0x08], 'Embedded favicon must have a gzip header');
+assert.equal(embeddedHtmlGzip[9], 0xFF, 'Embedded HTML gzip OS byte must be normalized');
+assert.equal(embeddedFaviconGzip[9], 0xFF, 'Embedded favicon gzip OS byte must be normalized');
+assert.equal(gunzipSync(embeddedHtmlGzip).toString('utf8'), webHtml, 'Embedded gzip HTML must match web/index.html');
+assert.deepEqual(gunzipSync(embeddedFaviconGzip), webFavicon, 'Embedded gzip favicon must match web/favicon.svg');
+assert.deepEqual(embeddedAppleTouchIcon, webAppleTouchIcon, 'Embedded Apple icon must match web/apple-touch-icon.png');
+assert.ok(embeddedHtmlGzip.length < Buffer.byteLength(webHtml) / 2, 'Embedded HTML gzip must stay below 50% of the source size');
+assert.ok(
+  embeddedHtmlGzip.length + embeddedFaviconGzip.length + embeddedAppleTouchIcon.length < Buffer.byteLength(webHtml),
+  'All embedded web assets together must stay smaller than the former raw HTML'
+);
+assert.match(firmware, /#include "web_assets\.h"/);
+assert.doesNotMatch(firmware, /const char INDEX_HTML\[\]/);
+assert.match(firmware, /server\.on\("\/favicon\.svg", HTTP_GET, handleFavicon\)/);
+assert.match(firmware, /server\.on\("\/apple-touch-icon\.png", HTTP_GET, handleAppleTouchIcon\)/);
+assert.match(firmware, /reinterpret_cast<PGM_P>\(INDEX_HTML_GZ\)/);
+assert.match(firmware, /reinterpret_cast<PGM_P>\(FAVICON_SVG_GZ\)/);
+assert.match(firmware, /reinterpret_cast<PGM_P>\(APPLE_TOUCH_ICON_PNG\)/);
 
 const settingsBlock = sliceBetween(
   publicHtml,

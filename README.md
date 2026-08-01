@@ -73,13 +73,13 @@ Khi ESP32 đã kết nối Wi-Fi nhà, có thể thử mở `http://longos-senso
 
 ## Smoke test ESP32 thật
 
-Khi ESP32 đang online cùng mạng với máy và máy có Node.js 18 trở lên, chạy kiểm tra nhanh hai endpoint `/health` và `/api/readings`:
+Khi ESP32 đang online cùng mạng với máy và máy có Node.js 18 trở lên, chạy kiểm tra nhanh dashboard, favicon, Apple touch icon và hai endpoint `/health`, `/api/readings`:
 
 ```bash
 node tools/test-device-smoke.mjs
 ```
 
-Script mặc định dùng `http://longos-sensor.local`, tự lấy phiên bản mong đợi từ `APP_VERSION` trong `src/main.cpp`, có timeout cho từng request và kiểm tra schema phản hồi. Để yêu cầu cả SHT30 và Supabase hoạt động thành công:
+Script mặc định dùng `http://longos-sensor.local`, tự lấy phiên bản mong đợi từ `APP_VERSION` trong `src/main.cpp`, có timeout cho từng request, kiểm tra schema phản hồi và xác nhận nội dung web nhúng khớp các file nguồn. Để yêu cầu cả SHT30 và Supabase hoạt động thành công:
 
 ```bash
 node tools/test-device-smoke.mjs --require-sensor --require-cloud
@@ -225,10 +225,10 @@ Khi chưa cắm hoặc không đọc được cảm biến:
 
 ## Đồng bộ web vào firmware
 
-Sau khi sửa `web/index.html`, chạy:
+Sau khi sửa bất kỳ file nào trong thư mục `web/`, chạy:
 
 ```bash
 node tools/embed-web.mjs
 ```
 
-Script này nhúng lại giao diện web vào `src/main.cpp` để ESP32 serve đúng bản mới.
+Script này gzip HTML và SVG, nhúng thêm Apple touch icon, rồi sinh lại `include/web_assets.h` để ESP32 serve đúng các file trong `web/`. File header là nội dung sinh tự động, không sửa thủ công.
