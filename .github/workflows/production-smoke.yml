@@ -2,7 +2,7 @@ name: LongOS Production Smoke
 
 on:
   schedule:
-    - cron: '17 2 * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -32,8 +32,21 @@ jobs:
           package-manager-cache: false
 
       - name: Smoke test production
-        run: >-
-          node tools/test-pages-smoke.mjs
-          --url "https://vqlong06.github.io/autohome-room-dashboard/"
-          --expected-build live
-          --require-cloud
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if node tools/test-pages-smoke.mjs \
+              --url "https://vqlong06.github.io/autohome-room-dashboard/" \
+              --expected-build live \
+              --attempts 1 \
+              --require-cloud-health; then
+              exit 0
+            fi
+
+            if (( attempt < 3 )); then
+              echo "Production smoke attempt ${attempt} failed; retrying in 20 seconds."
+              sleep 20
+            fi
+          done
+
+          exit 1

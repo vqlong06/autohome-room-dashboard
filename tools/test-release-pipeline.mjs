@@ -63,9 +63,14 @@ assert.match(ciWorkflow, /test ! -e include\/secrets\.h/);
 assert.match(ciWorkflow, /install -m 600 include\/secrets\.example\.h include\/secrets\.h/);
 assert.match(ciWorkflow, /pio run -e esp32dev/);
 assert.match(ciWorkflow, /node tools\/test-brand-migration\.mjs/);
+assert.match(ciWorkflow, /node --check tools\/lib\/cloud-health\.mjs/);
+assert.match(ciWorkflow, /node --check tools\/test-cloud-health\.mjs/);
+assert.match(ciWorkflow, /node tools\/test-cloud-health\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-release-pipeline\.mjs/);
 assert.match(ciWorkflow, /node --check tools\/test-pages-smoke\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-pages-smoke\.mjs --help/);
+assert.match(ciWorkflow, /node --check tools\/test-pages-smoke-integration\.mjs/);
+assert.match(ciWorkflow, /node tools\/test-pages-smoke-integration\.mjs/);
 assert.match(ciWorkflow, /node --check tools\/test-supabase-security\.mjs/);
 assert.match(ciWorkflow, /node tools\/test-supabase-security\.mjs/);
 assert.match(ciWorkflow, /python-3\.11-platformio-6\.1\.19-/);
@@ -94,7 +99,12 @@ assert.match(verifyJob, /contents:\s+read/);
 assert.doesNotMatch(verifyJob, /pages:\s+write|id-token:/, 'Pages verify job must not receive deployment permissions');
 assert.match(verifyJob, /node tools\/test-pages-smoke\.mjs/);
 assert.match(verifyJob, /\$\{\{ needs\.deploy\.outputs\.page_url \}\}/);
-assert.match(verifyJob, /--require-cloud/);
+assert.match(verifyJob, /--require-cloud(?:\s|$)/m);
+assert.doesNotMatch(
+  verifyJob,
+  /--require-cloud-health/,
+  'Pages post-deploy verification must check the cloud contract without depending on device health'
+);
 assert.match(pagesWorkflow, /path:\s+\$\{\{ runner\.temp \}\}\/longos-pages/);
 assert.match(pagesWorkflow, /include-hidden-files:\s+true/);
 assert.match(pagesWorkflow, /environment:\s*\n\s+name:\s+github-pages/);
@@ -102,7 +112,7 @@ assert.match(pagesWorkflow, /needs:\s+build/);
 assert.equal((pagesWorkflow.match(/persist-credentials:\s+false/g) || []).length, 2, 'Pages checkouts must not persist credentials');
 assert.doesNotMatch(pagesWorkflow, /^\s*path:\s*(?:['"]?\.['"]?|public)\s*$/m, 'Pages must never upload the repository root or public directly');
 
-assert.match(productionWorkflow, /cron:\s+'17 2 \* \* \*'/);
+assert.match(productionWorkflow, /cron:\s+'7,22,37,52 \* \* \* \*'/);
 assert.match(productionWorkflow, /workflow_dispatch:/);
 assert.match(productionWorkflow, /group:\s+longos-production-smoke/);
 assert.match(productionWorkflow, /cancel-in-progress:\s+true/);
@@ -111,7 +121,12 @@ assert.doesNotMatch(productionWorkflow, /contents:\s+write|pages:\s+write|id-tok
 assert.match(productionWorkflow, /node tools\/test-pages-smoke\.mjs/);
 assert.match(productionWorkflow, /https:\/\/vqlong06\.github\.io\/autohome-room-dashboard\//);
 assert.match(productionWorkflow, /--expected-build live/);
-assert.match(productionWorkflow, /--require-cloud/);
+assert.match(productionWorkflow, /--attempts 1/);
+assert.match(productionWorkflow, /--require-cloud-health/);
+assert.match(productionWorkflow, /shell:\s+bash/);
+assert.match(productionWorkflow, /for attempt in 1 2 3/);
+assert.match(productionWorkflow, /sleep 20/);
+assert.match(productionWorkflow, /exit 1/);
 assert.match(productionWorkflow, /ref:\s+main/);
 assert.equal((productionWorkflow.match(/persist-credentials:\s+false/g) || []).length, 1, 'Production checkout must not persist credentials');
 
@@ -121,8 +136,26 @@ assert.match(pagesSmokeTest, /'include\/secrets\.example\.h'/);
 assert.match(pagesSmokeTest, /'\.github\/workflows\/pages\.yml'/);
 assert.match(pagesSmokeTest, /verifyPng\('\.\/icon-192\.png', 192/);
 assert.match(pagesSmokeTest, /verifyPng\('\.\/icon-512\.png', 512/);
-assert.match(pagesSmokeTest, /for \(const table of \['room_latest', 'room_readings'\]\)/);
-assert.match(pagesSmokeTest, /if \(table === 'room_latest'\)/);
+assert.match(pagesSmokeTest, /--require-cloud-health/);
+assert.match(pagesSmokeTest, /--latest-max-age-ms/);
+assert.match(pagesSmokeTest, /--history-max-age-ms/);
+assert.match(pagesSmokeTest, /LONGOS_CLOUD_LATEST_MAX_AGE_MS/);
+assert.match(pagesSmokeTest, /LONGOS_CLOUD_HISTORY_MAX_AGE_MS/);
+assert.match(pagesSmokeTest, /DEFAULT_LATEST_MAX_AGE_MS/);
+assert.match(pagesSmokeTest, /DEFAULT_HISTORY_MAX_AGE_MS/);
+assert.match(pagesSmokeTest, /validateCloudHealth/);
+assert.match(pagesSmokeTest, /from '\.\/lib\/cloud-health\.mjs'/);
+assert.match(pagesSmokeTest, /if \(options\.requireCloudHealth\) options\.requireCloud = true/);
+assert.match(pagesSmokeTest, /if \(options\.requireCloudHealth\)/);
+assert.match(pagesSmokeTest, /room_id,updated_at,app_version,device_online,wifi_connected,sensor_online/);
+assert.match(pagesSmokeTest, /room_id,recorded_at,app_version,sensor_online/);
+assert.match(pagesSmokeTest, /Accept-Profile/);
+assert.match(pagesSmokeTest, /longos_private/);
+assert.match(pagesSmokeTest, /expectedStatus:\s*406/);
+assert.match(pagesSmokeTest, /PGRST106/);
+assert.match(pagesSmokeTest, /validateCloudHealth\(\{/);
+assert.match(pagesSmokeTest, /latestMaxAgeMs:\s*options\.latestMaxAgeMs/);
+assert.match(pagesSmokeTest, /historyMaxAgeMs:\s*options\.historyMaxAgeMs/);
 assert.match(pagesSmokeTest, /rows\.length > 0/);
 assert.match(pagesSmokeTest, /access-control-allow-origin/);
 

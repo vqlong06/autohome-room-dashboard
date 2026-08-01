@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  DEFAULT_HISTORY_MAX_AGE_MS,
+  DEFAULT_LATEST_MAX_AGE_MS,
+  validateCloudHealth
+} from './lib/cloud-health.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const defaultSiteUrl = 'https://vqlong06.github.io/autohome-room-dashboard/';
@@ -16,10 +21,14 @@ Options:
   --attempts <count>        Attempts while deployment propagates (default: 6)
   --retry-ms <ms>           Delay between attempts (default: 5000)
   --require-cloud           Verify anonymous Supabase reads without exposing telemetry
+  --require-cloud-health    Also require fresh heartbeat/history and online device/sensor
+  --latest-max-age-ms <ms>  Maximum heartbeat age (default: ${DEFAULT_LATEST_MAX_AGE_MS})
+  --history-max-age-ms <ms> Maximum history age (default: ${DEFAULT_HISTORY_MAX_AGE_MS})
   -h, --help                Show this help
 
 Environment overrides: LONGOS_PAGES_URL, LONGOS_PAGES_EXPECTED_BUILD,
-LONGOS_PAGES_TIMEOUT_MS, LONGOS_PAGES_ATTEMPTS, LONGOS_PAGES_RETRY_MS`);
+LONGOS_PAGES_TIMEOUT_MS, LONGOS_PAGES_ATTEMPTS, LONGOS_PAGES_RETRY_MS,
+LONGOS_CLOUD_LATEST_MAX_AGE_MS, LONGOS_CLOUD_HISTORY_MAX_AGE_MS`);
 }
 
 function positiveInteger(value, label) {
@@ -37,7 +46,16 @@ function parseArgs(argv) {
     timeoutMs: positiveInteger(process.env.LONGOS_PAGES_TIMEOUT_MS || '10000', 'timeout'),
     attempts: positiveInteger(process.env.LONGOS_PAGES_ATTEMPTS || '6', 'attempts'),
     retryMs: positiveInteger(process.env.LONGOS_PAGES_RETRY_MS || '5000', 'retry delay'),
-    requireCloud: false
+    requireCloud: false,
+    requireCloudHealth: false,
+    latestMaxAgeMs: positiveInteger(
+      process.env.LONGOS_CLOUD_LATEST_MAX_AGE_MS || String(DEFAULT_LATEST_MAX_AGE_MS),
+      'latest maximum age'
+    ),
+    historyMaxAgeMs: positiveInteger(
+      process.env.LONGOS_CLOUD_HISTORY_MAX_AGE_MS || String(DEFAULT_HISTORY_MAX_AGE_MS),
+      'history maximum age'
+    )
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -54,7 +72,12 @@ function parseArgs(argv) {
     else if (argument === '--attempts') options.attempts = positiveInteger(nextValue(), 'attempts');
     else if (argument === '--retry-ms') options.retryMs = positiveInteger(nextValue(), 'retry delay');
     else if (argument === '--require-cloud') options.requireCloud = true;
-    else if (argument === '--help' || argument === '-h') {
+    else if (argument === '--require-cloud-health') options.requireCloudHealth = true;
+    else if (argument === '--latest-max-age-ms') {
+      options.latestMaxAgeMs = positiveInteger(nextValue(), 'latest maximum age');
+    } else if (argument === '--history-max-age-ms') {
+      options.historyMaxAgeMs = positiveInteger(nextValue(), 'history maximum age');
+    } else if (argument === '--help' || argument === '-h') {
       usage();
       process.exit(0);
     } else {
@@ -62,6 +85,7 @@ function parseArgs(argv) {
     }
   }
 
+  if (options.requireCloudHealth) options.requireCloud = true;
   return options;
 }
 
@@ -200,6 +224,7 @@ for (const path of forbiddenPaths) {
   await retry(`private boundary ${path}`, () => fetchResource(siteUrl(path), { expectedStatus: 404 }));
 }
 
+let cloudHealth = null;
 if (options.requireCloud) {
   const supabaseUrl = new URL(javascriptConstant(html, 'SUPABASE_URL'));
   assert.equal(supabaseUrl.protocol, 'https:', 'Supabase URL must use HTTPS');
@@ -211,11 +236,22 @@ if (options.requireCloud) {
     Origin: baseUrl.origin
   };
 
+  const cloudRows = {};
   for (const table of ['room_latest', 'room_readings']) {
     await retry(`Supabase ${table} read contract`, async () => {
       const endpoint = new URL(`/rest/v1/${table}`, supabaseUrl);
       endpoint.searchParams.set('room_id', `eq.${roomId}`);
-      endpoint.searchParams.set('select', 'room_id');
+      endpoint.searchParams.set(
+        'select',
+        options.requireCloudHealth
+          ? table === 'room_latest'
+            ? 'room_id,updated_at,app_version,device_online,wifi_connected,sensor_online'
+            : 'room_id,recorded_at,app_version,sensor_online'
+          : 'room_id'
+      );
+      if (options.requireCloudHealth && table === 'room_readings') {
+        endpoint.searchParams.set('order', 'recorded_at.desc');
+      }
       endpoint.searchParams.set('limit', '1');
       const { response, body } = await fetchResource(endpoint, { headers: cloudHeaders });
       const allowOrigin = response.headers.get('access-control-allow-origin');
@@ -225,7 +261,42 @@ if (options.requireCloud) {
       if (table === 'room_latest') {
         assert.ok(rows.length > 0, `${table} must expose the configured room to the public dashboard`);
       }
+      if (options.requireCloudHealth) {
+        assert.ok(rows.length > 0, `${table} must contain health metadata for the configured room`);
+        cloudRows[table] = rows[0];
+      }
       assert.ok(rows.every((row) => row.room_id === roomId), `${table} returned an unexpected room`);
+    });
+  }
+
+  await retry('Supabase private schema boundary', async () => {
+    const endpoint = new URL('/rest/v1/room_latest', supabaseUrl);
+    endpoint.searchParams.set('select', 'room_id');
+    endpoint.searchParams.set('limit', '0');
+    const { response, body } = await fetchResource(endpoint, {
+      expectedStatus: 406,
+      headers: {
+        ...cloudHeaders,
+        'Accept-Profile': 'longos_private'
+      }
+    });
+    assert.match(
+      response.headers.get('content-type') || '',
+      /^application\/json\b/i,
+      'private schema boundary must return JSON'
+    );
+    const error = JSON.parse(body);
+    assert.equal(error.code, 'PGRST106', 'private schema boundary must reject an unexposed schema');
+  });
+
+  if (options.requireCloudHealth) {
+    cloudHealth = validateCloudHealth({
+      roomId,
+      latest: cloudRows.room_latest,
+      history: cloudRows.room_readings,
+      nowMs: Date.now(),
+      latestMaxAgeMs: options.latestMaxAgeMs,
+      historyMaxAgeMs: options.historyMaxAgeMs
     });
   }
 }
@@ -235,3 +306,9 @@ console.log(`Site: ${baseUrl.href}`);
 console.log(`Build: ${expectedBuild}`);
 console.log(`Public boundary: ${forbiddenPaths.length} private paths return 404`);
 console.log(`Cloud read contract: ${options.requireCloud ? 'OK' : 'skipped'}`);
+console.log(`Cloud private schema: ${options.requireCloud ? 'hidden' : 'skipped'}`);
+console.log(
+  `Cloud health: ${cloudHealth
+    ? `OK (heartbeat ${Math.round(cloudHealth.latestAgeMs / 1000)}s, history ${Math.round(cloudHealth.historyAgeMs / 60000)}m, ${cloudHealth.appVersion})`
+    : 'skipped'}`
+);
