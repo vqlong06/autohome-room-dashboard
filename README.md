@@ -95,6 +95,35 @@ node tools/test-device-smoke.mjs --url http://192.168.1.50 --require-sensor --re
 
 Xem toàn bộ tùy chọn bằng `node tools/test-device-smoke.mjs --help`.
 
+## CI và phát hành GitHub Pages
+
+Mỗi lần push hoặc mở pull request, workflow `LongOS CI` tự kiểm tra branding, migration, release allowlist và build firmware ESP32 bằng cấu hình mẫu. CI không đọc `include/secrets.h` thật; bản build CI chỉ dùng để xác nhận biên dịch, không dùng để nạp lên thiết bị.
+
+Kiểm tra tương đương trên máy:
+
+```bash
+node tools/test-brand-migration.mjs
+node tools/test-release-pipeline.mjs
+test -e include/secrets.h || install -m 600 include/secrets.example.h include/secrets.h
+pio run -e esp32dev
+```
+
+Lệnh `install` chỉ tạo cấu hình mẫu khi `include/secrets.h` chưa tồn tại, không ghi đè cấu hình thật. Workflow `Deploy LongOS Pages` sao chép đúng allowlist 7 file public vào một thư mục staging riêng; `src/`, `include/`, `web/`, SQL, secrets và snapshot cục bộ không nằm trong Pages artifact. Workflow chỉ deploy từ branch `main`.
+
+**Lưu ý riêng tư:** GitHub Pages và dữ liệu `main-room` theo cấu hình Supabase hiện tại đều công khai cho người có URL. Nếu dữ liệu phòng cần riêng tư, chưa bật Pages cho đến khi bổ sung đăng nhập và RLS tương ứng.
+
+Thiết lập một lần trên GitHub sau khi workflow đã được merge vào `main`:
+
+1. Mở repository, vào **Settings → Pages**.
+2. Trong **Build and deployment → Source**, chọn **GitHub Actions**.
+3. Merge hoặc push vào `main`; theo dõi workflow `Deploy LongOS Pages` trong tab **Actions**.
+4. Sau lần chạy đầu, có thể vào **Settings → Environments → github-pages** và giới hạn deployment branch là `main`.
+5. Khi workflow hoàn tất, mở URL Pages được hiển thị trong job `Deploy site`.
+
+Với remote hiện tại, URL dự kiến là `https://vqlong06.github.io/autohome-room-dashboard/`.
+
+Không chọn `Deploy from a branch` với thư mục root vì cách đó có thể public cả mã nguồn dự án. Nếu chạy workflow thủ công, hãy chọn branch `main`.
+
 ## Lịch sử và so sánh
 
 - ESP32 đồng bộ giờ bằng NTP khi kết nối Wi-Fi.
@@ -118,11 +147,11 @@ Dashboard có chế độ cloud để xem khi không ở cùng Wi-Fi. ESP32 gử
 2. Cài mới: chạy `supabase/room_latest.sql`, rồi `supabase/add_history.sql`.
 3. Với database đang chạy từ bản cũ: chạy một lần `supabase/security_hardening.sql` để thêm migration còn thiếu và bảo vệ quyền ghi bằng token ESP32.
 4. Upload lại firmware cho ESP32 sau khi SQL chạy thành công.
-5. Deploy toàn bộ các file được Git theo dõi trong thư mục `public/` lên GitHub Pages để có đủ HTML, manifest và icon.
+5. Bật workflow Pages theo mục **CI và phát hành GitHub Pages**; workflow sẽ deploy đủ HTML, manifest và icon từ `public/`.
 6. Mở dashboard cloud bằng:
 
 ```text
-public/index.html?source=cloud
+https://vqlong06.github.io/autohome-room-dashboard/?source=cloud
 ```
 
 Khi deploy `public/index.html` lên static hosting miễn phí như GitHub Pages, trang sẽ tự dùng Supabase nếu hostname không phải IP nội bộ. Dashboard không yêu cầu mật khẩu; bất kỳ ai có URL đều đọc được dữ liệu `main-room`. Quyền ghi và cập nhật vẫn chỉ dành cho ESP32 có device token hợp lệ. Nếu `updated_at` trên cloud cũ hơn 2 phút, dashboard sẽ báo `ESP32 offline`.
