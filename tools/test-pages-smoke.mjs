@@ -13,6 +13,7 @@ import {
   validateCloudHealth,
   validateHistoryCadence
 } from './lib/cloud-health.mjs';
+import { validatePagesRevision } from './lib/pages-release.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const defaultSiteUrl = 'https://vqlong06.github.io/autohome-room-dashboard/';
@@ -23,6 +24,7 @@ function usage() {
 Options:
   --url <url>               Pages base URL (default: ${defaultSiteUrl})
   --expected-build <value>  Expected longos-build value, or "live" (default: public/index.html)
+  --expected-revision <sha> Require exact deployed 40-character Git SHA
   --timeout-ms <ms>         Timeout for each request (default: 10000)
   --attempts <count>        Attempts while deployment propagates (default: 6)
   --retry-ms <ms>           Delay between attempts (default: 5000)
@@ -38,6 +40,7 @@ Options:
   -h, --help                Show this help
 
 Environment overrides: LONGOS_PAGES_URL, LONGOS_PAGES_EXPECTED_BUILD,
+LONGOS_PAGES_EXPECTED_REVISION,
 LONGOS_PAGES_TIMEOUT_MS, LONGOS_PAGES_ATTEMPTS, LONGOS_PAGES_RETRY_MS,
 LONGOS_CLOUD_LATEST_MAX_AGE_MS, LONGOS_CLOUD_HISTORY_MAX_AGE_MS,
 LONGOS_CLOUD_EXPECTED_VERSION, LONGOS_HISTORY_CADENCE_WINDOW_MS,
@@ -56,6 +59,7 @@ function parseArgs(argv) {
   const options = {
     url: process.env.LONGOS_PAGES_URL || defaultSiteUrl,
     expectedBuild: process.env.LONGOS_PAGES_EXPECTED_BUILD || '',
+    expectedRevision: process.env.LONGOS_PAGES_EXPECTED_REVISION || '',
     timeoutMs: positiveInteger(process.env.LONGOS_PAGES_TIMEOUT_MS || '10000', 'timeout'),
     attempts: positiveInteger(process.env.LONGOS_PAGES_ATTEMPTS || '6', 'attempts'),
     retryMs: positiveInteger(process.env.LONGOS_PAGES_RETRY_MS || '5000', 'retry delay'),
@@ -95,6 +99,7 @@ function parseArgs(argv) {
 
     if (argument === '--url') options.url = nextValue();
     else if (argument === '--expected-build') options.expectedBuild = nextValue();
+    else if (argument === '--expected-revision') options.expectedRevision = nextValue();
     else if (argument === '--timeout-ms') options.timeoutMs = positiveInteger(nextValue(), 'timeout');
     else if (argument === '--attempts') options.attempts = positiveInteger(nextValue(), 'attempts');
     else if (argument === '--retry-ms') options.retryMs = positiveInteger(nextValue(), 'retry delay');
@@ -120,6 +125,7 @@ function parseArgs(argv) {
     }
   }
 
+  if (options.expectedRevision) validatePagesRevision(options.expectedRevision);
   if (options.expectedCloudVersion) {
     assert.match(
       options.expectedCloudVersion,
@@ -159,6 +165,21 @@ function metaContent(source, name) {
   );
 }
 
+function optionalMetaContent(source, name) {
+  const attributeValues = (tag, attribute) => [...tag.matchAll(new RegExp(
+    `\\b${attribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'=<>]+))`,
+    'gi'
+  ))].map((match) => match[1] ?? match[2] ?? match[3]);
+  const tags = (source.match(/<meta\b[^>]*>/gi) || []).filter((tag) =>
+    attributeValues(tag, 'name').some((value) => value.toLowerCase() === name)
+  );
+  assert.ok(tags.length <= 1, `${name} meta tag must appear at most once`);
+  if (tags.length === 0) return '';
+  const contents = attributeValues(tags[0], 'content');
+  assert.equal(contents.length, 1, `${name} meta tag must contain exactly one content attribute`);
+  return contents[0];
+}
+
 function javascriptConstant(source, name) {
   return matchValue(
     source,
@@ -170,6 +191,7 @@ function javascriptConstant(source, name) {
 const options = parseArgs(process.argv.slice(2));
 const localPublicHtml = await readFile(resolve(root, 'public/index.html'), 'utf8');
 let expectedBuild = options.expectedBuild || metaContent(localPublicHtml, 'longos-build');
+let deployedRevision = '';
 const baseUrl = new URL(options.url);
 assert.match(baseUrl.protocol, /^https?:$/, 'Pages URL must use HTTP or HTTPS');
 baseUrl.search = '';
@@ -215,6 +237,8 @@ async function fetchResource(target, { expectedStatus = 200, headers = {}, binar
 function siteUrl(path) {
   const target = new URL(path, baseUrl);
   target.searchParams.set('_longos_smoke', expectedBuild);
+  const cacheRevision = options.expectedRevision || deployedRevision;
+  if (cacheRevision) target.searchParams.set('_longos_revision', cacheRevision);
   return target;
 }
 
@@ -235,6 +259,12 @@ const html = await retry('deployed HTML', async () => {
   assert.match(deployedBuild, /^\d{8}\.\d+$/, 'Pages build marker has an invalid format');
   if (expectedBuild === 'live') expectedBuild = deployedBuild;
   else assert.equal(deployedBuild, expectedBuild, 'Pages is serving a stale LongOS build');
+  deployedRevision = optionalMetaContent(result.body, 'longos-revision');
+  if (deployedRevision) validatePagesRevision(deployedRevision);
+  if (options.expectedRevision) {
+    assert.ok(deployedRevision, 'Pages longos-revision meta tag is missing');
+    assert.equal(deployedRevision, options.expectedRevision, 'Pages is serving a stale commit revision');
+  }
   assert.match(result.body, /<title>LongOS — Không gian của Long<\/title>/);
   assert.match(result.body, /function cloudHeaders\(\)\s*{[\s\S]*?apikey:[\s\S]*?Authorization:/);
   assert.doesNotMatch(result.body, /x-dashboard-token|CLOUD_ACCESS_STORAGE_KEY|Nhập mã truy cập cloud/);
@@ -244,15 +274,24 @@ const html = await retry('deployed HTML', async () => {
 await retry('index.html', async () => {
   const { body } = await fetchResource(siteUrl('./index.html'));
   assert.equal(metaContent(body, 'longos-build'), expectedBuild);
+  const indexRevision = optionalMetaContent(body, 'longos-revision');
+  if (indexRevision) validatePagesRevision(indexRevision);
+  assert.equal(indexRevision, deployedRevision, 'Pages root and index.html revisions do not match');
 });
 
 await retry('manifest', async () => {
   const { response, body } = await fetchResource(siteUrl('./manifest.webmanifest'));
   assert.match(response.headers.get('content-type') || '', /application\/(manifest\+json|json)/i);
+  const revisionKeyCount = (body.match(/"longos_revision"\s*:/g) || []).length;
+  assert.ok(revisionKeyCount <= 1, 'manifest longos_revision must appear at most once');
   const manifest = JSON.parse(body);
   assert.equal(manifest.name, 'LongOS');
   assert.equal(manifest.short_name, 'LongOS');
   assert.equal(manifest.start_url, `./?pwa=${expectedBuild}`);
+  const hasManifestRevision = Object.hasOwn(manifest, 'longos_revision');
+  const manifestRevision = hasManifestRevision ? manifest.longos_revision : '';
+  if (hasManifestRevision) validatePagesRevision(manifestRevision);
+  assert.equal(manifestRevision, deployedRevision, 'Pages HTML and manifest revisions do not match');
 });
 
 await retry('favicon', async () => {
@@ -403,6 +442,7 @@ if (options.requireCloud) {
 console.log('LongOS Pages smoke test: OK');
 console.log(`Site: ${baseUrl.href}`);
 console.log(`Build: ${expectedBuild}`);
+console.log(`Revision: ${deployedRevision || 'unstamped'}`);
 console.log(`Public boundary: ${forbiddenPaths.length} private paths return 404`);
 console.log(`Cloud read contract: ${options.requireCloud ? 'OK' : 'skipped'}`);
 console.log(`Cloud private schema: ${options.requireCloud ? 'hidden' : 'skipped'}`);
