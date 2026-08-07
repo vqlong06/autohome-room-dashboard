@@ -21,6 +21,9 @@ const [
   deviceSoak,
   deviceSoakValidator,
   deviceSoakTest,
+  nvsRetention,
+  nvsRetentionValidator,
+  nvsRetentionTest,
   platformio,
   gitignore,
   packageJsonSource,
@@ -37,6 +40,9 @@ const [
   read('tools/device-soak.mjs'),
   read('tools/lib/device-soak.mjs'),
   read('tools/test-device-soak.mjs'),
+  read('tools/nvs-retention.mjs'),
+  read('tools/lib/nvs-retention.mjs'),
+  read('tools/test-nvs-retention.mjs'),
   read('platformio.ini'),
   read('.gitignore'),
   read('package.json'),
@@ -119,6 +125,23 @@ assert.deepEqual(
   deviceSoakCiCommands,
   ['node tools/device-soak.mjs --help'],
   'CI must never contact physical hardware through the device soak CLI'
+);
+for (const command of [
+  'node --check tools/lib/nvs-retention.mjs',
+  'node --check tools/nvs-retention.mjs',
+  'node --check tools/test-nvs-retention.mjs',
+  'node tools/test-nvs-retention.mjs',
+  'node tools/nvs-retention.mjs --help'
+]) {
+  const exactCommand = new RegExp(`^\\s+${command.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\s*$`, 'gm');
+  assert.equal((ciWorkflow.match(exactCommand) || []).length, 1, `CI must run exactly one ${command}`);
+}
+const nvsRetentionCiCommands = [...ciWorkflow.matchAll(/^\s+node tools\/nvs-retention\.mjs(?:\s+[^\n]*)?$/gm)]
+  .map((match) => match[0].trim());
+assert.deepEqual(
+  nvsRetentionCiCommands,
+  ['node tools/nvs-retention.mjs --help'],
+  'CI must test the retention CLI without contacting physical hardware'
 );
 assert.match(ciWorkflow, /^\s+node --check tools\/test-firmware-reliability\.mjs\s*$/m);
 assert.match(ciWorkflow, /^\s+node tools\/test-firmware-reliability\.mjs\s*$/m);
@@ -452,6 +475,32 @@ assert.match(deviceSoakValidator, /today sample count decreased across the recon
 assert.match(deviceSoakValidator, /successful device observations did not cover the configured soak duration/);
 assert.match(deviceSoakValidator, /history status codes must be 2xx|latest\/history status codes must be 2xx/);
 assert.match(deviceSoakTest, /LongOS device soak validator tests: OK/);
+
+assert.match(nvsRetention, /from '\.\/lib\/nvs-retention\.mjs'/);
+assert.match(nvsRetention, /--before-version/);
+assert.match(nvsRetention, /--checkpoint/);
+assert.match(nvsRetention, /vietnamDayRemainingMs/);
+assert.match(nvsRetention, /minimum: MIN_POSTBOOT_UPTIME_MS/);
+assert.match(nvsRetention, /maximum: DEFAULT_MAX_POSTBOOT_UPTIME_MS/);
+assert.match(nvsRetention, /for \(let index = 0; index < 2; index \+= 1\)/);
+assert.match(nvsRetention, /writeRetentionCheckpoint/);
+assert.match(nvsRetention, /readRetentionCheckpoint/);
+assert.doesNotMatch(nvsRetention, /include\/secrets\.h|WIFI_PASSWORD|SUPABASE_DEVICE_TOKEN/);
+assert.match(nvsRetentionValidator, /longos-history-retention-evidence-v1/);
+assert.match(nvsRetentionValidator, /INCONCLUSIVE:/);
+assert.match(nvsRetentionValidator, /post-flash boot epoch predates checkpoint certification/);
+assert.match(nvsRetentionValidator, /link\(temporary, destination\)/);
+assert.match(nvsRetentionValidator, /O_NOFOLLOW/);
+assert.match(nvsRetentionValidator, /checkpoint permissions must be 0600/);
+assert.match(nvsRetentionValidator, /checkpoint must not be a symbolic link/);
+assert.doesNotMatch(
+  nvsRetentionValidator,
+  /temperatureC|humidity|\bip\b|cloudEnabled|SUPABASE|WIFI_PASSWORD/i,
+  'Retention checkpoints must not collect readings, network identity or secrets'
+);
+assert.match(nvsRetentionTest, /LongOS history retention evidence tests: OK/);
+assert.match(nvsRetentionTest, /EEXIST\|exist/);
+assert.match(nvsRetentionTest, /boot epoch predates/);
 
 assert.match(platformio, /^platform\s*=\s*espressif32@6\.10\.0$/m);
 assert.match(gitignore, /^include\/secrets\.h$/m);

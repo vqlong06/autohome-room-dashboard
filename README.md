@@ -99,14 +99,33 @@ Xem toàn bộ tùy chọn bằng `node tools/test-device-smoke.mjs --help`.
 
 Firmware reliability hiện tại là `longos-sensor-2026-08-02.1`. Khi nạp bản này, không chọn erase flash để giữ namespace NVS legacy `autohome` và lịch sử 21 ngày.
 
-1. Mở Serial Monitor `115200`: phải thấy đúng phiên bản mới, Wi-Fi/NTP kết nối thành công và tuyệt đối không có mật khẩu fallback AP.
-2. Khi Mac và ESP32 cùng Wi-Fi nhà, chạy smoke đầy đủ một lần:
+1. **Trước khi flash**, khi board `.3` và Mac còn cùng Wi-Fi nhà, tạo retention checkpoint. Bắt đầu khi còn ít nhất 17 phút trước 00:00 giờ Việt Nam; lệnh quan sát đủ 16 phút để counter ban đầu đi qua trọn cadence ghi NVS 15 phút:
+
+```bash
+node tools/nvs-retention.mjs capture \
+  --before-version longos-sensor-2026-08-01.3 \
+  --checkpoint /tmp/longos-history-retention.json
+```
+
+Checkpoint được tạo độc quyền, không ghi đè file đã có, có quyền `0600` và chỉ chứa version, thời gian/uptime cùng các bộ đếm lịch sử; không chứa nhiệt độ, độ ẩm, IP, cloud hoặc secret. Capture trả lỗi nonzero `INCONCLUSIVE` nếu bắt đầu quá sát nửa đêm hoặc baseline không có completed-day anchor/sample floor đủ mạnh; khi đó chưa được xem là bằng chứng retention. Nếu `.1` đã được flash mà chưa có checkpoint `.3` hợp lệ từ trước, bằng chứng này không thể tạo hồi tố.
+
+2. Flash **không erase**, mở Serial Monitor `115200` và xác nhận đúng `longos-sensor-2026-08-02.1`, Wi-Fi/NTP thành công, tuyệt đối không có mật khẩu fallback AP.
+3. Khi uptime boot mới đã qua 15 giây nhưng chưa quá 10 phút, và vẫn trong cùng ngày Việt Nam với capture, verify ngay trước các soak dài:
+
+```bash
+node tools/nvs-retention.mjs verify \
+  --checkpoint /tmp/longos-history-retention.json
+```
+
+Verify lấy hai observation hậu-flash cách nhau 5 giây, buộc version đổi đúng target trong source, uptime/wall-clock cùng tăng, boot epoch nằm sau lúc checkpoint được chứng nhận, completed-period counters không đổi và các counter còn lại không giảm. Đây là bằng chứng continuity của aggregate history qua API, không phải dump NVS byte-for-byte, chữ ký binary hay attestation mật mã.
+
+4. Khi Mac và ESP32 cùng Wi-Fi nhà, chạy smoke đầy đủ một lần:
 
 ```bash
 node tools/test-device-smoke.mjs --require-sensor --require-cloud --require-time-synced
 ```
 
-3. Chứng minh board ổn định trên Wi-Fi nhà trong 5 phút, uptime không reset/stall và local history không đứng 30 giây, đồng thời tăng ít nhất 50% số mẫu kỳ vọng theo nhịp 1 Hz:
+5. Chứng minh board ổn định trên Wi-Fi nhà trong 5 phút, uptime không reset/stall và local history không đứng 30 giây, đồng thời tăng ít nhất 50% số mẫu kỳ vọng theo nhịp 1 Hz:
 
 ```bash
 node tools/device-soak.mjs \
@@ -116,7 +135,7 @@ node tools/device-soak.mjs \
   --require-wifi --require-sensor --require-cloud --require-time-synced
 ```
 
-4. Tắt Wi-Fi nhà, kết nối Mac vào AP `LongOS-Sensor` bằng mật khẩu trong `include/secrets.h`, rồi chạy soak offline 3 phút:
+6. Tắt Wi-Fi nhà, kết nối Mac vào AP `LongOS-Sensor` bằng mật khẩu trong `include/secrets.h`, rồi chạy soak offline 3 phút:
 
 ```bash
 node tools/device-soak.mjs \
@@ -130,7 +149,7 @@ node tools/device-soak.mjs \
 
 Kết quả chỉ hợp lệ khi endpoint trả đúng mode `AP`, IP `192.168.4.1`, đồng hồ local vẫn synced và `todaySamples` tiếp tục tăng trong toàn bộ phiên mất Wi-Fi. File checkpoint chỉ chứa schema/version, mốc thời gian và ngày local, uptime cùng bộ đếm local; quyền file được đặt `0600`, không chứa nhiệt độ, độ ẩm, IP, cloud key hoặc Wi-Fi secret.
 
-5. Bật lại Wi-Fi nhà, nối Mac về Wi-Fi nhà rồi chạy soak hậu-reconnect đủ 30 phút. `caffeinate` giữ Mac không ngủ trong lúc đo:
+7. Bật lại Wi-Fi nhà, nối Mac về Wi-Fi nhà rồi chạy soak hậu-reconnect đủ 30 phút. `caffeinate` giữ Mac không ngủ trong lúc đo:
 
 ```bash
 caffeinate -dimsu node tools/device-soak.mjs \
@@ -143,7 +162,7 @@ caffeinate -dimsu node tools/device-soak.mjs \
 
 Pha này dừng ngay nếu checkpoint thiếu/sai, version đổi, uptime không nối tiếp hoặc bộ đếm local giảm ngoài rollover sang ngày Việt Nam kế tiếp. Vì vậy một reboot xảy ra đúng lúc chuyển từ AP về Wi-Fi nhà không thể bị phiên soak mới che mất.
 
-6. Sau khi đủ ít nhất ba lượt history của boot hiện tại, chạy proof trực tiếp trên Pages/Supabase:
+8. Sau khi đủ ít nhất ba lượt history của boot hiện tại, chạy proof trực tiếp trên Pages/Supabase:
 
 ```bash
 node tools/test-pages-smoke.mjs \
@@ -156,7 +175,7 @@ node tools/test-pages-smoke.mjs \
 
 Proof yêu cầu heartbeat và mẫu mới nhất đúng exact version, đồng thời có ít nhất 3 mẫu history của **cùng boot hiện tại** trong cửa sổ 40 phút; khoảng cách hai mẫu liền nhau phải từ 9 phút trở lên. Chạy trước khi đủ khoảng 20–30 phút sẽ `FAIL` đúng thiết kế. Xác nhận thêm ít nhất một lượt **LongOS Production Smoke** xanh trong tab **Actions**.
 
-Soak chỉ chứng minh API uptime và local `todaySamples` tăng trong phiên chạy; nó không đọc Serial, không tự tắt/bật Wi-Fi, không chứng minh mật khẩu AP không bị log và không thay thế kiểm tra NVS qua reboot. Exact `APP_VERSION` cũng không phải attestation binary/git SHA. Cloud cadence xác nhận cùng boot, số mẫu và khoảng cách tối thiểu, không khẳng định mọi khoảng cách phải đúng tuyệt đối 10 phút.
+Soak chỉ chứng minh API uptime và local `todaySamples` tăng trong phiên chạy; nó không đọc Serial, không tự tắt/bật Wi-Fi hoặc chứng minh mật khẩu AP không bị log. Retention checkpoint bổ sung bằng chứng aggregate qua reboot/flash nhưng không quan sát trực tiếp bytes đã commit trong NVS. Exact `APP_VERSION` cũng không phải attestation binary/git SHA. Cloud cadence xác nhận cùng boot, số mẫu và khoảng cách tối thiểu, không khẳng định mọi khoảng cách phải đúng tuyệt đối 10 phút.
 
 ## CI và phát hành GitHub Pages
 
@@ -171,6 +190,7 @@ node tools/test-brand-migration.mjs
 node tools/test-cloud-health.mjs
 node tools/test-device-soak.mjs
 node tools/test-firmware-reliability.mjs
+node tools/test-nvs-retention.mjs
 c++ -std=c++11 -Wall -Wextra -Werror -pedantic -Iinclude tools/test-firmware-retry-policy.cpp -o /tmp/longos-firmware-retry-policy-test
 /tmp/longos-firmware-retry-policy-test
 node tools/test-pages-release.mjs
@@ -181,9 +201,9 @@ test -e include/secrets.h || install -m 600 include/secrets.example.h include/se
 pio run -e esp32dev
 ```
 
-Gate firmware reliability kiểm tra tích hợp scheduler vào `src/main.cpp` và tự chèn 23 mutation lỗi để chứng minh gate bắt được regression. CI còn biên dịch/chạy riêng policy C++ thuần với cảnh `millis()` bằng 0, rollover 32-bit, cadence thành công 10 phút và backoff lỗi an toàn từ 30 giây đến tối đa 5 phút; bước này không kết nối hoặc nạp ESP32.
+Gate firmware reliability kiểm tra tích hợp scheduler vào `src/main.cpp`, khóa namespace/key NVS legacy, cadence mẫu 1 giây, 21 slot cùng layout binary `DayStat` và tự chèn 34 mutation lỗi để chứng minh gate bắt được regression. CI còn biên dịch/chạy riêng policy C++ thuần với cảnh `millis()` bằng 0, rollover 32-bit, cadence thành công 10 phút và backoff lỗi an toàn từ 30 giây đến tối đa 5 phút; bước này không kết nối hoặc nạp ESP32.
 
-CI chỉ chạy unit test của soak validator và kiểm tra `--help`; runner GitHub không kết nối ESP32 thật. Ba pha soak Wi-Fi nhà, AP fallback và hậu-reconnect ở checklist trên vẫn là kiểm thử phần cứng bắt buộc.
+CI chỉ chạy unit/fixture test của soak và retention validator rồi kiểm tra `--help`; runner GitHub không chạy lệnh capture/verify và không kết nối ESP32 thật. Retention capture/verify cùng ba pha soak Wi-Fi nhà, AP fallback và hậu-reconnect ở checklist trên vẫn là kiểm thử phần cứng bắt buộc.
 
 `test:supabase-semantic` chạy các migration thật trong một database PGlite tạm thời, không kết nối Supabase production và không đọc secrets hoặc telemetry production. Gate kiểm tra riêng bootstrap fresh hiện tại, sau đó dựng nguyên trạng legacy từ commit `f589e75` rồi xác nhận hardening giữ nguyên fingerprint toàn bộ telemetry; hành vi RLS/ACL, token đúng/sai, giới hạn `main-room`, trigger `updated_at` và luồng cron; contract verifier đúng 21 trường (kết quả `PASS` cùng 20 kiểm tra boolean); đủ 20 mutation bảo mật độc lập phải làm từng trường verifier chuyển sang `false` và mỗi mutation phải rollback sạch về `PASS`. Gate cũng xác nhận hardening chạy lặp lại an toàn, emergency rollback vẫn chặn token sai, không đổi telemetry và có thể harden lại sau rollback.
 
