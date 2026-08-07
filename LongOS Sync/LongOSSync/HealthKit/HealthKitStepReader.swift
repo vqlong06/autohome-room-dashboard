@@ -24,9 +24,10 @@ final class HealthKitStepReader: @unchecked Sendable {
         }
 
         let timezone = TimeZone.current
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = Locale(identifier: "en_US_POSIX")
-        calendar.timeZone = timezone
+        var configuredCalendar = Calendar(identifier: .gregorian)
+        configuredCalendar.locale = Locale(identifier: "en_US_POSIX")
+        configuredCalendar.timeZone = timezone
+        let calendar = configuredCalendar
         let end = Date.now
         let today = calendar.startOfDay(for: end)
         guard let start = calendar.date(byAdding: .day, value: -max(0, days - 1), to: today) else {
@@ -94,8 +95,9 @@ final class HealthKitStepReader: @unchecked Sendable {
 
         if observerQuery == nil {
             let query = HKObserverQuery(sampleType: steps, predicate: nil) { _, completion, error in
+                let completionBox = HealthObserverCompletion(completion)
                 Task {
-                    defer { completion() }
+                    defer { completionBox.call() }
                     guard error == nil else { return }
                     await onChange()
                 }
@@ -120,6 +122,18 @@ final class HealthKitStepReader: @unchecked Sendable {
             store.stop(observerQuery)
         }
         observerQuery = nil
+    }
+}
+
+private final class HealthObserverCompletion: @unchecked Sendable {
+    private let handler: () -> Void
+
+    init(_ handler: @escaping () -> Void) {
+        self.handler = handler
+    }
+
+    func call() {
+        handler()
     }
 }
 
