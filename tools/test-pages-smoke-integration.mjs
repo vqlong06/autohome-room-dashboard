@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { injectManifestRevision, injectPagesRevision } from './lib/pages-release.mjs';
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const smokeScript = new URL('./test-pages-smoke.mjs', import.meta.url);
 const siteOrigin = 'https://pages.example';
@@ -11,6 +13,7 @@ const supabaseOrigin = 'https://supabase.example';
 const roomId = 'main-room';
 const appVersion = 'longos-sensor-2026-08-01.3';
 const strictAppVersion = 'longos-sensor-2026-08-02.1';
+const releaseRevision = '0123456789abcdef0123456789abcdef01234567';
 
 const [sourceHtml, manifest, favicon, appleIcon, icon192, icon512] = await Promise.all([
   readFile(resolve(root, 'public/index.html'), 'utf8'),
@@ -24,10 +27,37 @@ const [sourceHtml, manifest, favicon, appleIcon, icon192, icon512] = await Promi
 const buildMatch = sourceHtml.match(/<meta\s+name=["']longos-build["']\s+content=["']([^"']+)["']/i);
 assert.ok(buildMatch, 'public/index.html must contain a LongOS build marker');
 const expectedBuild = buildMatch[1];
-const deployedHtml = sourceHtml
+const configuredHtml = sourceHtml
   .replace(/const SUPABASE_URL = '[^']+';/, `const SUPABASE_URL = '${supabaseOrigin}';`)
   .replace(/const SUPABASE_PUBLISHABLE_KEY = '[^']+';/, "const SUPABASE_PUBLISHABLE_KEY = 'test-publishable-key';")
   .replace(/const SUPABASE_ROOM_ID = '[^']+';/, `const SUPABASE_ROOM_ID = '${roomId}';`);
+const manifestSource = manifest.toString('utf8');
+
+function htmlWithRevision(revision, { duplicate = false } = {}) {
+  if (revision === null) return configuredHtml;
+  let result = /^[0-9a-f]{40}$/.test(revision)
+    ? injectPagesRevision(configuredHtml, revision)
+    : injectPagesRevision(configuredHtml, releaseRevision)
+      .replace(`content="${releaseRevision}"`, `content="${revision}"`);
+  if (duplicate) {
+    result = result.replace(
+      '</head>',
+      `  <meta content="${revision}" name=longos-revision>\n</head>`
+    );
+  }
+  return result;
+}
+
+function manifestWithRevision(revision, { duplicate = false } = {}) {
+  if (revision === null) return manifestSource;
+  let result = /^[0-9a-f]{40}$/.test(revision)
+    ? injectManifestRevision(manifestSource, revision)
+    : `${JSON.stringify({ ...JSON.parse(manifestSource), longos_revision: revision }, null, 2)}\n`;
+  if (duplicate) {
+    result = result.replace(/\n}\s*$/, `,\n  "longos_revision": "${revision}"\n}\n`);
+  }
+  return result;
+}
 
 function response(body, { status = 200, contentType = 'text/plain', headers = {} } = {}) {
   return new Response(body, {
@@ -49,9 +79,17 @@ function createFetchMock({
   cadenceVersion = strictAppVersion,
   cadenceAgesMs = [60 * 1000, 11 * 60 * 1000, 21 * 60 * 1000],
   cadenceBootEpochOffsetsMs = [],
-  fixtureBootAgeMs = 60 * 60 * 1000
+  fixtureBootAgeMs = 60 * 60 * 1000,
+  htmlRevision = releaseRevision,
+  indexRevision = htmlRevision,
+  manifestRevision = releaseRevision,
+  duplicateHtmlRevision = false,
+  duplicateManifestRevision = false
 } = {}) {
   const calls = [];
+  const deployedHtml = htmlWithRevision(htmlRevision, { duplicate: duplicateHtmlRevision });
+  const deployedIndexHtml = htmlWithRevision(indexRevision);
+  const deployedManifest = manifestWithRevision(manifestRevision, { duplicate: duplicateManifestRevision });
   const fixtureNowMs = Date.now();
   const fixtureBootEpochMs = fixtureNowMs - fixtureBootAgeMs;
   const latestUpdatedAtMs = fixtureNowMs - (staleLatest ? 4 * 60 * 1000 : 30 * 1000);
@@ -117,9 +155,10 @@ function createFetchMock({
 
     if (url.origin === siteOrigin && url.pathname.startsWith('/longos/')) {
       const path = url.pathname.slice('/longos/'.length);
-      if (path === '' || path === 'index.html') return response(deployedHtml, { contentType: 'text/html' });
+      if (path === '') return response(deployedHtml, { contentType: 'text/html' });
+      if (path === 'index.html') return response(deployedIndexHtml, { contentType: 'text/html' });
       if (path === 'manifest.webmanifest') {
-        return response(manifest, { contentType: 'application/manifest+json' });
+        return response(deployedManifest, { contentType: 'application/manifest+json' });
       }
       if (path === 'favicon.svg') return response(favicon, { contentType: 'image/svg+xml' });
       if (path === 'apple-touch-icon.png') return response(appleIcon, { contentType: 'image/png' });
@@ -149,6 +188,9 @@ async function runScenario(name, fixture = {}, cli = {}) {
   if (cli.expectedCloudVersion) {
     process.argv.push('--expected-cloud-version', cli.expectedCloudVersion);
   }
+  if (cli.expectedRevision) {
+    process.argv.push('--expected-revision', cli.expectedRevision);
+  }
   if (cli.requireHistoryCadence) {
     process.argv.push('--require-history-cadence');
   }
@@ -172,6 +214,7 @@ async function runScenario(name, fixture = {}, cli = {}) {
 const passing = await runScenario('pass');
 assert.equal(passing.error, null);
 assert.ok(passing.logs.includes('LongOS Pages smoke test: OK'));
+assert.ok(passing.logs.includes(`Revision: ${releaseRevision}`));
 assert.ok(passing.logs.some((line) => line.startsWith('Cloud health: OK')));
 assert.ok(passing.logs.includes('Cloud private schema: hidden'));
 assert.ok(passing.logs.every((line) => !line.includes('test-publishable-key')));
@@ -195,6 +238,66 @@ assert.equal(historyCall.url.searchParams.get('limit'), '1');
 assert.ok(passing.calls.some((call) => call.headers.get('Accept-Profile') === 'longos_private'));
 assert.equal([...latestCall.url.searchParams.values()].some((value) => /temperature|humidity/i.test(value)), false);
 assert.equal([...historyCall.url.searchParams.values()].some((value) => /temperature|humidity/i.test(value)), false);
+
+const exactRevision = await runScenario('exact-revision', {}, { expectedRevision: releaseRevision });
+assert.equal(exactRevision.error, null);
+assert.ok(
+  exactRevision.calls
+    .filter((call) => call.url.origin === siteOrigin)
+    .every((call) => call.url.searchParams.get('_longos_revision') === releaseRevision),
+  'exact revision smoke must cache-bust every Pages request with the expected revision'
+);
+
+const wrongRevision = await runScenario(
+  'wrong-revision',
+  {},
+  { expectedRevision: 'fedcba9876543210fedcba9876543210fedcba98' }
+);
+assert.match(wrongRevision.error?.message || '', /serving a stale commit revision/);
+
+const legacyRevision = await runScenario('legacy-revision', {
+  htmlRevision: null,
+  indexRevision: null,
+  manifestRevision: null
+});
+assert.equal(legacyRevision.error, null);
+assert.ok(legacyRevision.logs.includes('Revision: unstamped'));
+
+const missingExactRevision = await runScenario('missing-exact-revision', {
+  htmlRevision: null,
+  indexRevision: null,
+  manifestRevision: null
+}, { expectedRevision: releaseRevision });
+assert.match(missingExactRevision.error?.message || '', /longos-revision meta tag is missing/);
+
+const malformedRevision = await runScenario('malformed-revision', { htmlRevision: 'ABC' });
+assert.match(malformedRevision.error?.message || '', /lowercase 40-character Git SHA/);
+
+const duplicateRevision = await runScenario('duplicate-revision', { duplicateHtmlRevision: true });
+assert.match(duplicateRevision.error?.message || '', /must appear at most once/);
+
+const mismatchedIndexRevision = await runScenario('mismatched-index-revision', {
+  indexRevision: 'fedcba9876543210fedcba9876543210fedcba98'
+});
+assert.match(mismatchedIndexRevision.error?.message || '', /root and index\.html revisions do not match/);
+
+const missingManifestRevision = await runScenario('missing-manifest-revision', { manifestRevision: null });
+assert.match(missingManifestRevision.error?.message || '', /HTML and manifest revisions do not match/);
+
+const mismatchedManifestRevision = await runScenario('mismatched-manifest-revision', {
+  manifestRevision: 'fedcba9876543210fedcba9876543210fedcba98'
+});
+assert.match(mismatchedManifestRevision.error?.message || '', /HTML and manifest revisions do not match/);
+
+const malformedManifestRevision = await runScenario('malformed-manifest-revision', {
+  manifestRevision: 'ABC'
+});
+assert.match(malformedManifestRevision.error?.message || '', /lowercase 40-character Git SHA/);
+
+const duplicateManifestRevision = await runScenario('duplicate-manifest-revision', {
+  duplicateManifestRevision: true
+});
+assert.match(duplicateManifestRevision.error?.message || '', /must appear at most once/);
 
 const staleLatest = await runScenario('stale-latest', { staleLatest: true });
 assert.match(staleLatest.error?.message || '', /latest\.updated_at is stale/);

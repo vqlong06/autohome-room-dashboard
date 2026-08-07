@@ -1,21 +1,29 @@
 name: Deploy LongOS Pages
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - LongOS CI
+    types:
+      - completed
     branches:
       - main
-  workflow_dispatch:
 
 permissions: {}
 
 concurrency:
   group: longos-pages
-  cancel-in-progress: false
+  queue: max
 
 jobs:
   build:
     name: Validate and package site
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_sha == github.sha
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -27,6 +35,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -37,25 +46,22 @@ jobs:
       - name: Validate release files
         run: |
           node tools/test-brand-migration.mjs
+          node tools/test-pages-release.mjs
           node tools/test-release-pipeline.mjs
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
 
       - name: Stage public release allowlist
-        run: |
-          release_dir="${RUNNER_TEMP}/longos-pages"
-          install -d -m 0755 "${release_dir}"
-          install -m 0644 \
-            public/.nojekyll \
-            public/apple-touch-icon.png \
-            public/favicon.svg \
-            public/icon-192.png \
-            public/icon-512.png \
-            public/index.html \
-            public/manifest.webmanifest \
-            "${release_dir}/"
-          test "$(find "${release_dir}" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')" = 7
+        env:
+          LONGOS_RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: >-
+          node tools/stage-pages-release.mjs
+          --output "${RUNNER_TEMP}/longos-pages"
+          --revision "${LONGOS_RELEASE_SHA}"
+
+      - name: Verify staging did not mutate tracked source
+        run: git diff --exit-code
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
@@ -63,10 +69,46 @@ jobs:
           path: ${{ runner.temp }}/longos-pages
           include-hidden-files: true
 
+  release_gate:
+    name: Confirm current main revision
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      current: ${{ steps.compare.outputs.current }}
+
+    steps:
+      - name: Check out current main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: refs/heads/main
+          fetch-depth: 1
+
+      - name: Compare current main with the CI-approved revision
+        id: compare
+        env:
+          LONGOS_RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          current_sha="$(git rev-parse HEAD)"
+          if [[ "${current_sha}" == "${LONGOS_RELEASE_SHA}" ]]; then
+            echo "current=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "current=false" >> "${GITHUB_OUTPUT}"
+            echo "::notice::Skipping stale Pages release ${LONGOS_RELEASE_SHA}; current main is ${current_sha}."
+          fi
+
   deploy:
     name: Deploy site
-    if: github.ref == 'refs/heads/main'
-    needs: build
+    needs:
+      - build
+      - release_gate
+    if: >-
+      needs.release_gate.outputs.current == 'true' &&
+      github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -85,7 +127,6 @@ jobs:
 
   verify:
     name: Verify live site
-    if: github.ref == 'refs/heads/main'
     needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -97,6 +138,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -108,6 +150,7 @@ jobs:
         run: >-
           node tools/test-pages-smoke.mjs
           --url "${{ needs.deploy.outputs.page_url }}"
+          --expected-revision "${{ github.event.workflow_run.head_sha }}"
           --require-cloud
           --attempts 12
           --retry-ms 5000

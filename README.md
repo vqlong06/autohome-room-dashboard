@@ -173,6 +173,7 @@ node tools/test-device-soak.mjs
 node tools/test-firmware-reliability.mjs
 c++ -std=c++11 -Wall -Wextra -Werror -pedantic -Iinclude tools/test-firmware-retry-policy.cpp -o /tmp/longos-firmware-retry-policy-test
 /tmp/longos-firmware-retry-policy-test
+node tools/test-pages-release.mjs
 node tools/test-pages-smoke-integration.mjs
 node tools/test-release-pipeline.mjs
 node tools/test-supabase-security.mjs
@@ -188,15 +189,19 @@ CI chỉ chạy unit test của soak validator và kiểm tra `--help`; runner G
 
 PGlite chỉ là semantic gate PostgreSQL chạy cục bộ. Test dùng shim cho catalog và hàm điều khiển `pg_cron`, nên không mô phỏng scheduler/extension `pg_cron` thật; nó cũng không mô phỏng lớp PostgREST, schema exposure, HTTP error mapping hoặc tranh chấp từ nhiều kết nối đồng thời. Vì vậy kết quả có thẩm quyền cho production vẫn là `supabase/verify_security_hardening.sql` trả đủ 21 trường hợp lệ trên database thật, kết hợp REST smoke ở bản Pages đang live; semantic gate không thay thế hai kiểm tra đó.
 
-Lệnh `install` chỉ tạo cấu hình mẫu khi `include/secrets.h` chưa tồn tại, không ghi đè cấu hình thật. Workflow `Deploy LongOS Pages` sao chép đúng allowlist 7 file public vào một thư mục staging riêng; `src/`, `include/`, `web/`, SQL, secrets và snapshot cục bộ không nằm trong Pages artifact. Workflow chỉ deploy từ branch `main`.
+Lệnh `install` chỉ tạo cấu hình mẫu khi `include/secrets.h` chưa tồn tại, không ghi đè cấu hình thật. Workflow `Deploy LongOS Pages` tạo đúng allowlist 7 file public trong một thư mục staging riêng; `src/`, `include/`, `web/`, SQL, secrets và snapshot cục bộ không nằm trong Pages artifact. Source `index.html`, `public/index.html` và hai manifest luôn không có release revision. Chỉ bản sao staging được đóng full SHA 40 ký tự vào `longos-revision` của HTML và `longos_revision` của manifest; staging còn xác nhận không làm thay đổi file tracked.
 
-Sau mỗi deployment, một job không có quyền deploy chạy kiểm tra contract: đối chiếu build marker, manifest, favicon, Apple touch icon, `.nojekyll`, xác nhận source/secrets trả `404`, thử quyền đọc ẩn danh của hai bảng Supabase và xác nhận schema riêng `longos_private` không được public qua REST. Kiểm tra này không yêu cầu ESP32 đang online nên một lần mất điện hoặc mất Wi-Fi không làm deployment hợp lệ bị báo hỏng. Có thể chạy lại cùng kiểm tra contract với bản đã deploy bằng:
+Pages không còn trigger trực tiếp bằng `push` hoặc `workflow_dispatch`. Nó chỉ nhận sự kiện `LongOS CI` đã hoàn tất thành công cho một lần push từ chính repository vào `main`, checkout đúng `head_sha` đã qua CI, rồi kiểm tra lại SHA hiện tại của `main` ngay trước deployment. Toàn chuỗi build → deploy → verify dùng một hàng đợi tuần tự nên hai release không thể ghi đè hoặc verify chéo nhau. Nếu `main` đã đi tiếp trước lúc release gate kiểm tra, release cũ được bỏ qua thay vì rollback site. Job deploy chỉ chấp nhận attempt đầu tiên, nên re-run riêng một Pages job cũ cũng không thể tái phát hành artifact cũ; muốn thử lại phải re-run lượt `LongOS CI` gốc như hướng dẫn bên dưới.
+
+Sau mỗi deployment, một job không có quyền deploy chạy kiểm tra contract: đối chiếu exact commit revision ở cả HTML và manifest, build marker, manifest, favicon, Apple touch icon, `.nojekyll`, xác nhận source/secrets trả `404`, thử quyền đọc ẩn danh của hai bảng Supabase và xác nhận schema riêng `longos_private` không được public qua REST. Kiểm tra này không yêu cầu ESP32 đang online nên một lần mất điện hoặc mất Wi-Fi không làm deployment hợp lệ bị báo hỏng. Có thể chạy lại contract generic với bản đã deploy bằng:
 
 ```bash
 node tools/test-pages-smoke.mjs --require-cloud
 ```
 
-Workflow `LongOS Production Smoke` chạy kiểm tra health đầy đủ trên phiên bản đang live mỗi 15 phút, lệch vào phút 07/22/37/52 để tránh giờ tròn đông tải, và có thể chạy thủ công trong tab **Actions**. Mỗi lượt thử lại tối đa 3 lần khi có lỗi mạng tạm thời. Ngoài toàn bộ contract ở trên, job yêu cầu heartbeat `room_latest` không cũ quá 3 phút, mẫu history mới nhất không cũ quá 20 phút và các trạng thái ESP32, Wi-Fi, SHT30 đều online. Job ngay sau deployment vẫn chỉ kiểm tra contract và đối chiếu build marker chính xác với commit vừa phát hành; lỗi thiết bị sẽ do production health báo riêng.
+Để đối chiếu đúng một release cụ thể, thêm `--expected-revision <full-40-character-sha>`. Khi không truyền flag này, smoke vẫn chấp nhận site legacy hoàn toàn chưa được stamp; nếu thấy revision ở bất kỳ resource nào thì HTML gốc, `index.html` và manifest bắt buộc có cùng SHA hợp lệ. `longos-build` vẫn là version PWA/human-readable và không bị thay bằng Git SHA. Revision là provenance công khai của artifact, không phải chữ ký mật mã hay attestation nếu chính workflow bị xâm phạm.
+
+Workflow `LongOS Production Smoke` chạy kiểm tra health đầy đủ trên phiên bản đang live mỗi 15 phút, lệch vào phút 07/22/37/52 để tránh giờ tròn đông tải, và có thể chạy thủ công trong tab **Actions**. Mỗi lượt thử lại tối đa 3 lần khi có lỗi mạng tạm thời. Ngoài toàn bộ contract ở trên, job yêu cầu heartbeat `room_latest` không cũ quá 3 phút, mẫu history mới nhất không cũ quá 20 phút và các trạng thái ESP32, Wi-Fi, SHT30 đều online. Job ngay sau deployment vẫn chỉ kiểm tra contract web/cloud và đối chiếu exact commit revision; lỗi thiết bị sẽ do production health báo riêng.
 
 Chạy production health tương đương trên máy:
 
@@ -222,13 +227,13 @@ Thiết lập một lần trên GitHub sau khi workflow đã được merge vào
 
 1. Mở repository, vào **Settings → Pages**.
 2. Trong **Build and deployment → Source**, chọn **GitHub Actions**.
-3. Merge hoặc push vào `main`; theo dõi workflow `Deploy LongOS Pages` trong tab **Actions**.
+3. Merge hoặc push vào `main`; đợi `LongOS CI` xanh, sau đó theo dõi workflow `Deploy LongOS Pages` tự chạy trong tab **Actions**.
 4. Sau lần chạy đầu, có thể vào **Settings → Environments → github-pages** và giới hạn deployment branch là `main`.
 5. Khi workflow hoàn tất, mở URL Pages được hiển thị trong job `Deploy site`.
 
 Với remote hiện tại, URL dự kiến là `https://vqlong06.github.io/autohome-room-dashboard/`.
 
-Không chọn `Deploy from a branch` với thư mục root vì cách đó có thể public cả mã nguồn dự án. Nếu chạy workflow thủ công, hãy chọn branch `main`.
+Không chọn `Deploy from a branch` với thư mục root vì cách đó có thể public cả mã nguồn dự án. Pages cố ý không có nút chạy thủ công để tránh bypass CI; khi cần redeploy cùng commit `main`, hãy **Re-run all jobs** của lượt `LongOS CI` được tạo bởi push tương ứng.
 
 ## Lịch sử và so sánh
 

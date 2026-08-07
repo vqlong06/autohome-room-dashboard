@@ -38,7 +38,9 @@ jobs:
           node --check tools/embed-web.mjs
           node --check tools/lib/cloud-health.mjs
           node --check tools/lib/device-soak.mjs
+          node --check tools/lib/pages-release.mjs
           node --check tools/device-soak.mjs
+          node --check tools/stage-pages-release.mjs
           node --check tools/test-brand-migration.mjs
           node --check tools/test-cloud-health.mjs
           node --check tools/test-device-soak.mjs
@@ -46,6 +48,7 @@ jobs:
           node --check tools/test-firmware-reliability.mjs
           node --check tools/test-pages-smoke.mjs
           node --check tools/test-pages-smoke-integration.mjs
+          node --check tools/test-pages-release.mjs
           node --check tools/test-release-pipeline.mjs
           node --check tools/test-supabase-migrations.mjs
           node --check tools/test-supabase-security.mjs
@@ -56,11 +59,13 @@ jobs:
           node tools/test-cloud-health.mjs
           node tools/test-device-soak.mjs
           node tools/test-firmware-reliability.mjs
+          node tools/test-pages-release.mjs
           node tools/test-release-pipeline.mjs
           node tools/device-soak.mjs --help
           node tools/test-device-smoke.mjs --help
           node tools/test-pages-smoke.mjs --help
           node tools/test-pages-smoke-integration.mjs
+          node tools/stage-pages-release.mjs --help
           npm run test:supabase-semantic
           node tools/test-supabase-security.mjs
 

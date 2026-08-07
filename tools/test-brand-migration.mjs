@@ -79,6 +79,10 @@ function createStorage(initial = {}) {
 
 assert.equal(rootHtml, publicHtml, 'Root HTML must match public HTML');
 assert.equal(rootManifestSource, publicManifestSource, 'Root manifest must match public manifest');
+assert.doesNotMatch(rootHtml, /longos-revision/i, 'Tracked HTML source must remain unstamped');
+assert.doesNotMatch(publicHtml, /longos-revision/i, 'Public HTML source must remain unstamped');
+assert.doesNotMatch(rootManifestSource, /"longos_revision"\s*:/, 'Tracked manifest source must remain unstamped');
+assert.doesNotMatch(publicManifestSource, /"longos_revision"\s*:/, 'Public manifest source must remain unstamped');
 
 const trackedPublicFiles = execFileSync('git', ['ls-files', 'public'], {
   cwd: root,
@@ -115,6 +119,7 @@ vm.runInNewContext(redirectScriptMatch[1], { URL, window: { location: redirectLo
 assert.equal(redirectedTo, 'https://example.com/LongOS/index.html?source=cloud#history');
 
 const rootManifest = JSON.parse(rootManifestSource);
+assert.equal(Object.hasOwn(rootManifest, 'longos_revision'), false, 'Tracked manifest must not contain a release revision');
 assert.equal(rootManifest.name, 'LongOS');
 assert.equal(rootManifest.short_name, 'LongOS');
 assert.equal(rootManifest.start_url, './?pwa=20260801.3');
