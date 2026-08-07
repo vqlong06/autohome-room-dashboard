@@ -132,6 +132,7 @@ function unsignedConstant(source, name) {
 
 function validateFirmware(source) {
   const code = stripComments(source);
+  const sampleInterval = unsignedConstant(code, 'SAMPLE_INTERVAL_MS');
   const cloudInterval = unsignedConstant(code, 'CLOUD_HISTORY_INTERVAL_MS');
   const cloudRetry = unsignedConstant(code, 'CLOUD_HISTORY_RETRY_INTERVAL_MS');
   const cloudRetryMax = unsignedConstant(code, 'CLOUD_HISTORY_RETRY_MAX_MS');
@@ -139,12 +140,33 @@ function validateFirmware(source) {
   const saveRetry = unsignedConstant(code, 'HISTORY_SAVE_RETRY_INTERVAL_MS');
   const saveRetryMax = unsignedConstant(code, 'HISTORY_SAVE_RETRY_MAX_MS');
 
+  assert.equal(sampleInterval, 1000, 'The retention evidence fresh-sample bound requires a 1-second sample cadence');
   assert.equal(cloudInterval, 600_000, 'Cloud history cadence must remain 10 minutes');
   assert.equal(cloudRetry, 30_000, 'Cloud history safe retry must start at 30 seconds');
   assert.equal(cloudRetryMax, 300_000, 'Cloud history safe retry must cap at 5 minutes');
   assert.equal(saveInterval, 900_000, 'NVS save cadence must remain 15 minutes');
   assert.equal(saveRetry, 30_000, 'NVS retry must start at 30 seconds');
   assert.equal(saveRetryMax, 300_000, 'NVS retry must cap at 5 minutes');
+  assert.match(code, /const char \*LEGACY_HISTORY_NAMESPACE = "autohome";/, 'Legacy NVS namespace must remain autohome');
+  assert.equal((code.match(/\bLEGACY_HISTORY_NAMESPACE\b/g) || []).length, 2, 'Legacy NVS namespace must only be declared and opened');
+  assert.match(code, /const int HISTORY_DAYS = 21;/, 'NVS history ring must remain 21 days');
+  assert.match(
+    code,
+    /struct DayStat\s*\{\s*uint32_t day = 0;\s*double tempSum = 0;\s*double humiditySum = 0;\s*uint32_t samples = 0;\s*float tempMin = NAN;\s*float tempMax = NAN;\s*float humidityMin = NAN;\s*float humidityMax = NAN;\s*\};/,
+    'Persisted DayStat field types and order must remain binary-compatible'
+  );
+  assert.match(code, /DayStat history\[HISTORY_DAYS\];/, 'The persisted history array must use the locked 21-day DayStat layout');
+  assert.doesNotMatch(code, /#\s*pragma\s+pack\b|\b__attribute__\s*\(\(\s*packed\s*\)\)/, 'Persisted history layout must not be packed');
+  assert.doesNotMatch(
+    code,
+    /\bpreferences\.(?:clear|remove)\s*\(|\b(?:nvs_flash_erase|nvs_erase_all|nvs_erase_key|esp_partition_erase_range)\s*\(/,
+    'Firmware must not erase retained NVS history'
+  );
+  const loadHistory = functionBody(code, 'loadHistory');
+  assert.match(loadHistory, /historyReady = preferences\.begin\(LEGACY_HISTORY_NAMESPACE, false\);/);
+  assert.match(loadHistory, /size_t bytesRead = preferences\.getBytes\("daily", history, sizeof\(history\)\);/);
+  assert.match(loadHistory, /if \(bytesRead != sizeof\(history\)\)/);
+  assert.equal((code.match(/preferences\.getBytes\s*\(/g) || []).length, 1, 'History must be loaded from NVS exactly once');
   assert.match(code, /#include "longos_retry_policy\.h"/);
   assert.match(code, /longos::PeriodicRetryTimer cloudHistoryRetryTimer;/);
   assert.match(code, /longos::PeriodicRetryTimer historySaveRetryTimer;/);
@@ -261,6 +283,51 @@ function expectMutationRejected(name, mutate) {
 }
 
 validateFirmware(firmware);
+
+expectMutationRejected('sensor sample cadence invalidates the fresh-boot evidence bound', (source) => source.replace(
+  'const unsigned long SAMPLE_INTERVAL_MS = 1000;',
+  'const unsigned long SAMPLE_INTERVAL_MS = 100;'
+));
+expectMutationRejected('legacy NVS namespace changes', (source) => source.replace(
+  'LEGACY_HISTORY_NAMESPACE = "autohome"',
+  'LEGACY_HISTORY_NAMESPACE = "longos"'
+));
+expectMutationRejected('history retention count changes', (source) => source.replace(
+  'const int HISTORY_DAYS = 21;',
+  'const int HISTORY_DAYS = 20;'
+));
+expectMutationRejected('persisted history array bypasses the locked retention count', (source) => source.replace(
+  'DayStat history[HISTORY_DAYS];',
+  'DayStat history[20];'
+));
+expectMutationRejected('persisted DayStat layout changes', (source) => source.replace(
+  '  double tempSum = 0;\n  double humiditySum = 0;',
+  '  double humiditySum = 0;\n  double tempSum = 0;'
+));
+expectMutationRejected('persisted DayStat layout is packed', (source) => source.replace(
+  'struct DayStat {',
+  '#pragma pack(push, 1)\nstruct DayStat {'
+));
+expectMutationRejected('retained NVS history is explicitly erased', (source) => source.replace(
+  '  historyReady = preferences.begin(LEGACY_HISTORY_NAMESPACE, false);',
+  '  historyReady = preferences.begin(LEGACY_HISTORY_NAMESPACE, false);\n  preferences.clear();'
+));
+expectMutationRejected('legacy NVS read key changes', (source) => source.replace(
+  'preferences.getBytes("daily", history, sizeof(history))',
+  'preferences.getBytes("history", history, sizeof(history))'
+));
+expectMutationRejected('legacy NVS read size changes', (source) => source.replace(
+  'preferences.getBytes("daily", history, sizeof(history))',
+  'preferences.getBytes("daily", history, sizeof(history) - 1)'
+));
+expectMutationRejected('legacy NVS write key changes', (source) => source.replace(
+  'preferences.putBytes("daily", history, sizeof(history))',
+  'preferences.putBytes("history", history, sizeof(history))'
+));
+expectMutationRejected('legacy NVS write size changes', (source) => source.replace(
+  'preferences.putBytes("daily", history, sizeof(history))',
+  'preferences.putBytes("daily", history, sizeof(history) - 1)'
+));
 
 expectMutationRejected('pre-request setup failure loses short retry', (source) => source.replace(
   'CLOUD_HISTORY_RETRY_INTERVAL_MS = 30UL * 1000UL',
@@ -408,4 +475,4 @@ expectMutationRejected('NVS scheduler guard is disabled by preprocessor', (sourc
   '  #endif\n\n  size_t bytesWritten = preferences.putBytes'
 ));
 
-console.log('LongOS firmware reliability tests: OK (23 mutations rejected)');
+console.log('LongOS firmware reliability tests: OK (34 mutations rejected)');
