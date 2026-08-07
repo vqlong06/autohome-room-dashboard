@@ -1,0 +1,7 @@
+project_id = "longos-sync"
+
+[functions.health-ingest]
+verify_jwt = false
+
+[functions.health-delete]
+verify_jwt = false

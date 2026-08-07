@@ -1,0 +1,547 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B10000000000000000000001 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* AppConfiguration.swift */; };
+		B10000000000000000000002 /* AppRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* AppRuntime.swift */; };
+		B10000000000000000000003 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* AppDelegate.swift */; };
+		B10000000000000000000004 /* LongOSSyncApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* LongOSSyncApp.swift */; };
+		B10000000000000000000005 /* SupabaseAuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* SupabaseAuthClient.swift */; };
+		B10000000000000000000006 /* HealthIngestClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* HealthIngestClient.swift */; };
+		B10000000000000000000007 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* RootView.swift */; };
+		B10000000000000000000008 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* SignInView.swift */; };
+		B10000000000000000000009 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* DashboardView.swift */; };
+		B1000000000000000000000A /* CloudConsentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000A /* CloudConsentView.swift */; };
+		B1000000000000000000000B /* PrivacyDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000B /* PrivacyDetailView.swift */; };
+		B1000000000000000000000C /* HealthKitStepReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000C /* HealthKitStepReader.swift */; };
+		B1000000000000000000000D /* PendingStepUpload.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000D /* PendingStepUpload.swift */; };
+		B1000000000000000000000E /* MetricSyncState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000E /* MetricSyncState.swift */; };
+		B1000000000000000000000F /* SyncedStepBucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000F /* SyncedStepBucket.swift */; };
+		B10000000000000000000010 /* SecureSessionStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* SecureSessionStorage.swift */; };
+		B10000000000000000000011 /* CloudSyncConsentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* CloudSyncConsentStore.swift */; };
+		B10000000000000000000012 /* StepSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* StepSyncCoordinator.swift */; };
+		B10000000000000000000013 /* StepBucket.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* StepBucket.swift */; };
+		B10000000000000000000014 /* IngestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* IngestModels.swift */; };
+		B10000000000000000000015 /* RetryPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* RetryPolicy.swift */; };
+		B10000000000000000000016 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* PrivacyInfo.xcprivacy */; };
+		B10000000000000000000017 /* StepBucketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* StepBucketTests.swift */; };
+		B10000000000000000000018 /* RetryPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* RetryPolicyTests.swift */; };
+		B10000000000000000000019 /* HealthKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* HealthKit.framework */; };
+		B1000000000000000000001A /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* SwiftUI.framework */; };
+		B1000000000000000000001B /* SwiftData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* SwiftData.framework */; };
+		B1000000000000000000001C /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* Security.framework */; };
+		B1000000000000000000001D /* BackgroundTasks.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* BackgroundTasks.framework */; };
+		B1000000000000000000001E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C10000000000000000000020 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F10000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D10000000000000000000001;
+			remoteInfo = LongOSSync;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000001 /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
+		A10000000000000000000002 /* AppRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRuntime.swift; sourceTree = "<group>"; };
+		A10000000000000000000003 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* LongOSSyncApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LongOSSyncApp.swift; sourceTree = "<group>"; };
+		A10000000000000000000005 /* SupabaseAuthClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseAuthClient.swift; sourceTree = "<group>"; };
+		A10000000000000000000006 /* HealthIngestClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthIngestClient.swift; sourceTree = "<group>"; };
+		A10000000000000000000007 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A10000000000000000000008 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		A10000000000000000000009 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		A1000000000000000000000A /* CloudConsentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudConsentView.swift; sourceTree = "<group>"; };
+		A1000000000000000000000B /* PrivacyDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyDetailView.swift; sourceTree = "<group>"; };
+		A1000000000000000000000C /* HealthKitStepReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitStepReader.swift; sourceTree = "<group>"; };
+		A1000000000000000000000D /* PendingStepUpload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingStepUpload.swift; sourceTree = "<group>"; };
+		A1000000000000000000000E /* MetricSyncState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricSyncState.swift; sourceTree = "<group>"; };
+		A1000000000000000000000F /* SyncedStepBucket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncedStepBucket.swift; sourceTree = "<group>"; };
+		A10000000000000000000010 /* SecureSessionStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureSessionStorage.swift; sourceTree = "<group>"; };
+		A10000000000000000000011 /* CloudSyncConsentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncConsentStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000012 /* StepSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepSyncCoordinator.swift; sourceTree = "<group>"; };
+		A10000000000000000000013 /* StepBucket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepBucket.swift; sourceTree = "<group>"; };
+		A10000000000000000000014 /* IngestModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000015 /* RetryPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetryPolicy.swift; sourceTree = "<group>"; };
+		A10000000000000000000016 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A10000000000000000000017 /* StepBucketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepBucketTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000018 /* RetryPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetryPolicyTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000019 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1000000000000000000001A /* LongOSSync.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LongOSSync.entitlements; sourceTree = "<group>"; };
+		A1000000000000000000001B /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		A1000000000000000000001C /* Secrets.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.example.xcconfig; sourceTree = "<group>"; };
+		A1000000000000000000001D /* LongOSSync.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LongOSSync.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000000000000000001E /* LongOSSyncTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LongOSSyncTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000020 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
+		A10000000000000000000021 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		A10000000000000000000022 /* SwiftData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftData.framework; path = System/Library/Frameworks/SwiftData.framework; sourceTree = SDKROOT; };
+		A10000000000000000000023 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		A10000000000000000000024 /* BackgroundTasks.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BackgroundTasks.framework; path = System/Library/Frameworks/BackgroundTasks.framework; sourceTree = SDKROOT; };
+		A10000000000000000000025 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D10000000000000000000010 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000019 /* HealthKit.framework in Frameworks */,
+				B1000000000000000000001A /* SwiftUI.framework in Frameworks */,
+				B1000000000000000000001B /* SwiftData.framework in Frameworks */,
+				B1000000000000000000001C /* Security.framework in Frameworks */,
+				B1000000000000000000001D /* BackgroundTasks.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000011 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C10000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000002 /* LongOSSync */,
+				C10000000000000000000003 /* LongOSSyncCore */,
+				C10000000000000000000004 /* LongOSSyncCoreTests */,
+				C10000000000000000000005 /* Config */,
+				C10000000000000000000006 /* Frameworks */,
+				C10000000000000000000007 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C10000000000000000000002 /* LongOSSync */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000008 /* App */,
+				C10000000000000000000009 /* Backend */,
+				C1000000000000000000000A /* Features */,
+				C1000000000000000000000B /* HealthKit */,
+				C1000000000000000000000C /* Persistence */,
+				C1000000000000000000000D /* Security */,
+				C1000000000000000000000E /* Sync */,
+				C1000000000000000000000F /* Resources */,
+				A10000000000000000000019 /* Info.plist */,
+				A1000000000000000000001A /* LongOSSync.entitlements */,
+			);
+			path = LongOSSync;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000003 /* LongOSSyncCore */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000013 /* StepBucket.swift */,
+				A10000000000000000000014 /* IngestModels.swift */,
+				A10000000000000000000015 /* RetryPolicy.swift */,
+			);
+			path = LongOSSyncCore;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000004 /* LongOSSyncCoreTests */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000017 /* StepBucketTests.swift */,
+				A10000000000000000000018 /* RetryPolicyTests.swift */,
+			);
+			path = LongOSSyncCoreTests;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000005 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000000000001B /* Base.xcconfig */,
+				A1000000000000000000001C /* Secrets.example.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000006 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000020 /* HealthKit.framework */,
+				A10000000000000000000021 /* SwiftUI.framework */,
+				A10000000000000000000022 /* SwiftData.framework */,
+				A10000000000000000000023 /* Security.framework */,
+				A10000000000000000000024 /* BackgroundTasks.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000007 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000000000001D /* LongOSSync.app */,
+				A1000000000000000000001E /* LongOSSyncTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000008 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000001 /* AppConfiguration.swift */,
+				A10000000000000000000002 /* AppRuntime.swift */,
+				A10000000000000000000003 /* AppDelegate.swift */,
+				A10000000000000000000004 /* LongOSSyncApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		C10000000000000000000009 /* Backend */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000005 /* SupabaseAuthClient.swift */,
+				A10000000000000000000006 /* HealthIngestClient.swift */,
+			);
+			path = Backend;
+			sourceTree = "<group>";
+		};
+		C1000000000000000000000A /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000007 /* RootView.swift */,
+				A10000000000000000000008 /* SignInView.swift */,
+				A10000000000000000000009 /* DashboardView.swift */,
+				A1000000000000000000000A /* CloudConsentView.swift */,
+				A1000000000000000000000B /* PrivacyDetailView.swift */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		C1000000000000000000000B /* HealthKit */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000000000000C /* HealthKitStepReader.swift */,
+			);
+			path = HealthKit;
+			sourceTree = "<group>";
+		};
+		C1000000000000000000000C /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000000000000D /* PendingStepUpload.swift */,
+				A1000000000000000000000E /* MetricSyncState.swift */,
+				A1000000000000000000000F /* SyncedStepBucket.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		C1000000000000000000000D /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000010 /* SecureSessionStorage.swift */,
+				A10000000000000000000011 /* CloudSyncConsentStore.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		C1000000000000000000000E /* Sync */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000012 /* StepSyncCoordinator.swift */,
+			);
+			path = Sync;
+			sourceTree = "<group>";
+		};
+		C1000000000000000000000F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000025 /* Assets.xcassets */,
+				A10000000000000000000016 /* PrivacyInfo.xcprivacy */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D10000000000000000000001 /* LongOSSync */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E10000000000000000000001 /* Build configuration list for PBXNativeTarget "LongOSSync" */;
+			buildPhases = (
+				D10000000000000000000012 /* Sources */,
+				D10000000000000000000010 /* Frameworks */,
+				D10000000000000000000014 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = LongOSSync;
+			productName = LongOSSync;
+			productReference = A1000000000000000000001D /* LongOSSync.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D10000000000000000000002 /* LongOSSyncTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E10000000000000000000002 /* Build configuration list for PBXNativeTarget "LongOSSyncTests" */;
+			buildPhases = (
+				D10000000000000000000013 /* Sources */,
+				D10000000000000000000011 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D10000000000000000000020 /* PBXTargetDependency */,
+			);
+			name = LongOSSyncTests;
+			productName = LongOSSyncTests;
+			productReference = A1000000000000000000001E /* LongOSSyncTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F10000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					D10000000000000000000001 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					D10000000000000000000002 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = D10000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = E10000000000000000000003 /* Build configuration list for PBXProject "LongOSSync" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = C10000000000000000000001;
+			productRefGroup = C10000000000000000000007 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D10000000000000000000001 /* LongOSSync */,
+				D10000000000000000000002 /* LongOSSyncTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D10000000000000000000014 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000016 /* PrivacyInfo.xcprivacy in Resources */,
+				B1000000000000000000001E /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D10000000000000000000012 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000001 /* AppConfiguration.swift in Sources */,
+				B10000000000000000000002 /* AppRuntime.swift in Sources */,
+				B10000000000000000000003 /* AppDelegate.swift in Sources */,
+				B10000000000000000000004 /* LongOSSyncApp.swift in Sources */,
+				B10000000000000000000005 /* SupabaseAuthClient.swift in Sources */,
+				B10000000000000000000006 /* HealthIngestClient.swift in Sources */,
+				B10000000000000000000007 /* RootView.swift in Sources */,
+				B10000000000000000000008 /* SignInView.swift in Sources */,
+				B10000000000000000000009 /* DashboardView.swift in Sources */,
+				B1000000000000000000000A /* CloudConsentView.swift in Sources */,
+				B1000000000000000000000B /* PrivacyDetailView.swift in Sources */,
+				B1000000000000000000000C /* HealthKitStepReader.swift in Sources */,
+				B1000000000000000000000D /* PendingStepUpload.swift in Sources */,
+				B1000000000000000000000E /* MetricSyncState.swift in Sources */,
+				B1000000000000000000000F /* SyncedStepBucket.swift in Sources */,
+				B10000000000000000000010 /* SecureSessionStorage.swift in Sources */,
+				B10000000000000000000011 /* CloudSyncConsentStore.swift in Sources */,
+				B10000000000000000000012 /* StepSyncCoordinator.swift in Sources */,
+				B10000000000000000000013 /* StepBucket.swift in Sources */,
+				B10000000000000000000014 /* IngestModels.swift in Sources */,
+				B10000000000000000000015 /* RetryPolicy.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D10000000000000000000013 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000017 /* StepBucketTests.swift in Sources */,
+				B10000000000000000000018 /* RetryPolicyTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D10000000000000000000020 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D10000000000000000000001 /* LongOSSync */;
+			targetProxy = C10000000000000000000020 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		E10000000000000000000010 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1000000000000000000001B /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LongOSSync/LongOSSync.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LongOSSync/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_NAME = LongOSSync;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		E10000000000000000000011 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1000000000000000000001B /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = LongOSSync/LongOSSync.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = LongOSSync/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_NAME = LongOSSync;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		E10000000000000000000012 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.vqlong.longos.sync.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LongOSSync.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LongOSSync";
+			};
+			name = Debug;
+		};
+		E10000000000000000000013 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.vqlong.longos.sync.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LongOSSync.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LongOSSync";
+			};
+			name = Release;
+		};
+		E10000000000000000000014 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+			};
+			name = Debug;
+		};
+		E10000000000000000000015 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E10000000000000000000001 /* Build configuration list for PBXNativeTarget "LongOSSync" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E10000000000000000000010 /* Debug */,
+				E10000000000000000000011 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E10000000000000000000002 /* Build configuration list for PBXNativeTarget "LongOSSyncTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E10000000000000000000012 /* Debug */,
+				E10000000000000000000013 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E10000000000000000000003 /* Build configuration list for PBXProject "LongOSSync" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E10000000000000000000014 /* Debug */,
+				E10000000000000000000015 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F10000000000000000000001 /* Project object */;
+}

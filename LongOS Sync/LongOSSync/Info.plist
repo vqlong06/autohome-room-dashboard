@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>$(LONGOS_BACKGROUND_REFRESH_IDENTIFIER)</string>
+	</array>
+	<key>CFBundleDisplayName</key>
+	<string>LongOS Sync</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>LONGOS_BACKGROUND_REFRESH_IDENTIFIER</key>
+	<string>$(LONGOS_BACKGROUND_REFRESH_IDENTIFIER)</string>
+	<key>LONGOS_SUPABASE_HOST</key>
+	<string>$(LONGOS_SUPABASE_HOST)</string>
+	<key>LONGOS_SUPABASE_PUBLISHABLE_KEY</key>
+	<string>$(LONGOS_SUPABASE_PUBLISHABLE_KEY)</string>
+	<key>LONGOS_SUPABASE_SCHEME</key>
+	<string>$(LONGOS_SUPABASE_SCHEME)</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>LongOS Sync đọc số bước đã được Apple Health tổng hợp để bạn theo dõi hoạt động cá nhân và đồng bộ vào khu vực LongOS riêng tư khi bạn bật cloud sync.</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+</dict>
+</plist>
