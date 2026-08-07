@@ -35,6 +35,16 @@ test("accepts and canonicalizes the Steps contract", async () => {
   assert.match(await sha256Hex(canonicalPayload(parsed)), /^[0-9a-f]{64}$/);
 });
 
+test("accepts uppercase UUIDs emitted by Foundation and normalizes them", () => {
+  const payload = valid();
+  payload.requestId = "A1B2C3D4-E5F6-4A7B-8C9D-A1B2C3D4E5F6";
+  payload.installationId = "F0E1D2C3-B4A5-4F67-9A8B-C7D6E5F4A3B2";
+
+  const parsed = parseHealthIngestRequest(payload, now);
+  assert.equal(parsed.requestId, payload.requestId.toLowerCase());
+  assert.equal(parsed.installationId, payload.installationId.toLowerCase());
+});
+
 test("rejects userId and every unknown root key", () => {
   assert.throws(() => parseHealthIngestRequest({ ...valid(), userId: crypto.randomUUID() }, now), ContractError);
   assert.throws(() => parseHealthIngestRequest({ ...valid(), rawSamples: [] }, now), ContractError);

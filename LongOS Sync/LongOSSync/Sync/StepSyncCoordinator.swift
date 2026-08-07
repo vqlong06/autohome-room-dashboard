@@ -145,6 +145,9 @@ final class StepSyncCoordinator: ObservableObject {
 
             if cloudConsent.isGranted {
                 try persistChangedBuckets(buckets, ownerID: ownerID)
+                if reason == .manual {
+                    try reactivatePermanentFailures(ownerID: ownerID)
+                }
                 try await uploadEligibleItems(ownerID: ownerID)
             } else {
                 statusMessage = buckets.isEmpty ? "Chưa có dữ liệu Steps" : "Đã đọc Steps trên iPhone"
@@ -293,14 +296,29 @@ final class StepSyncCoordinator: ObservableObject {
             }
         }
 
+        refreshPendingCount(ownerID: ownerID)
         if uploadedAny {
             lastSuccessfulSyncAt = .now
             try updateSuccessfulUploadState(ownerID: ownerID, at: .now)
-            statusMessage = "Đồng bộ hoàn tất"
+            statusMessage = pendingUploadCount == 0 ? "Đồng bộ hoàn tất" : "Đã đồng bộ một phần"
         } else if items.isEmpty {
-            statusMessage = "Dữ liệu đã cập nhật"
+            statusMessage = pendingUploadCount == 0 ? "Dữ liệu đã cập nhật" : "Còn dữ liệu đang chờ thử lại"
         } else {
             statusMessage = "Đã giữ dữ liệu để thử lại"
+        }
+    }
+
+    private func reactivatePermanentFailures(ownerID: String) throws {
+        let items = try modelContext.fetch(FetchDescriptor<PendingStepUpload>())
+        var changed = false
+        for item in items where item.ownerID == ownerID &&
+            UploadRetryPolicy.shouldReactivateForManualSync(errorCode: item.lastErrorCode) {
+            item.nextAttemptAt = .distantPast
+            item.lastErrorCode = nil
+            changed = true
+        }
+        if changed {
+            try modelContext.save()
         }
     }
 

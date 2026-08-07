@@ -3,5 +3,7 @@ DerivedData/
 node_modules/
 .DS_Store
 Config/Secrets.xcconfig
+Supabase/.temp/
+Supabase/supabase/.temp/
 *.xcuserstate
 xcuserdata/

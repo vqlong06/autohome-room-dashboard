@@ -15,4 +15,8 @@ public enum UploadRetryPolicy {
     public static func shouldRetry(statusCode: Int) -> Bool {
         statusCode == 408 || statusCode == 425 || statusCode == 429 || (500...599).contains(statusCode)
     }
+
+    public static func shouldReactivateForManualSync(errorCode: String?) -> Bool {
+        errorCode?.hasPrefix("permanent_") == true
+    }
 }

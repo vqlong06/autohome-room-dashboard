@@ -21,4 +21,12 @@ final class RetryPolicyTests: XCTestCase {
         XCTAssertFalse(UploadRetryPolicy.shouldRetry(statusCode: 401))
         XCTAssertFalse(UploadRetryPolicy.shouldRetry(statusCode: 409))
     }
+
+    func testManualSyncReactivatesOnlyPermanentHTTPFailures() {
+        XCTAssertTrue(UploadRetryPolicy.shouldReactivateForManualSync(errorCode: "permanent_400"))
+        XCTAssertTrue(UploadRetryPolicy.shouldReactivateForManualSync(errorCode: "permanent_422"))
+        XCTAssertFalse(UploadRetryPolicy.shouldReactivateForManualSync(errorCode: "request_conflict"))
+        XCTAssertFalse(UploadRetryPolicy.shouldReactivateForManualSync(errorCode: "retryable_503"))
+        XCTAssertFalse(UploadRetryPolicy.shouldReactivateForManualSync(errorCode: nil))
+    }
 }

@@ -11,7 +11,7 @@ const BUCKET_KEYS = new Set([
   "algorithmVersion",
   "sourceUpdatedAt"
 ]);
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LOCAL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_FUTURE_MS = 10 * 60 * 1000;
 const MAX_AGE_MS = 400 * 24 * 60 * 60 * 1000;
@@ -131,7 +131,7 @@ function parseUUID(value) {
   if (typeof value !== "string" || !UUID_PATTERN.test(value) || value === "00000000-0000-0000-0000-000000000000") {
     throw new ContractError();
   }
-  return value;
+  return value.toLowerCase();
 }
 
 function parseInstant(value) {
