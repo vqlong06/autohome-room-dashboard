@@ -48,6 +48,7 @@ jobs:
           node --check tools/test-device-soak.mjs
           node --check tools/test-device-smoke.mjs
           node --check tools/test-firmware-reliability.mjs
+          node --check tools/test-health-web.mjs
           node --check tools/test-nvs-retention.mjs
           node --check tools/test-pages-smoke.mjs
           node --check tools/test-pages-smoke-integration.mjs
@@ -62,6 +63,7 @@ jobs:
           node tools/test-cloud-health.mjs
           node tools/test-device-soak.mjs
           node tools/test-firmware-reliability.mjs
+          node tools/test-health-web.mjs
           node tools/test-nvs-retention.mjs
           node tools/test-pages-release.mjs
           node tools/test-release-pipeline.mjs

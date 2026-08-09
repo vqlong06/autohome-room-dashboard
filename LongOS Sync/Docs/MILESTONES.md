@@ -9,7 +9,10 @@
 
 ## M1.3 — LongOS web
 
-Thêm card Steps có đăng nhập và freshness. Web chỉ đọc authenticated summary; không thể đánh thức app. Chưa triển khai trong app folder này vì dashboard hiện tại phải được thay đổi ở root sau khi M1 backend/device đã PASS.
+- Dashboard root có card Steps, đăng nhập Supabase và freshness.
+- Web chỉ đọc bucket/status của chính user bằng JWT và RLS; room telemetry ESP32 vẫn là luồng riêng.
+- Session chỉ nằm trong `sessionStorage`, mật khẩu không được lưu và không có service credential trong web.
+- Website không thể đánh thức app; LongOS Sync trên iPhone vẫn chịu trách nhiệm đọc HealthKit và upload.
 
 ## M2 — Sleep × Room
 

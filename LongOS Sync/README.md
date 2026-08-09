@@ -36,7 +36,7 @@ LongOS Sync/
 └── Tests/
 ```
 
-Mọi file liên quan LongOS Sync đều nằm trong thư mục này. Dashboard và firmware ở root repository không bị thay đổi.
+Backend và app iPhone nằm trong thư mục này. Dashboard root có integration M1.3 để hiển thị Steps đã đồng bộ cạnh dữ liệu ESP32; firmware không đọc hoặc lưu dữ liệu HealthKit.
 
 ## Cấu hình cục bộ
 
