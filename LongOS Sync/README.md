@@ -1,25 +1,26 @@
 # LongOS Sync
 
-LongOS Sync là ứng dụng iPhone riêng của LongOS. Bản đầu tiên chỉ đọc **Steps** từ HealthKit, lưu hàng đợi trên máy và đồng bộ các bucket thống kê lên vùng dữ liệu Supabase riêng tư.
+LongOS Sync là ứng dụng iPhone riêng của LongOS. App đọc **Steps**, **Active Energy** và **Sleep** từ HealthKit, lưu hàng đợi trên máy rồi đồng bộ dữ liệu tổng hợp lên vùng Supabase riêng tư.
 
 Ứng dụng không ghi vào Apple Health, không có watchOS target và không dùng các bảng phòng công khai `room_latest` / `room_readings`.
 
 ## Trạng thái milestone
 
-Milestone M1 gồm:
+Phiên bản 0.3 gồm:
 
 - SwiftUI, iOS 17+ và SwiftData.
 - Đăng nhập Supabase bằng email/password.
-- Xin duy nhất quyền đọc Steps.
+- Xin quyền chỉ đọc Steps, Active Energy và Sleep Analysis.
 - Consent HealthKit và consent upload Supabase là hai bước độc lập.
-- Tính bucket Steps theo giờ bằng `HKStatisticsCollectionQuery`.
+- Tính Steps và Active Energy theo bucket giờ bằng `HKStatisticsCollectionQuery`.
+- Gộp các khoảng đang ngủ bị chồng lấn từ HealthKit thành một bản tóm tắt mỗi ngày: giờ ngủ, giờ thức và tổng phút thực ngủ; không upload raw sleep stages.
 - Reconcile hôm nay và 7 ngày gần nhất.
 - Hàng đợi offline, retry có giới hạn và upload idempotent.
 - `HKObserverQuery`, HealthKit background delivery và `BGAppRefreshTask` theo kiểu best-effort.
-- Hiển thị Steps hôm nay, lần sync cuối, hàng đợi và lỗi gần nhất.
+- Hiển thị Steps, kcal vận động, giấc ngủ gần nhất, lần sync cuối, hàng đợi và lỗi gần nhất.
 - Backend Auth/RLS/Edge Function nằm trong thư mục `Supabase/` của app.
 
-Không thuộc M1: Sleep, nhịp tim, HRV, workout, Activity Rings, ECG, thuốc, hồ sơ bệnh án và watchOS.
+Chưa thuộc phạm vi: nhịp tim, HRV, workout chi tiết, Activity Rings, ECG, thuốc, hồ sơ bệnh án và watchOS.
 
 ## Cấu trúc
 
@@ -36,7 +37,7 @@ LongOS Sync/
 └── Tests/
 ```
 
-Backend và app iPhone nằm trong thư mục này. Dashboard root có integration M1.3 để hiển thị Steps đã đồng bộ cạnh dữ liệu ESP32; firmware không đọc hoặc lưu dữ liệu HealthKit.
+Backend và app iPhone nằm trong thư mục này. Dashboard root hiển thị Steps, kcal vận động và giấc ngủ đã đồng bộ cạnh dữ liệu ESP32; firmware không đọc hoặc lưu dữ liệu HealthKit.
 
 Từ bản 0.2, app có card **LongOS trên web** để mở dashboard cloud. Safari yêu cầu đăng nhập riêng bằng cùng tài khoản Supabase; app không nhúng session, token hoặc mật khẩu vào URL.
 
@@ -81,7 +82,7 @@ Trong Xcode:
 2. Chọn Apple Account/Personal Team và bundle identifier riêng.
 3. Giữ Automatic Signing.
 4. Kiểm tra capability HealthKit và Background Delivery.
-5. Cài lên iPhone, đăng nhập rồi cấp quyền Steps.
+5. Cài lên iPhone, đăng nhập rồi cấp quyền Steps, Active Energy và Sleep.
 6. Bật consent cloud riêng trong app trước khi nhấn **Đồng bộ ngay**.
 
 ## Test không cần Xcode
@@ -99,4 +100,4 @@ npm run check
 
 ## Quyền riêng tư
 
-HealthKit authorization không đồng nghĩa với đồng ý upload. Cloud sync mặc định tắt. App chỉ upload Steps sau khi người dùng đọc disclosure và bật consent riêng. Xem [Docs/PRIVACY.md](Docs/PRIVACY.md).
+HealthKit authorization không đồng nghĩa với đồng ý upload. Cloud sync mặc định tắt. App chỉ upload dữ liệu HealthKit tổng hợp sau khi người dùng đọc disclosure và bật consent riêng. Xem [Docs/PRIVACY.md](Docs/PRIVACY.md).

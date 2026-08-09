@@ -35,6 +35,26 @@ test("accepts and canonicalizes the Steps contract", async () => {
   assert.match(await sha256Hex(canonicalPayload(parsed)), /^[0-9a-f]{64}$/);
 });
 
+test("accepts Active Energy and daily Sleep summaries", () => {
+  const energy = valid();
+  energy.buckets[0].metric = "active_energy";
+  energy.buckets[0].unit = "kcal";
+  energy.buckets[0].value = 87;
+  const parsedEnergy = parseHealthIngestRequest(energy, now);
+  assert.equal(parsedEnergy.buckets[0].metric, "active_energy");
+  assert.equal(databaseBuckets(parsedEnergy)[0].provenance, "healthkit_statistics");
+
+  const sleep = valid();
+  sleep.buckets[0].metric = "sleep";
+  sleep.buckets[0].unit = "minute";
+  sleep.buckets[0].start = "2026-08-06T16:00:00.000Z";
+  sleep.buckets[0].end = "2026-08-06T23:00:00.000Z";
+  sleep.buckets[0].value = 405;
+  const parsedSleep = parseHealthIngestRequest(sleep, now);
+  assert.equal(parsedSleep.buckets[0].metric, "sleep");
+  assert.equal(databaseBuckets(parsedSleep)[0].provenance, "healthkit_sleep_summary");
+});
+
 test("accepts uppercase UUIDs emitted by Foundation and normalizes them", () => {
   const payload = valid();
   payload.requestId = "A1B2C3D4-E5F6-4A7B-8C9D-A1B2C3D4E5F6";
@@ -50,14 +70,18 @@ test("rejects userId and every unknown root key", () => {
   assert.throws(() => parseHealthIngestRequest({ ...valid(), rawSamples: [] }, now), ContractError);
 });
 
-test("rejects unknown bucket keys and non-Steps metrics", () => {
+test("rejects unknown bucket keys, metrics and mismatched units", () => {
   const extra = valid();
   extra.buckets[0].device = "watch";
   assert.throws(() => parseHealthIngestRequest(extra, now), ContractError);
 
-  const sleep = valid();
-  sleep.buckets[0].metric = "sleep";
-  assert.throws(() => parseHealthIngestRequest(sleep, now), ContractError);
+  const unknown = valid();
+  unknown.buckets[0].metric = "distance";
+  assert.throws(() => parseHealthIngestRequest(unknown, now), ContractError);
+
+  const mismatched = valid();
+  mismatched.buckets[0].metric = "sleep";
+  assert.throws(() => parseHealthIngestRequest(mismatched, now), ContractError);
 });
 
 test("rejects invalid numbers, dates, UUIDs and timezones", () => {
@@ -83,5 +107,23 @@ test("rejects invalid numbers, dates, UUIDs and timezones", () => {
 test("rejects duplicate bucket identities", () => {
   const payload = valid();
   payload.buckets.push(structuredClone(payload.buckets[0]));
+  assert.throws(() => parseHealthIngestRequest(payload, now), ContractError);
+
+  const duplicateSleepDay = valid();
+  duplicateSleepDay.buckets[0].metric = "sleep";
+  duplicateSleepDay.buckets[0].unit = "minute";
+  duplicateSleepDay.buckets[0].value = 405;
+  const secondSleep = structuredClone(duplicateSleepDay.buckets[0]);
+  secondSleep.start = "2026-08-07T02:00:00.000Z";
+  secondSleep.end = "2026-08-07T03:00:00.000Z";
+  duplicateSleepDay.buckets.push(secondSleep);
+  assert.throws(() => parseHealthIngestRequest(duplicateSleepDay, now), ContractError);
+});
+
+test("rejects zero-minute Sleep summaries", () => {
+  const payload = valid();
+  payload.buckets[0].metric = "sleep";
+  payload.buckets[0].unit = "minute";
+  payload.buckets[0].value = 0;
   assert.throws(() => parseHealthIngestRequest(payload, now), ContractError);
 });

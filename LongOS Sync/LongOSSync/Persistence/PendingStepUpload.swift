@@ -12,7 +12,9 @@ final class PendingStepUpload {
     var localDate: String
     var timezoneID: String
     var utcOffsetMinutes: Int
+    var metricKey: String = "steps"
     var stepValue: Int
+    var unit: String = "count"
     var algorithmVersion: Int
     var sourceUpdatedAt: Date
     var attemptCount: Int
@@ -30,7 +32,9 @@ final class PendingStepUpload {
         localDate = bucket.localDate
         timezoneID = bucket.timezoneId
         utcOffsetMinutes = bucket.utcOffsetMinutes
+        metricKey = bucket.metric
         stepValue = bucket.value
+        unit = bucket.unit
         algorithmVersion = bucket.algorithmVersion
         sourceUpdatedAt = bucket.sourceUpdatedAt
         attemptCount = 0
@@ -42,12 +46,14 @@ final class PendingStepUpload {
     var bucket: StepBucket {
         StepBucket(
             id: operationID,
+            metric: metricKey,
             start: bucketStart,
             end: bucketEnd,
             localDate: localDate,
             timezoneId: timezoneID,
             utcOffsetMinutes: utcOffsetMinutes,
             value: stepValue,
+            unit: unit,
             algorithmVersion: algorithmVersion,
             sourceUpdatedAt: sourceUpdatedAt
         )
@@ -61,7 +67,9 @@ final class PendingStepUpload {
         localDate = bucket.localDate
         timezoneID = bucket.timezoneId
         utcOffsetMinutes = bucket.utcOffsetMinutes
+        metricKey = bucket.metric
         stepValue = bucket.value
+        unit = bucket.unit
         algorithmVersion = bucket.algorithmVersion
         sourceUpdatedAt = bucket.sourceUpdatedAt
         attemptCount = 0

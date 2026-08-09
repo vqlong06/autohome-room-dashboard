@@ -61,7 +61,7 @@ struct SignInView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Không có quyền Health nào được xin trước khi đăng nhập.", systemImage: "lock.shield")
                         Label("HealthKit và upload Supabase là hai consent riêng.", systemImage: "hand.raised")
-                        Label("M1 chỉ dùng Steps đã tổng hợp, không dùng raw samples.", systemImage: "figure.walk")
+                        Label("Chỉ dùng Steps, kcal và giấc ngủ đã tổng hợp; không upload raw samples.", systemImage: "figure.walk")
                     }
                     .font(.footnote)
                     .foregroundStyle(.secondary)

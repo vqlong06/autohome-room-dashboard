@@ -24,6 +24,7 @@ struct DashboardView: View {
                     }
 
                     stepsHero
+                    healthSummary
                     healthAccessCard
                     cloudCard
                     syncCard
@@ -66,7 +67,7 @@ struct DashboardView: View {
                     Task { await coordinator.deleteCloudHealthData() }
                 }
             } message: {
-                Text("Thao tác này xóa dữ liệu Steps của tài khoản khỏi Supabase và tắt cloud sync. Dữ liệu gốc trong Apple Health không bị xóa.")
+                Text("Thao tác này xóa Steps, Active Energy và giấc ngủ của tài khoản khỏi Supabase, đồng thời tắt cloud sync. Dữ liệu gốc trong Apple Health không bị xóa.")
             }
         }
     }
@@ -113,18 +114,53 @@ struct DashboardView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
     }
 
+    private var healthSummary: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) {
+                sleepCard
+                energyCard
+            }
+            VStack(spacing: 14) {
+                sleepCard
+                energyCard
+            }
+        }
+    }
+
+    private var sleepCard: some View {
+        healthMetricCard(
+            icon: "bed.double.fill",
+            title: "Giấc ngủ gần nhất",
+            value: sleepDurationText,
+            unit: coordinator.latestSleepMinutes == nil ? "chưa có dữ liệu" : "thời gian ngủ",
+            detail: sleepWindowText
+        )
+    }
+
+    private var energyCard: some View {
+        healthMetricCard(
+            icon: "flame.fill",
+            title: "Năng lượng hôm nay",
+            value: coordinator.todayActiveEnergyKcal?.formatted(.number.grouping(.automatic)) ?? "--",
+            unit: "kcal hoạt động",
+            detail: coordinator.todayActiveEnergyKcal == nil
+                ? "LongOS không coi thiếu quyền hoặc chưa sync là 0."
+                : "Active Energy Burned từ Apple Health."
+        )
+    }
+
     private var healthAccessCard: some View {
         StatusCard(
             icon: "heart.text.square",
             title: "Apple Health",
             detail: coordinator.healthRequestCompleted
-                ? "Đã gửi yêu cầu đọc Steps. Apple không tiết lộ trạng thái quyền đọc; dữ liệu trống không đồng nghĩa với 0."
-                : "Chỉ xin quyền Steps. App không ghi dữ liệu vào HealthKit.",
+                ? "Đã gửi yêu cầu đọc Steps, Active Energy và Sleep. Apple không tiết lộ trạng thái quyền đọc; dữ liệu trống không đồng nghĩa với 0."
+                : "Chỉ xin quyền đọc Steps, Active Energy và Sleep. App không ghi dữ liệu vào HealthKit.",
             badge: coordinator.healthRequestCompleted ? "Đã yêu cầu" : "Chưa yêu cầu",
             badgeColor: coordinator.healthRequestCompleted ? .mint : .secondary
         ) {
             if !coordinator.healthRequestCompleted {
-                Button("Cho phép đọc Steps") {
+                Button("Cho phép đọc HealthKit") {
                     Task { await coordinator.requestHealthAccess() }
                 }
                 .buttonStyle(.borderedProminent)
@@ -139,7 +175,7 @@ struct DashboardView: View {
             icon: "cloud",
             title: "Cloud sync riêng tư",
             detail: consent.isGranted
-                ? "Bucket Steps được gửi đến Supabase để dùng trong LongOS. Bạn có thể tắt bất cứ lúc nào."
+                ? "Bucket Steps, kcal hoạt động và bản tổng hợp giấc ngủ được gửi đến Supabase để dùng trong LongOS. Bạn có thể tắt bất cứ lúc nào."
                 : "Mặc định tắt. HealthKit authorization không tự cho phép upload.",
             badge: consent.isGranted ? "Đang bật" : "Đang tắt",
             badgeColor: consent.isGranted ? .mint : .secondary
@@ -187,7 +223,7 @@ struct DashboardView: View {
                 Task { await coordinator.synchronize(reason: .manual) }
             } label: {
                 HStack {
-                    Text(consent.isGranted ? "Đồng bộ ngay" : "Đọc Steps trên iPhone")
+                    Text(consent.isGranted ? "Đồng bộ ngay" : "Đọc HealthKit trên iPhone")
                         .fontWeight(.semibold)
                     Spacer()
                     Image(systemName: "arrow.clockwise")
@@ -247,12 +283,56 @@ struct DashboardView: View {
 
     private var webDashboardDetail: String {
         if consent.isGranted, coordinator.lastSuccessfulSyncAt != nil {
-            return "Xem Steps đã đồng bộ cạnh nhiệt độ và độ ẩm từ ESP32."
+            return "Xem Steps, kcal hoạt động và giấc ngủ đã đồng bộ cạnh dữ liệu ESP32."
         }
         if consent.isGranted {
-            return "Hãy đồng bộ Steps ít nhất một lần để dữ liệu xuất hiện trên web."
+            return "Hãy đồng bộ HealthKit ít nhất một lần để dữ liệu xuất hiện trên web."
         }
-        return "Dashboard vẫn hiển thị dữ liệu phòng; bật cloud sync nếu muốn xem thêm Steps."
+        return "Dashboard vẫn hiển thị dữ liệu phòng; bật cloud sync nếu muốn xem thêm dữ liệu HealthKit."
+    }
+
+    private var sleepDurationText: String {
+        guard let minutes = coordinator.latestSleepMinutes else { return "--" }
+        let hours = minutes / 60
+        let remainder = minutes % 60
+        if hours == 0 { return "\(remainder) phút" }
+        if remainder == 0 { return "\(hours) giờ" }
+        return "\(hours)g \(remainder)p"
+    }
+
+    private var sleepWindowText: String {
+        guard let start = coordinator.latestSleepStart,
+              let end = coordinator.latestSleepEnd else {
+            return "LongOS không coi thiếu quyền hoặc chưa sync là 0."
+        }
+        return "Ngủ \(start.formatted(date: .omitted, time: .shortened)) – thức \(end.formatted(date: .omitted, time: .shortened))"
+    }
+
+    private func healthMetricCard(
+        icon: String,
+        title: String,
+        value: String,
+        unit: String,
+        detail: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: icon)
+                .font(.headline)
+                .foregroundStyle(.mint)
+            Text(value)
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .foregroundStyle(.primary)
+            Text(unit)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(detail)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, minHeight: 178, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
     }
 
     private func metric(label: String, value: String) -> some View {

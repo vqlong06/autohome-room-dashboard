@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const migration = await readFile(new URL("../migrations/202608070001_health_steps.sql", import.meta.url), "utf8");
+const migration = (await Promise.all([
+  "202608070001_health_steps.sql",
+  "202608090001_health_sleep_energy.sql"
+].map((name) => readFile(new URL(`../migrations/${name}`, import.meta.url), "utf8")))).join("\n");
 const ingest = await readFile(new URL("../functions/health-ingest/index.ts", import.meta.url), "utf8");
 const deletion = await readFile(new URL("../functions/health-delete/index.ts", import.meta.url), "utf8");
 

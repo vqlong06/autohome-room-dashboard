@@ -15,6 +15,11 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 const LOCAL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_FUTURE_MS = 10 * 60 * 1000;
 const MAX_AGE_MS = 400 * 24 * 60 * 60 * 1000;
+const METRIC_CONTRACTS = new Map([
+  ["steps", { unit: "count", maximum: 2_000_000, provenance: "healthkit_statistics" }],
+  ["active_energy", { unit: "kcal", maximum: 100_000, provenance: "healthkit_statistics" }],
+  ["sleep", { unit: "minute", minimum: 1, maximum: 1_440, provenance: "healthkit_sleep_summary" }],
+]);
 
 export class ContractError extends Error {
   constructor(code = "invalid_request") {
@@ -41,10 +46,12 @@ export function parseHealthIngestRequest(input, now = new Date()) {
   const buckets = input.buckets.map((bucket) => {
     assertPlainObject(bucket);
     assertExactKeys(bucket, BUCKET_KEYS);
-    if (bucket.metric !== "steps" || bucket.unit !== "count" || bucket.algorithmVersion !== 1) {
+    const metricContract = METRIC_CONTRACTS.get(bucket.metric);
+    if (!metricContract || bucket.unit !== metricContract.unit || bucket.algorithmVersion !== 1) {
       throw new ContractError();
     }
-    if (!Number.isSafeInteger(bucket.value) || bucket.value < 0 || bucket.value > 2_000_000) {
+    const minimum = metricContract.minimum ?? 0;
+    if (!Number.isSafeInteger(bucket.value) || bucket.value < minimum || bucket.value > metricContract.maximum) {
       throw new ContractError();
     }
     if (!Number.isInteger(bucket.utcOffsetMinutes) || bucket.utcOffsetMinutes < -900 || bucket.utcOffsetMinutes > 900) {
@@ -62,25 +69,27 @@ export function parseHealthIngestRequest(input, now = new Date()) {
     parseLocalDate(bucket.localDate);
     parseTimeZone(bucket.timezoneId);
 
-    const identity = [bucket.metric, start, end, bucket.algorithmVersion].join("|");
+    const identity = bucket.metric === "sleep"
+      ? [bucket.metric, bucket.localDate, bucket.algorithmVersion].join("|")
+      : [bucket.metric, start, end, bucket.algorithmVersion].join("|");
     if (identities.has(identity)) throw new ContractError();
     identities.add(identity);
 
     return {
-      metric: "steps",
+      metric: bucket.metric,
       start: new Date(start).toISOString(),
       end: new Date(end).toISOString(),
       localDate: bucket.localDate,
       timezoneId: bucket.timezoneId,
       utcOffsetMinutes: bucket.utcOffsetMinutes,
       value: bucket.value,
-      unit: "count",
+      unit: metricContract.unit,
       algorithmVersion: 1,
       sourceUpdatedAt: new Date(sourceUpdatedAt).toISOString()
     };
   });
 
-  buckets.sort((a, b) => a.start.localeCompare(b.start));
+  buckets.sort((a, b) => a.metric.localeCompare(b.metric) || a.start.localeCompare(b.start));
   return { schemaVersion: 1, requestId, installationId, buckets };
 }
 
@@ -104,7 +113,7 @@ export function databaseBuckets(payload) {
     value_integer: bucket.value,
     unit: bucket.unit,
     algorithm_version: bucket.algorithmVersion,
-    provenance: "healthkit_statistics",
+    provenance: METRIC_CONTRACTS.get(bucket.metric).provenance,
     source_updated_at: bucket.sourceUpdatedAt
   }));
 }
