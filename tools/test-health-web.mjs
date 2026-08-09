@@ -47,6 +47,51 @@ assert.match(rootHtml, /requestHealthAuth\('password', \{ email, password \}\)/)
 assert.match(rootHtml, /requestHealthAuth\('refresh_token', \{ refresh_token: current\.refreshToken \}\)/);
 assert.match(rootHtml, /Authorization: `Bearer \$\{accessToken\}`/);
 assert.match(rootHtml, /healthHeaders\(session\.accessToken\)/);
+assert.doesNotMatch(rootHtml, /(?:accessToken|refreshToken)\.length < 20/);
+
+const healthSessionFunction = scriptMatch[1].match(
+  /function healthSessionFromAuth\(payload\) \{[\s\S]*?\n    \}(?=\n\n    function healthHeaders)/
+);
+assert.ok(healthSessionFunction, 'Health Auth response parser must exist');
+const authContext = {
+  state: { healthSession: null },
+  payload: {
+    access_token: 'a',
+    refresh_token: 'r',
+    expires_in: 3600,
+    user: { id: 'user-a', email: 'long@example.com' }
+  },
+  parsed: null
+};
+vm.runInNewContext(
+  `${healthSessionFunction[0]}\nparsed = healthSessionFromAuth(payload);`,
+  authContext
+);
+assert.equal(authContext.parsed.accessToken, 'a');
+assert.equal(authContext.parsed.refreshToken, 'r');
+assert.equal(authContext.parsed.email, 'long@example.com');
+
+const loadSessionFunction = scriptMatch[1].match(
+  /function loadHealthSession\(\) \{[\s\S]*?\n    \}(?=\n\n    function persistHealthSession)/
+);
+assert.ok(loadSessionFunction, 'stored Health session parser must exist');
+const storedSession = {
+  accessToken: 'a',
+  refreshToken: 'r',
+  expiresAt: Date.now() + 3600_000,
+  email: 'long@example.com',
+  userId: 'user-a'
+};
+const storageContext = {
+  sessionStorage: { getItem: () => JSON.stringify(storedSession) },
+  loaded: null
+};
+vm.runInNewContext(
+  `const HEALTH_SESSION_KEY = 'longos.health.session.v1';\n${loadSessionFunction[0]}\nloaded = loadHealthSession();`,
+  storageContext
+);
+assert.equal(storageContext.loaded.accessToken, 'a');
+assert.equal(storageContext.loaded.refreshToken, 'r');
 
 assert.match(rootHtml, /\/rest\/v1\/health_metric_buckets\?metric_key=eq\.steps/);
 assert.match(rootHtml, /\/rest\/v1\/health_sync_status\?metric_key=eq\.steps/);
