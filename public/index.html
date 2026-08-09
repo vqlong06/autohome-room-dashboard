@@ -4026,8 +4026,8 @@
         if (!raw) return null;
         const value = JSON.parse(raw);
         if (!value || typeof value !== 'object') return null;
-        if (typeof value.accessToken !== 'string' || value.accessToken.length < 20) return null;
-        if (typeof value.refreshToken !== 'string' || value.refreshToken.length < 20) return null;
+        if (typeof value.accessToken !== 'string' || value.accessToken.length === 0) return null;
+        if (typeof value.refreshToken !== 'string' || value.refreshToken.length === 0) return null;
         if (!Number.isFinite(value.expiresAt) || value.expiresAt <= 0) return null;
         if (typeof value.email !== 'string' || !value.email.includes('@')) return null;
         return {
@@ -4063,7 +4063,7 @@
         : Date.now() + Math.max(60, Number.isFinite(expiresIn) ? expiresIn : 3600) * 1000;
       const email = typeof payload.user?.email === 'string' ? payload.user.email : state.healthSession?.email || '';
       const userId = typeof payload.user?.id === 'string' ? payload.user.id : state.healthSession?.userId || '';
-      if (accessToken.length < 20 || refreshToken.length < 20 || !email.includes('@')) {
+      if (!accessToken || !refreshToken || !email.includes('@')) {
         throw new Error('Phản hồi đăng nhập thiếu session hợp lệ.');
       }
       return { accessToken, refreshToken, expiresAt, email, userId };
