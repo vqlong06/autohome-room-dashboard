@@ -190,6 +190,7 @@ node tools/test-brand-migration.mjs
 node tools/test-cloud-health.mjs
 node tools/test-device-soak.mjs
 node tools/test-firmware-reliability.mjs
+node tools/test-health-web.mjs
 node tools/test-nvs-retention.mjs
 c++ -std=c++11 -Wall -Wextra -Werror -pedantic -Iinclude tools/test-firmware-retry-policy.cpp -o /tmp/longos-firmware-retry-policy-test
 /tmp/longos-firmware-retry-policy-test
@@ -271,6 +272,14 @@ Không chọn `Deploy from a branch` với thư mục root vì cách đó có th
 - Nếu ESP32 không đọc được SHT30, API trả `temperatureC: null`, `humidity: null` và dashboard hiện trạng thái chưa có dữ liệu.
 
 ## Xem ngoài mạng bằng Supabase Free
+
+### HealthKit và ESP32 trên cùng dashboard
+
+Dashboard hiển thị dữ liệu phòng từ ESP32 và card Steps từ LongOS Sync trên cùng giao diện, nhưng không trộn hai nguồn vào cùng bảng hoặc cùng quyền truy cập. Room telemetry tiếp tục dùng luồng hiện tại; Steps nằm trong `health_metric_buckets` và `health_sync_status`, chỉ tài khoản Supabase đã đăng nhập mới đọc được dữ liệu của chính mình qua RLS.
+
+Nhấn biểu tượng tài khoản hoặc nút **Đăng nhập** trên card HealthKit, dùng cùng tài khoản đã đăng nhập trong app iPhone. Web chỉ giữ access/refresh token trong `sessionStorage` của tab hiện tại, không lưu mật khẩu và không chứa service credential. Card cộng các bucket Steps theo `local_date` hôm nay và hiển thị freshness gần nhất; nó không thể đánh thức app iPhone, nên hãy mở LongOS Sync hoặc nhấn **Đồng bộ ngay** khi dữ liệu cũ.
+
+Card chỉ hoạt động sau khi migration và Edge Function trong `LongOS Sync/Supabase/` đã được deploy, app iPhone đã upload ít nhất một batch, và Auth account trên web trùng với account trong app. ESP32 vẫn hoạt động độc lập nếu chưa đăng nhập HealthKit hoặc khi HealthKit tạm lỗi.
 
 Dashboard có chế độ cloud để xem khi không ở cùng Wi-Fi. ESP32 gửi heartbeat lên Supabase mỗi 30 giây vào `room_latest`, đồng thời ghi lịch sử thưa hơn mỗi 10 phút vào `room_readings` để giữ dữ liệu nhẹ và vẫn đủ so sánh ngày/tuần/tháng.
 

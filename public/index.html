@@ -1261,6 +1261,45 @@
     .score-bar > span { display: block; height: 100%; width: 0; border-radius: 4px; background: var(--accent); transition: width 600ms var(--ease-standard); }
     .digest { margin-top: 14px; font-size: 14.5px; line-height: 1.5; color: var(--text); }
 
+    /* ===================== PRIVATE HEALTH CARD ===================== */
+    .health-card {
+      margin-top: 12px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+    .health-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .health-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      min-height: 26px; padding: 4px 9px; border-radius: 999px;
+      color: var(--muted); background: color-mix(in srgb, var(--panel), var(--bg) 38%);
+      border: 1px solid var(--line); font-size: 12px; font-weight: 720;
+    }
+    .health-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+    .health-badge.ready::before { background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent), transparent 84%); }
+    .health-badge.error::before { background: var(--warm); }
+    .health-reading { display: flex; align-items: baseline; gap: 9px; margin-top: 12px; }
+    .health-value {
+      font-family: var(--font-display); font-size: clamp(42px, 7vw, 66px); line-height: .95;
+      font-weight: 820; letter-spacing: -.045em; font-variant-numeric: tabular-nums;
+    }
+    .health-unit { color: var(--muted); font-size: 15px; font-weight: 720; }
+    .health-copy { margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .health-copy strong { color: var(--text); font-weight: 720; }
+    .health-actions { min-width: 170px; display: grid; gap: 8px; }
+    .health-actions .btn { width: 100%; }
+    .health-privacy { font-size: 11px; line-height: 1.4; color: var(--muted); text-align: center; }
+    .health-account-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .health-account-btn:hover { transform: translateY(-1px); }
+    .health-account-btn.signed-in { color: var(--accent); border-color: color-mix(in srgb, var(--accent), var(--line) 42%); }
+    .health-auth-status { min-height: 20px; margin: 2px 0 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+    .health-auth-status.error { color: var(--warm); }
+    .health-session-email { margin: 14px 0; padding: 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); overflow-wrap: anywhere; }
+    .health-session-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .health-auth-form .btn[disabled] { cursor: wait; opacity: .65; }
+
     /* ===================== SETTINGS BUTTON + PANEL ===================== */
     .icon-btn {
       width: 38px; height: 38px; flex: 0 0 auto;
@@ -1319,6 +1358,8 @@
     @media (max-width: 720px) {
       .insights-grid { grid-template-columns: 1fr; }
       .field-row { grid-template-columns: 1fr; }
+      .health-card { grid-template-columns: 1fr; }
+      .health-actions { min-width: 0; }
       body.kiosk .value { font-size: 64px; }
     }
 
@@ -1353,7 +1394,7 @@
       font-weight: 600;
     }
     /* Viền sáng mảnh ở mép trên thẻ -> chiều sâu "kính" cao cấp */
-    .metric-card, .history-card, .compare-card, .insights-card, .weather-card,
+    .metric-card, .history-card, .compare-card, .insights-card, .weather-card, .health-card,
     .comfort-card, .details, .ac-month-card, .chip-card {
       border-top: 1px solid var(--card-edge);
     }
@@ -1830,19 +1871,24 @@
       order: 3;
     }
 
+    .dashboard[data-active-view="overview"] > .health-card {
+      grid-column: 1 / -1;
+      order: 4;
+    }
+
     .dashboard[data-active-view="overview"] > .weather-card {
       grid-column: span 7;
-      order: 4;
+      order: 5;
     }
 
     .dashboard[data-active-view="overview"] > .insights-card {
       grid-column: span 5;
-      order: 5;
+      order: 6;
     }
 
     .dashboard[data-active-view="overview"] > .system-status {
       grid-column: 1 / -1;
-      order: 6;
+      order: 7;
     }
 
     .dashboard[data-active-view="ac"] > [data-dashboard-view],
@@ -2284,6 +2330,7 @@
       .status {
         max-width: none;
         width: 100%;
+        box-sizing: border-box;
         display: flex;
         justify-content: stretch;
         text-align: left;
@@ -2945,6 +2992,18 @@
     }
 
     @media (max-width: 720px) {
+      .status {
+        width: 100%;
+        max-width: none;
+        box-sizing: border-box;
+      }
+
+      #statusText {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
       .dashboard > .view-entering {
         animation: none;
       }
@@ -3095,6 +3154,12 @@
           <span id="statusDot" class="dot" aria-hidden="true"></span>
           <span id="statusText">Chưa có dữ liệu</span>
           <div class="topbar-actions">
+            <button id="healthAccountBtn" class="icon-btn health-account-btn" type="button" title="HealthKit" aria-label="Đăng nhập để xem HealthKit">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"></circle>
+                <path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path>
+              </svg>
+            </button>
             <button id="settingsBtn" class="icon-btn" type="button" title="Cài đặt" aria-label="Cài đặt">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.6a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.6a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2Z"/>
@@ -3258,6 +3323,25 @@
           </div>
         </article>
       </div>
+
+      <section class="health-card" data-dashboard-view="overview" aria-label="Số bước từ HealthKit">
+        <div>
+          <div class="health-head">
+            <p class="metric-label">HealthKit / Steps</p>
+            <span id="healthAuthState" class="health-badge">Riêng tư · chưa đăng nhập</span>
+          </div>
+          <div class="health-reading">
+            <span id="healthStepsToday" class="health-value">--</span>
+            <span class="health-unit">bước hôm nay</span>
+          </div>
+          <p id="healthStepsMeta" class="health-copy">Đăng nhập tài khoản LongOS để xem dữ liệu HealthKit của bạn.</p>
+          <p id="healthSyncFreshness" class="health-copy">ESP32 vẫn hiển thị độc lập; dữ liệu sức khỏe không bao giờ đọc bằng quyền anonymous.</p>
+        </div>
+        <div class="health-actions">
+          <button id="healthCardAction" class="btn primary" type="button">Đăng nhập</button>
+          <span class="health-privacy">Chỉ phiên tab này lưu token. Mật khẩu không được lưu.</span>
+        </div>
+      </section>
 
       <section class="weather-card" data-dashboard-view="overview" aria-label="So sánh trong phòng và ngoài trời">
         <div class="weather-head">
@@ -3564,6 +3648,41 @@
     </div>
   </div>
 
+  <div id="healthAuthOverlay" class="panel-overlay" role="dialog" aria-modal="true" aria-label="Tài khoản HealthKit">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>HealthKit riêng tư</h2>
+        <button id="healthAuthClose" class="icon-btn" type="button" aria-label="Đóng">✕</button>
+      </div>
+      <p class="panel-sub">Đăng nhập Supabase để web chỉ đọc Steps thuộc chính tài khoản của bạn qua RLS.</p>
+
+      <form id="healthAuthForm" class="health-auth-form">
+        <div class="field">
+          <label for="healthEmail">Email</label>
+          <input id="healthEmail" type="email" autocomplete="username" inputmode="email" required>
+        </div>
+        <div class="field">
+          <label for="healthPassword">Mật khẩu</label>
+          <input id="healthPassword" type="password" autocomplete="current-password" required>
+          <p class="field-hint">Mật khẩu chỉ được gửi trực tiếp tới Supabase Auth và không lưu trong trình duyệt.</p>
+        </div>
+        <p id="healthAuthStatus" class="health-auth-status" role="status" aria-live="polite"></p>
+        <div class="panel-actions">
+          <button id="healthSignIn" class="btn primary" type="submit">Đăng nhập</button>
+        </div>
+      </form>
+
+      <div id="healthSessionPanel" hidden>
+        <p class="field-group-title">Đang đăng nhập</p>
+        <p id="healthSessionEmail" class="health-session-email">--</p>
+        <div class="health-session-actions">
+          <button id="healthRefresh" class="btn primary" type="button">Làm mới Steps</button>
+          <button id="healthSignOut" class="btn" type="button">Đăng xuất</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const APP_BUILD = document.querySelector('meta[name="longos-build"]')?.content
       || document.querySelector('meta[name="autohome-build"]')?.content
@@ -3612,6 +3731,9 @@
     const SUPABASE_URL = 'https://ucgbvsmxljilmgrdfazk.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_HRYudnWYxKH7VKEqJMGVXQ_FjR311MO';
     const SUPABASE_ROOM_ID = 'main-room';
+    const HEALTH_SESSION_KEY = 'longos.health.session.v1';
+    const HEALTH_REFRESH_MARGIN_MS = 60 * 1000;
+    const HEALTH_DASHBOARD_REFRESH_MS = 5 * 60 * 1000;
     const CLOUD_STALE_MS = 2 * 60 * 1000;
     const CLOUD_HISTORY_REFRESH_MS = 60 * 1000;
     const CLOUD_POLL_INTERVAL_MS = 30 * 1000;
@@ -3773,6 +3895,13 @@
       environmentTone: 'normal',
       latestReading: null,
       tickInFlight: false,
+      healthSession: loadHealthSession(),
+      healthLoadedAt: 0,
+      healthFetchPromise: null,
+      healthStepsToday: null,
+      healthBucketCount: 0,
+      healthFreshAt: 0,
+      healthError: '',
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
@@ -3784,6 +3913,23 @@
       statusPill: document.getElementById('statusPill'),
       statusDot: document.getElementById('statusDot'),
       statusText: document.getElementById('statusText'),
+      healthAccountBtn: document.getElementById('healthAccountBtn'),
+      healthAuthState: document.getElementById('healthAuthState'),
+      healthStepsToday: document.getElementById('healthStepsToday'),
+      healthStepsMeta: document.getElementById('healthStepsMeta'),
+      healthSyncFreshness: document.getElementById('healthSyncFreshness'),
+      healthCardAction: document.getElementById('healthCardAction'),
+      healthAuthOverlay: document.getElementById('healthAuthOverlay'),
+      healthAuthClose: document.getElementById('healthAuthClose'),
+      healthAuthForm: document.getElementById('healthAuthForm'),
+      healthEmail: document.getElementById('healthEmail'),
+      healthPassword: document.getElementById('healthPassword'),
+      healthAuthStatus: document.getElementById('healthAuthStatus'),
+      healthSignIn: document.getElementById('healthSignIn'),
+      healthSessionPanel: document.getElementById('healthSessionPanel'),
+      healthSessionEmail: document.getElementById('healthSessionEmail'),
+      healthRefresh: document.getElementById('healthRefresh'),
+      healthSignOut: document.getElementById('healthSignOut'),
       deviceStatus: document.getElementById('deviceStatus'),
       deviceDetail: document.getElementById('deviceDetail'),
       chipTemp: document.getElementById('chipTemp'),
@@ -3873,6 +4019,268 @@
       acSessionList: document.getElementById('acSessionList'),
       acLiveBadge: document.getElementById('acLiveBadge')
     };
+
+    function loadHealthSession() {
+      try {
+        const raw = sessionStorage.getItem(HEALTH_SESSION_KEY);
+        if (!raw) return null;
+        const value = JSON.parse(raw);
+        if (!value || typeof value !== 'object') return null;
+        if (typeof value.accessToken !== 'string' || value.accessToken.length < 20) return null;
+        if (typeof value.refreshToken !== 'string' || value.refreshToken.length < 20) return null;
+        if (!Number.isFinite(value.expiresAt) || value.expiresAt <= 0) return null;
+        if (typeof value.email !== 'string' || !value.email.includes('@')) return null;
+        return {
+          accessToken: value.accessToken,
+          refreshToken: value.refreshToken,
+          expiresAt: value.expiresAt,
+          email: value.email,
+          userId: typeof value.userId === 'string' ? value.userId : ''
+        };
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function persistHealthSession(session) {
+      state.healthSession = session;
+      try {
+        if (session) sessionStorage.setItem(HEALTH_SESSION_KEY, JSON.stringify(session));
+        else sessionStorage.removeItem(HEALTH_SESSION_KEY);
+      } catch (error) {
+        // The in-memory session still works when private storage is unavailable.
+      }
+    }
+
+    function healthSessionFromAuth(payload) {
+      if (!payload || typeof payload !== 'object') throw new Error('Phản hồi đăng nhập không hợp lệ.');
+      const accessToken = typeof payload.access_token === 'string' ? payload.access_token : '';
+      const refreshToken = typeof payload.refresh_token === 'string' ? payload.refresh_token : '';
+      const expiresIn = Number(payload.expires_in);
+      const expiresAtSeconds = Number(payload.expires_at);
+      const expiresAt = Number.isFinite(expiresAtSeconds) && expiresAtSeconds > 0
+        ? expiresAtSeconds * 1000
+        : Date.now() + Math.max(60, Number.isFinite(expiresIn) ? expiresIn : 3600) * 1000;
+      const email = typeof payload.user?.email === 'string' ? payload.user.email : state.healthSession?.email || '';
+      const userId = typeof payload.user?.id === 'string' ? payload.user.id : state.healthSession?.userId || '';
+      if (accessToken.length < 20 || refreshToken.length < 20 || !email.includes('@')) {
+        throw new Error('Phản hồi đăng nhập thiếu session hợp lệ.');
+      }
+      return { accessToken, refreshToken, expiresAt, email, userId };
+    }
+
+    function healthHeaders(accessToken) {
+      return {
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${accessToken}`
+      };
+    }
+
+    async function requestHealthAuth(grantType, body) {
+      return fetchJsonWithTimeout(`${SUPABASE_URL}/auth/v1/token?grant_type=${encodeURIComponent(grantType)}`, {
+        method: 'POST',
+        cache: 'no-store',
+        headers: {
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+    }
+
+    async function signInHealth(email, password) {
+      const { response, data } = await requestHealthAuth('password', { email, password });
+      if (!response.ok) throw new Error('Email hoặc mật khẩu không đúng.');
+      const session = healthSessionFromAuth(data);
+      persistHealthSession(session);
+      state.healthError = '';
+      state.healthLoadedAt = 0;
+      renderHealthCard();
+      return session;
+    }
+
+    async function refreshHealthSession(force = false) {
+      const current = state.healthSession;
+      if (!current) return null;
+      if (!force && current.expiresAt - Date.now() > HEALTH_REFRESH_MARGIN_MS) return current;
+      const { response, data } = await requestHealthAuth('refresh_token', { refresh_token: current.refreshToken });
+      if (!response.ok) {
+        persistHealthSession(null);
+        throw new Error('Phiên HealthKit đã hết hạn. Vui lòng đăng nhập lại.');
+      }
+      const session = healthSessionFromAuth(data);
+      persistHealthSession(session);
+      return session;
+    }
+
+    function localDateKey(date = new Date()) {
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function relativeAge(timestampMs) {
+      if (!Number.isFinite(timestampMs) || timestampMs <= 0) return 'chưa có mốc đồng bộ';
+      const ageMs = Math.max(0, Date.now() - timestampMs);
+      if (ageMs < 60 * 1000) return 'vừa đồng bộ';
+      if (ageMs < 60 * 60 * 1000) return `${Math.floor(ageMs / (60 * 1000))} phút trước`;
+      if (ageMs < 24 * 60 * 60 * 1000) return `${Math.floor(ageMs / (60 * 60 * 1000))} giờ trước`;
+      return `${Math.floor(ageMs / (24 * 60 * 60 * 1000))} ngày trước`;
+    }
+
+    function setHealthAuthMessage(message = '', isError = false) {
+      els.healthAuthStatus.textContent = message;
+      els.healthAuthStatus.classList.toggle('error', isError);
+    }
+
+    function renderHealthCard() {
+      const signedIn = Boolean(state.healthSession);
+      els.healthAccountBtn.classList.toggle('signed-in', signedIn);
+      els.healthAccountBtn.setAttribute('aria-label', signedIn ? 'Quản lý tài khoản HealthKit' : 'Đăng nhập để xem HealthKit');
+      els.healthAuthForm.hidden = signedIn;
+      els.healthSessionPanel.hidden = !signedIn;
+      els.healthSessionEmail.textContent = signedIn ? state.healthSession.email : '--';
+
+      if (!signedIn) {
+        els.healthAuthState.className = 'health-badge';
+        els.healthAuthState.textContent = 'Riêng tư · chưa đăng nhập';
+        els.healthStepsToday.textContent = '--';
+        els.healthStepsMeta.textContent = 'Đăng nhập tài khoản LongOS để xem dữ liệu HealthKit của bạn.';
+        els.healthSyncFreshness.textContent = 'ESP32 vẫn hiển thị độc lập; dữ liệu sức khỏe không bao giờ đọc bằng quyền anonymous.';
+        els.healthCardAction.textContent = 'Đăng nhập';
+        return;
+      }
+
+      els.healthCardAction.textContent = state.healthFetchPromise ? 'Đang làm mới…' : 'Làm mới Steps';
+      els.healthCardAction.disabled = Boolean(state.healthFetchPromise);
+      if (state.healthError) {
+        els.healthAuthState.className = 'health-badge error';
+        els.healthAuthState.textContent = 'Không tải được';
+        els.healthStepsMeta.textContent = state.healthError;
+        els.healthSyncFreshness.textContent = 'Dữ liệu phòng từ ESP32 không bị ảnh hưởng.';
+        return;
+      }
+
+      if (state.healthStepsToday === null) {
+        els.healthAuthState.className = 'health-badge';
+        els.healthAuthState.textContent = 'Đang tải riêng tư';
+        els.healthStepsToday.textContent = '--';
+        els.healthStepsMeta.textContent = 'Đang đọc bucket Steps bằng phiên đăng nhập của bạn.';
+        els.healthSyncFreshness.textContent = 'Web không thể tự đánh thức ứng dụng iPhone.';
+        return;
+      }
+
+      els.healthAuthState.className = 'health-badge ready';
+      els.healthAuthState.textContent = 'HealthKit riêng tư';
+      els.healthStepsToday.textContent = new Intl.NumberFormat('vi-VN').format(state.healthStepsToday);
+      els.healthStepsMeta.textContent = `${state.healthBucketCount} bucket theo giờ đã được LongOS Sync xác nhận cho hôm nay.`;
+      els.healthSyncFreshness.textContent = `Lần đồng bộ gần nhất: ${relativeAge(state.healthFreshAt)}. Dữ liệu có thể trễ khi iPhone chưa cho app chạy nền.`;
+    }
+
+    async function fetchHealthRows(accessToken) {
+      const date = localDateKey();
+      const bucketUrl = `${SUPABASE_URL}/rest/v1/health_metric_buckets?metric_key=eq.steps`
+        + `&local_date=eq.${encodeURIComponent(date)}`
+        + '&select=value_integer,source_updated_at,updated_at&order=bucket_start.asc';
+      const statusUrl = `${SUPABASE_URL}/rest/v1/health_sync_status?metric_key=eq.steps`
+        + '&select=last_source_updated_at,last_ingested_at,updated_at&order=last_ingested_at.desc&limit=1';
+      const headers = healthHeaders(accessToken);
+      const [buckets, status] = await Promise.all([
+        fetchJsonWithTimeout(bucketUrl, { cache: 'no-store', headers }),
+        fetchJsonWithTimeout(statusUrl, { cache: 'no-store', headers })
+      ]);
+      return { buckets, status };
+    }
+
+    async function fetchHealthDashboard() {
+      let session = await refreshHealthSession(false);
+      if (!session) return false;
+      let result = await fetchHealthRows(session.accessToken);
+      if (result.buckets.response.status === 401 || result.status.response.status === 401) {
+        session = await refreshHealthSession(true);
+        result = await fetchHealthRows(session.accessToken);
+      }
+      if (!result.buckets.response.ok || !result.status.response.ok) {
+        throw new Error('Supabase chưa cho phép đọc dữ liệu HealthKit của tài khoản này.');
+      }
+
+      const rows = Array.isArray(result.buckets.data) ? result.buckets.data : [];
+      let total = 0;
+      let freshest = 0;
+      rows.forEach(row => {
+        const value = Number(row.value_integer);
+        if (!Number.isSafeInteger(value) || value < 0 || value > 2000000) {
+          throw new Error('Bucket Steps có giá trị không hợp lệ.');
+        }
+        total += value;
+        freshest = Math.max(freshest, Date.parse(row.source_updated_at) || 0, Date.parse(row.updated_at) || 0);
+      });
+      const statusRow = Array.isArray(result.status.data) ? result.status.data[0] : null;
+      if (statusRow) {
+        freshest = Math.max(
+          freshest,
+          Date.parse(statusRow.last_source_updated_at) || 0,
+          Date.parse(statusRow.last_ingested_at) || 0,
+          Date.parse(statusRow.updated_at) || 0
+        );
+      }
+      state.healthStepsToday = total;
+      state.healthBucketCount = rows.length;
+      state.healthFreshAt = freshest;
+      state.healthLoadedAt = Date.now();
+      state.healthError = '';
+      return true;
+    }
+
+    function maybeFetchHealth(force = false) {
+      if (!state.healthSession || state.healthFetchPromise) return state.healthFetchPromise;
+      if (!force && state.healthLoadedAt && Date.now() - state.healthLoadedAt < HEALTH_DASHBOARD_REFRESH_MS) return null;
+      state.healthFetchPromise = fetchHealthDashboard()
+        .catch(error => {
+          state.healthError = error instanceof Error ? error.message : 'Không tải được dữ liệu HealthKit.';
+          return false;
+        })
+        .finally(() => {
+          state.healthFetchPromise = null;
+          renderHealthCard();
+        });
+      renderHealthCard();
+      return state.healthFetchPromise;
+    }
+
+    function openHealthAuth() {
+      renderHealthCard();
+      setHealthAuthMessage();
+      els.healthAuthOverlay.classList.add('open');
+      if (!state.healthSession) window.setTimeout(() => els.healthEmail.focus(), 0);
+    }
+
+    function closeHealthAuth() {
+      els.healthPassword.value = '';
+      setHealthAuthMessage();
+      els.healthAuthOverlay.classList.remove('open');
+    }
+
+    async function signOutHealth() {
+      const session = state.healthSession;
+      persistHealthSession(null);
+      state.healthLoadedAt = 0;
+      state.healthStepsToday = null;
+      state.healthBucketCount = 0;
+      state.healthFreshAt = 0;
+      state.healthError = '';
+      renderHealthCard();
+      closeHealthAuth();
+      if (!session) return;
+      try {
+        await fetchJsonWithTimeout(`${SUPABASE_URL}/auth/v1/logout`, {
+          method: 'POST',
+          cache: 'no-store',
+          headers: healthHeaders(session.accessToken)
+        });
+      } catch (error) {
+        // Local logout is authoritative for this tab even when the network is unavailable.
+      }
+    }
 
     function ensureDemoHistory() {
       if (state.historyPoints.length > 0) return;
@@ -5663,6 +6071,7 @@
         state.latestReading = reading;
         render(reading);
         void maybeFetchCloudHistory();
+        void maybeFetchHealth();
       } finally {
         state.tickInFlight = false;
       }
@@ -6608,6 +7017,40 @@
       maybeFetchOutdoorWeather(true);
     });
 
+    els.healthAccountBtn.addEventListener('click', openHealthAuth);
+    els.healthAuthClose.addEventListener('click', closeHealthAuth);
+    els.healthAuthOverlay.addEventListener('click', event => {
+      if (event.target === els.healthAuthOverlay) closeHealthAuth();
+    });
+    els.healthCardAction.addEventListener('click', () => {
+      if (!state.healthSession) openHealthAuth();
+      else void maybeFetchHealth(true);
+    });
+    els.healthRefresh.addEventListener('click', () => {
+      closeHealthAuth();
+      void maybeFetchHealth(true);
+    });
+    els.healthSignOut.addEventListener('click', () => { void signOutHealth(); });
+    els.healthAuthForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      const email = els.healthEmail.value.trim();
+      const password = els.healthPassword.value;
+      if (!email || !password) return;
+      els.healthSignIn.disabled = true;
+      setHealthAuthMessage('Đang đăng nhập…');
+      try {
+        await signInHealth(email, password);
+        els.healthPassword.value = '';
+        closeHealthAuth();
+        await maybeFetchHealth(true);
+      } catch (error) {
+        els.healthPassword.value = '';
+        setHealthAuthMessage(error instanceof Error ? error.message : 'Không đăng nhập được.', true);
+      } finally {
+        els.healthSignIn.disabled = false;
+      }
+    });
+
     const dashboardShell = document.querySelector('.dashboard');
     const dashboardNav = document.querySelector('.dashboard-nav');
     const dashboardTabs = Array.from(document.querySelectorAll('[data-dashboard-tab]'));
@@ -6624,6 +7067,7 @@
 
     const dashboardReadingOrder = [
       '.grid[data-dashboard-view="overview"]',
+      '.health-card[data-dashboard-view="overview"]',
       '.comfort-card[data-dashboard-view="overview"]',
       '.weather-card[data-dashboard-view="overview"]',
       '.insights-card[data-dashboard-view="overview"]',
@@ -6747,6 +7191,7 @@
       if (!document.hidden) {
         checkStandaloneUpdate();
         void tick();
+        void maybeFetchHealth(true);
       }
     });
 
@@ -6774,6 +7219,8 @@
     window.setTimeout(() => checkStandaloneUpdate(true), 1200);
     setDashboardView('overview', false);
 
+    renderHealthCard();
+    void maybeFetchHealth(true);
     void tick();
     restartTimer();
   </script>
