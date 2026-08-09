@@ -11,6 +11,9 @@ const coordinator = await readFile(new URL("../LongOSSync/Sync/StepSyncCoordinat
 const entitlements = await readFile(new URL("../LongOSSync/LongOSSync.entitlements", import.meta.url), "utf8");
 const info = await readFile(new URL("../LongOSSync/Info.plist", import.meta.url), "utf8");
 const project = await readFile(new URL("../LongOSSync.xcodeproj/project.pbxproj", import.meta.url), "utf8");
+const configuration = await readFile(new URL("../LongOSSync/App/AppConfiguration.swift", import.meta.url), "utf8");
+const dashboard = await readFile(new URL("../LongOSSync/Features/DashboardView.swift", import.meta.url), "utf8");
+const baseConfiguration = await readFile(new URL("../Config/Base.xcconfig", import.meta.url), "utf8");
 
 async function filesRecursively(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -59,6 +62,17 @@ test("app icon and privacy manifest are target resources", () => {
   assert.match(project, /PrivacyInfo\.xcprivacy in Resources/);
   assert.match(project, /ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon/);
   assert.match(project, /ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor/);
+});
+
+test("M1.3 opens the HTTPS LongOS dashboard without transferring app credentials", () => {
+  assert.match(info, /LONGOS_DASHBOARD_HOST/);
+  assert.match(info, /LONGOS_DASHBOARD_PATH/);
+  assert.match(baseConfiguration, /LONGOS_DASHBOARD_HOST = vqlong06\.github\.io/);
+  assert.match(configuration, /dashboardComponents\.scheme = "https"/);
+  assert.match(configuration, /URLQueryItem\(name: "source", value: "cloud"\)/);
+  assert.match(dashboard, /Link\(destination: coordinator\.dashboardURL\)/);
+  assert.match(dashboard, /không chuyển mật khẩu hoặc token sang website/);
+  assert.doesNotMatch(dashboard, /accessToken|refreshToken/);
 });
 
 test("client sources and build config never contain a service-role credential", async () => {

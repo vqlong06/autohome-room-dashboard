@@ -22,6 +22,7 @@ final class StepSyncCoordinator: ObservableObject {
     @Published private(set) var statusMessage = "Chưa đồng bộ"
 
     let cloudConsent: CloudSyncConsentStore
+    let dashboardURL: URL
 
     private let modelContext: ModelContext
     private let healthReader: HealthKitStepReader
@@ -44,6 +45,7 @@ final class StepSyncCoordinator: ObservableObject {
         secureStorage = SecureSessionStorage(service: configuration.supabaseURL.host ?? "LongOSSync")
         self.defaults = defaults
         cloudConsent = CloudSyncConsentStore(defaults: defaults)
+        dashboardURL = configuration.dashboardURL
         installationID = try secureStorage.installationID()
         session = try secureStorage.loadSession()
         activateSessionState()

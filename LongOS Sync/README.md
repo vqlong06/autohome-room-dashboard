@@ -38,6 +38,8 @@ LongOS Sync/
 
 Backend và app iPhone nằm trong thư mục này. Dashboard root có integration M1.3 để hiển thị Steps đã đồng bộ cạnh dữ liệu ESP32; firmware không đọc hoặc lưu dữ liệu HealthKit.
 
+Từ bản 0.2, app có card **LongOS trên web** để mở dashboard cloud. Safari yêu cầu đăng nhập riêng bằng cùng tài khoản Supabase; app không nhúng session, token hoặc mật khẩu vào URL.
+
 ## Cấu hình cục bộ
 
 Sao chép file mẫu nhưng không commit file thật:

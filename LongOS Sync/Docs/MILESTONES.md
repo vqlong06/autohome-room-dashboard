@@ -13,6 +13,7 @@
 - Web chỉ đọc bucket/status của chính user bằng JWT và RLS; room telemetry ESP32 vẫn là luồng riêng.
 - Session chỉ nằm trong `sessionStorage`, mật khẩu không được lưu và không có service credential trong web.
 - Website không thể đánh thức app; LongOS Sync trên iPhone vẫn chịu trách nhiệm đọc HealthKit và upload.
+- App 0.2 mở dashboard cloud bằng URL HTTPS cấu hình sẵn, nhưng không chuyển session, token hoặc mật khẩu sang website.
 
 ## M2 — Sleep × Room
 

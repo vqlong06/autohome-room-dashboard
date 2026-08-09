@@ -27,6 +27,7 @@ struct DashboardView: View {
                     healthAccessCard
                     cloudCard
                     syncCard
+                    webDashboardCard
 
                     if let error = coordinator.lastErrorMessage {
                         NoticeCard(icon: "exclamationmark.triangle.fill", text: error, color: .orange)
@@ -213,6 +214,45 @@ struct DashboardView: View {
         }
         .font(.callout)
         .padding(.vertical, 8)
+    }
+
+    private var webDashboardCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("LongOS trên web", systemImage: "safari")
+                .font(.headline)
+
+            Text(webDashboardDetail)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            Link(destination: coordinator.dashboardURL) {
+                HStack {
+                    Text("Mở dashboard LongOS")
+                        .fontWeight(.semibold)
+                    Spacer()
+                    Image(systemName: "arrow.up.right.square")
+                }
+                .padding(.vertical, 6)
+            }
+            .buttonStyle(.bordered)
+            .tint(.mint)
+
+            Text("Safari sẽ yêu cầu đăng nhập riêng bằng cùng tài khoản. App không chuyển mật khẩu hoặc token sang website.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(18)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private var webDashboardDetail: String {
+        if consent.isGranted, coordinator.lastSuccessfulSyncAt != nil {
+            return "Xem Steps đã đồng bộ cạnh nhiệt độ và độ ẩm từ ESP32."
+        }
+        if consent.isGranted {
+            return "Hãy đồng bộ Steps ít nhất một lần để dữ liệu xuất hiện trên web."
+        }
+        return "Dashboard vẫn hiển thị dữ liệu phòng; bật cloud sync nếu muốn xem thêm Steps."
     }
 
     private func metric(label: String, value: String) -> some View {
