@@ -51,6 +51,58 @@ final class StepBucketTests: XCTestCase {
         )
     }
 
+    func testMetricIdentitySeparatesStepsEnergyAndDailySleep() throws {
+        let start = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-08-07T00:00:00Z"))
+        let end = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-08-07T01:00:00Z"))
+        let steps = StepBucketIdentity.make(
+            metric: "steps",
+            ownerID: "user-a",
+            start: start,
+            end: end,
+            algorithmVersion: 1
+        )
+        let energy = StepBucketIdentity.make(
+            metric: "active_energy",
+            ownerID: "user-a",
+            start: start,
+            end: end,
+            algorithmVersion: 1
+        )
+        let sleep = StepBucketIdentity.makeDaily(
+            metric: "sleep",
+            ownerID: "user-a",
+            localDate: "2026-08-07",
+            algorithmVersion: 1
+        )
+
+        XCTAssertNotEqual(steps, energy)
+        XCTAssertEqual(sleep, "sleep|user-a|2026-08-07|1")
+    }
+
+    func testSleepSummaryMergesOverlappingStagesWithoutDoubleCounting() {
+        let base = Date(timeIntervalSince1970: 0)
+        let episodes = SleepSummaryBuilder.merge(intervals: [
+            DateInterval(start: base, duration: 2 * 60 * 60),
+            DateInterval(start: base.addingTimeInterval(30 * 60), duration: 60 * 60),
+            DateInterval(start: base.addingTimeInterval(2.5 * 60 * 60), duration: 60 * 60)
+        ])
+
+        XCTAssertEqual(episodes.count, 1)
+        XCTAssertEqual(episodes[0].start, base)
+        XCTAssertEqual(episodes[0].end, base.addingTimeInterval(3.5 * 60 * 60))
+        XCTAssertEqual(episodes[0].asleepSeconds, 3 * 60 * 60)
+    }
+
+    func testSleepSummarySeparatesEpisodesAcrossLongWakeGap() {
+        let base = Date(timeIntervalSince1970: 0)
+        let episodes = SleepSummaryBuilder.merge(intervals: [
+            DateInterval(start: base, duration: 60 * 60),
+            DateInterval(start: base.addingTimeInterval(3 * 60 * 60), duration: 60 * 60)
+        ])
+
+        XCTAssertEqual(episodes.count, 2)
+    }
+
     func testRequestUsesCamelCaseContractAndNeverContainsUserID() throws {
         let requestID = UUID(uuidString: "00000000-0000-4000-8000-000000000001")!
         let installationID = UUID(uuidString: "00000000-0000-4000-8000-000000000002")!

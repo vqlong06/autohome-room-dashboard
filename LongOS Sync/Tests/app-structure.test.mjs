@@ -24,11 +24,19 @@ async function filesRecursively(directory) {
   return nested.flat();
 }
 
-test("M1 requests only read-only Steps and uses HealthKit statistics", () => {
+test("requests read-only Steps, Active Energy and Sleep with aggregate queries", () => {
   assert.match(health, /quantityType\(forIdentifier: \.stepCount\)/);
+  assert.match(health, /quantityType\(forIdentifier: \.activeEnergyBurned\)/);
+  assert.match(health, /categoryType\(forIdentifier: \.sleepAnalysis\)/);
   assert.match(health, /HKStatisticsCollectionQuery/);
+  assert.match(health, /HKSampleQuery/);
   assert.match(health, /options: \.cumulativeSum/);
-  assert.match(health, /requestAuthorization\(toShare: \[\], read: \[steps\]\)/);
+  assert.match(health, /let readTypes: Set<HKObjectType> = \[types\.steps, types\.activeEnergy, types\.sleep\]/);
+  assert.match(health, /requestAuthorization\(toShare: \[\], read: readTypes\)/);
+  assert.match(coordinator, /health-request-completed\..*\.v2/);
+  assert.match(health, /metric: "active_energy"/);
+  assert.match(health, /metric: "sleep"/);
+  assert.match(health, /StepBucketIdentity\.makeDaily/);
   assert.doesNotMatch(info, /NSHealthUpdateUsageDescription/);
 });
 

@@ -11,8 +11,8 @@ struct PrivacyDetailView: View {
                         .font(.largeTitle.bold())
                     Text("LongOS Sync là công cụ wellness cá nhân, không phải thiết bị y tế và không đưa ra chẩn đoán.")
                     section(
-                        "M1 thu thập gì?",
-                        "Chỉ tổng Steps theo bucket giờ, timestamp, múi giờ và trạng thái đồng bộ. Không upload raw sample, GPS, ECG, thuốc hoặc clinical records."
+                        "LongOS Sync thu thập gì?",
+                        "Chỉ tổng Steps và Active Energy theo bucket giờ; với Sleep chỉ có giờ ngủ, giờ thức và số phút ngủ tổng hợp theo ngày, cùng timestamp, múi giờ và trạng thái đồng bộ. Không upload raw stages, GPS, ECG, thuốc hoặc clinical records."
                     )
                     section(
                         "Consent",

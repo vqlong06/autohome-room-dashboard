@@ -1280,12 +1280,16 @@
     .health-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
     .health-badge.ready::before { background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent), transparent 84%); }
     .health-badge.error::before { background: var(--warm); }
-    .health-reading { display: flex; align-items: baseline; gap: 9px; margin-top: 12px; }
+    .health-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+    .health-metric { min-width: 0; padding: 14px; border-radius: 12px; background: color-mix(in srgb, var(--panel), var(--bg) 28%); border: 1px solid var(--line); }
+    .health-metric-label { display: block; color: var(--muted); font-size: 12px; font-weight: 720; }
+    .health-reading { display: flex; align-items: baseline; gap: 7px; margin-top: 8px; flex-wrap: wrap; }
     .health-value {
-      font-family: var(--font-display); font-size: clamp(42px, 7vw, 66px); line-height: .95;
+      font-family: var(--font-display); font-size: clamp(28px, 4vw, 44px); line-height: .95;
       font-weight: 820; letter-spacing: -.045em; font-variant-numeric: tabular-nums;
     }
-    .health-unit { color: var(--muted); font-size: 15px; font-weight: 720; }
+    .health-unit { color: var(--muted); font-size: 13px; font-weight: 720; }
+    .health-window { display: block; min-height: 18px; margin-top: 8px; color: var(--muted); font-size: 12px; font-weight: 650; }
     .health-copy { margin: 10px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
     .health-copy strong { color: var(--text); font-weight: 720; }
     .health-actions { min-width: 170px; display: grid; gap: 8px; }
@@ -1359,6 +1363,7 @@
       .insights-grid { grid-template-columns: 1fr; }
       .field-row { grid-template-columns: 1fr; }
       .health-card { grid-template-columns: 1fr; }
+      .health-metrics { grid-template-columns: 1fr; }
       .health-actions { min-width: 0; }
       body.kiosk .value { font-size: 64px; }
     }
@@ -3324,15 +3329,36 @@
         </article>
       </div>
 
-      <section class="health-card" data-dashboard-view="overview" aria-label="Số bước từ HealthKit">
+      <section class="health-card" data-dashboard-view="overview" aria-label="Steps, năng lượng và giấc ngủ từ HealthKit">
         <div>
           <div class="health-head">
-            <p class="metric-label">HealthKit / Steps</p>
+            <p class="metric-label">HealthKit / Hôm nay</p>
             <span id="healthAuthState" class="health-badge">Riêng tư · chưa đăng nhập</span>
           </div>
-          <div class="health-reading">
-            <span id="healthStepsToday" class="health-value">--</span>
-            <span class="health-unit">bước hôm nay</span>
+          <div class="health-metrics">
+            <div class="health-metric">
+              <span class="health-metric-label">Bước chân</span>
+              <div class="health-reading">
+                <span id="healthStepsToday" class="health-value">--</span>
+                <span class="health-unit">bước</span>
+              </div>
+              <span class="health-window">Tổng hôm nay</span>
+            </div>
+            <div class="health-metric">
+              <span class="health-metric-label">Năng lượng hoạt động</span>
+              <div class="health-reading">
+                <span id="healthEnergyToday" class="health-value">--</span>
+                <span class="health-unit">kcal</span>
+              </div>
+              <span class="health-window">Active Energy Burned</span>
+            </div>
+            <div class="health-metric">
+              <span class="health-metric-label">Giấc ngủ gần nhất</span>
+              <div class="health-reading">
+                <span id="healthSleepDuration" class="health-value">--</span>
+              </div>
+              <span id="healthSleepWindow" class="health-window">Chưa có dữ liệu</span>
+            </div>
           </div>
           <p id="healthStepsMeta" class="health-copy">Đăng nhập tài khoản LongOS để xem dữ liệu HealthKit của bạn.</p>
           <p id="healthSyncFreshness" class="health-copy">ESP32 vẫn hiển thị độc lập; dữ liệu sức khỏe không bao giờ đọc bằng quyền anonymous.</p>
@@ -3654,7 +3680,7 @@
         <h2>HealthKit riêng tư</h2>
         <button id="healthAuthClose" class="icon-btn" type="button" aria-label="Đóng">✕</button>
       </div>
-      <p class="panel-sub">Đăng nhập Supabase để web chỉ đọc Steps thuộc chính tài khoản của bạn qua RLS.</p>
+      <p class="panel-sub">Đăng nhập Supabase để web chỉ đọc Steps, kcal hoạt động và giấc ngủ thuộc chính tài khoản của bạn qua RLS.</p>
 
       <form id="healthAuthForm" class="health-auth-form">
         <div class="field">
@@ -3676,7 +3702,7 @@
         <p class="field-group-title">Đang đăng nhập</p>
         <p id="healthSessionEmail" class="health-session-email">--</p>
         <div class="health-session-actions">
-          <button id="healthRefresh" class="btn primary" type="button">Làm mới Steps</button>
+          <button id="healthRefresh" class="btn primary" type="button">Làm mới HealthKit</button>
           <button id="healthSignOut" class="btn" type="button">Đăng xuất</button>
         </div>
       </div>
@@ -3899,6 +3925,10 @@
       healthLoadedAt: 0,
       healthFetchPromise: null,
       healthStepsToday: null,
+      healthEnergyToday: null,
+      healthSleepMinutes: null,
+      healthSleepStart: 0,
+      healthSleepEnd: 0,
       healthBucketCount: 0,
       healthFreshAt: 0,
       healthError: '',
@@ -3916,6 +3946,9 @@
       healthAccountBtn: document.getElementById('healthAccountBtn'),
       healthAuthState: document.getElementById('healthAuthState'),
       healthStepsToday: document.getElementById('healthStepsToday'),
+      healthEnergyToday: document.getElementById('healthEnergyToday'),
+      healthSleepDuration: document.getElementById('healthSleepDuration'),
+      healthSleepWindow: document.getElementById('healthSleepWindow'),
       healthStepsMeta: document.getElementById('healthStepsMeta'),
       healthSyncFreshness: document.getElementById('healthSyncFreshness'),
       healthCardAction: document.getElementById('healthCardAction'),
@@ -4132,6 +4165,30 @@
       els.healthAuthStatus.classList.toggle('error', isError);
     }
 
+    function formatHealthDuration(minutes) {
+      if (!Number.isSafeInteger(minutes) || minutes < 0) return '--';
+      const hours = Math.floor(minutes / 60);
+      const remainder = minutes % 60;
+      if (hours === 0) return `${remainder}p`;
+      return remainder === 0 ? `${hours}g` : `${hours}g ${remainder}p`;
+    }
+
+    function renderHealthValues() {
+      els.healthStepsToday.textContent = state.healthStepsToday === null
+        ? '--'
+        : new Intl.NumberFormat('vi-VN').format(state.healthStepsToday);
+      els.healthEnergyToday.textContent = state.healthEnergyToday === null
+        ? '--'
+        : new Intl.NumberFormat('vi-VN').format(state.healthEnergyToday);
+      els.healthSleepDuration.textContent = formatHealthDuration(state.healthSleepMinutes);
+      if (state.healthSleepStart > 0 && state.healthSleepEnd > state.healthSleepStart) {
+        const format = new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        els.healthSleepWindow.textContent = `Ngủ ${format.format(state.healthSleepStart)} – thức ${format.format(state.healthSleepEnd)}`;
+      } else {
+        els.healthSleepWindow.textContent = 'Chưa có dữ liệu';
+      }
+    }
+
     function renderHealthCard() {
       const signedIn = Boolean(state.healthSession);
       els.healthAccountBtn.classList.toggle('signed-in', signedIn);
@@ -4143,14 +4200,19 @@
       if (!signedIn) {
         els.healthAuthState.className = 'health-badge';
         els.healthAuthState.textContent = 'Riêng tư · chưa đăng nhập';
-        els.healthStepsToday.textContent = '--';
+        state.healthStepsToday = null;
+        state.healthEnergyToday = null;
+        state.healthSleepMinutes = null;
+        state.healthSleepStart = 0;
+        state.healthSleepEnd = 0;
+        renderHealthValues();
         els.healthStepsMeta.textContent = 'Đăng nhập tài khoản LongOS để xem dữ liệu HealthKit của bạn.';
         els.healthSyncFreshness.textContent = 'ESP32 vẫn hiển thị độc lập; dữ liệu sức khỏe không bao giờ đọc bằng quyền anonymous.';
         els.healthCardAction.textContent = 'Đăng nhập';
         return;
       }
 
-      els.healthCardAction.textContent = state.healthFetchPromise ? 'Đang làm mới…' : 'Làm mới Steps';
+      els.healthCardAction.textContent = state.healthFetchPromise ? 'Đang làm mới…' : 'Làm mới HealthKit';
       els.healthCardAction.disabled = Boolean(state.healthFetchPromise);
       if (state.healthError) {
         els.healthAuthState.className = 'health-badge error';
@@ -4160,29 +4222,29 @@
         return;
       }
 
-      if (state.healthStepsToday === null) {
+      if (state.healthLoadedAt === 0) {
         els.healthAuthState.className = 'health-badge';
         els.healthAuthState.textContent = 'Đang tải riêng tư';
-        els.healthStepsToday.textContent = '--';
-        els.healthStepsMeta.textContent = 'Đang đọc bucket Steps bằng phiên đăng nhập của bạn.';
+        renderHealthValues();
+        els.healthStepsMeta.textContent = 'Đang đọc bucket HealthKit bằng phiên đăng nhập của bạn.';
         els.healthSyncFreshness.textContent = 'Web không thể tự đánh thức ứng dụng iPhone.';
         return;
       }
 
       els.healthAuthState.className = 'health-badge ready';
       els.healthAuthState.textContent = 'HealthKit riêng tư';
-      els.healthStepsToday.textContent = new Intl.NumberFormat('vi-VN').format(state.healthStepsToday);
-      els.healthStepsMeta.textContent = `${state.healthBucketCount} bucket theo giờ đã được LongOS Sync xác nhận cho hôm nay.`;
+      renderHealthValues();
+      els.healthStepsMeta.textContent = `${state.healthBucketCount} bucket và bản tổng hợp HealthKit đã được LongOS Sync xác nhận cho hôm nay.`;
       els.healthSyncFreshness.textContent = `Lần đồng bộ gần nhất: ${relativeAge(state.healthFreshAt)}. Dữ liệu có thể trễ khi iPhone chưa cho app chạy nền.`;
     }
 
     async function fetchHealthRows(accessToken) {
       const date = localDateKey();
-      const bucketUrl = `${SUPABASE_URL}/rest/v1/health_metric_buckets?metric_key=eq.steps`
+      const bucketUrl = `${SUPABASE_URL}/rest/v1/health_metric_buckets?metric_key=in.(steps,active_energy,sleep)`
         + `&local_date=eq.${encodeURIComponent(date)}`
-        + '&select=value_integer,source_updated_at,updated_at&order=bucket_start.asc';
-      const statusUrl = `${SUPABASE_URL}/rest/v1/health_sync_status?metric_key=eq.steps`
-        + '&select=last_source_updated_at,last_ingested_at,updated_at&order=last_ingested_at.desc&limit=1';
+        + '&select=metric_key,bucket_start,bucket_end,value_integer,unit,source_updated_at,updated_at&order=bucket_start.asc';
+      const statusUrl = `${SUPABASE_URL}/rest/v1/health_sync_status?metric_key=in.(steps,active_energy,sleep)`
+        + '&select=metric_key,last_source_updated_at,last_ingested_at,updated_at&order=last_ingested_at.desc';
       const headers = healthHeaders(accessToken);
       const [buckets, status] = await Promise.all([
         fetchJsonWithTimeout(bucketUrl, { cache: 'no-store', headers }),
@@ -4204,26 +4266,56 @@
       }
 
       const rows = Array.isArray(result.buckets.data) ? result.buckets.data : [];
-      let total = 0;
+      let stepsTotal = 0;
+      let energyTotal = 0;
+      let stepCount = 0;
+      let energyCount = 0;
+      let latestSleep = null;
       let freshest = 0;
       rows.forEach(row => {
         const value = Number(row.value_integer);
-        if (!Number.isSafeInteger(value) || value < 0 || value > 2000000) {
-          throw new Error('Bucket Steps có giá trị không hợp lệ.');
+        const metric = row.metric_key;
+        const valid = Number.isSafeInteger(value) && value >= 0 && (
+          (metric === 'steps' && row.unit === 'count' && value <= 2000000)
+          || (metric === 'active_energy' && row.unit === 'kcal' && value <= 100000)
+          || (metric === 'sleep' && row.unit === 'minute' && value <= 1440)
+        );
+        if (!valid) {
+          throw new Error('Bucket HealthKit có giá trị không hợp lệ.');
         }
-        total += value;
+        if (metric === 'steps') {
+          stepsTotal += value;
+          stepCount += 1;
+        } else if (metric === 'active_energy') {
+          energyTotal += value;
+          energyCount += 1;
+        } else if (metric === 'sleep') {
+          const start = Date.parse(row.bucket_start);
+          const end = Date.parse(row.bucket_end);
+          if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+            throw new Error('Mốc giấc ngủ không hợp lệ.');
+          }
+          const updatedAt = Math.max(Date.parse(row.source_updated_at) || 0, Date.parse(row.updated_at) || 0);
+          if (!latestSleep || updatedAt >= latestSleep.updatedAt) {
+            latestSleep = { minutes: value, start, end, updatedAt };
+          }
+        }
         freshest = Math.max(freshest, Date.parse(row.source_updated_at) || 0, Date.parse(row.updated_at) || 0);
       });
-      const statusRow = Array.isArray(result.status.data) ? result.status.data[0] : null;
-      if (statusRow) {
+      const statusRows = Array.isArray(result.status.data) ? result.status.data : [];
+      statusRows.forEach(statusRow => {
         freshest = Math.max(
           freshest,
           Date.parse(statusRow.last_source_updated_at) || 0,
           Date.parse(statusRow.last_ingested_at) || 0,
           Date.parse(statusRow.updated_at) || 0
         );
-      }
-      state.healthStepsToday = total;
+      });
+      state.healthStepsToday = stepCount === 0 ? null : stepsTotal;
+      state.healthEnergyToday = energyCount === 0 ? null : energyTotal;
+      state.healthSleepMinutes = latestSleep?.minutes ?? null;
+      state.healthSleepStart = latestSleep?.start ?? 0;
+      state.healthSleepEnd = latestSleep?.end ?? 0;
       state.healthBucketCount = rows.length;
       state.healthFreshAt = freshest;
       state.healthLoadedAt = Date.now();
@@ -4265,6 +4357,10 @@
       persistHealthSession(null);
       state.healthLoadedAt = 0;
       state.healthStepsToday = null;
+      state.healthEnergyToday = null;
+      state.healthSleepMinutes = null;
+      state.healthSleepStart = 0;
+      state.healthSleepEnd = 0;
       state.healthBucketCount = 0;
       state.healthFreshAt = 0;
       state.healthError = '';

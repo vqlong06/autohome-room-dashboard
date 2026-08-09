@@ -37,7 +37,7 @@
 	<key>LONGOS_SUPABASE_SCHEME</key>
 	<string>$(LONGOS_SUPABASE_SCHEME)</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>LongOS Sync đọc số bước đã được Apple Health tổng hợp để bạn theo dõi hoạt động cá nhân và đồng bộ vào khu vực LongOS riêng tư khi bạn bật cloud sync.</string>
+	<string>LongOS Sync đọc số bước, năng lượng hoạt động và giấc ngủ đã được Apple Health tổng hợp để bạn theo dõi sức khỏe cá nhân và đồng bộ vào khu vực LongOS riêng tư khi bạn bật cloud sync.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

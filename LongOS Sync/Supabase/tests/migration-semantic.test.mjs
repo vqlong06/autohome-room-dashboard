@@ -5,10 +5,15 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { pgcrypto } from "@electric-sql/pglite/contrib/pgcrypto";
 
-const migration = await readFile(
+const stepsMigration = await readFile(
   new URL("../migrations/202608070001_health_steps.sql", import.meta.url),
   "utf8"
 );
+const sleepEnergyMigration = await readFile(
+  new URL("../migrations/202608090001_health_sleep_energy.sql", import.meta.url),
+  "utf8"
+);
+const migration = `${stepsMigration}\n${sleepEnergyMigration}`;
 
 const bootstrap = `
   create role anon nologin;
@@ -134,10 +139,64 @@ test("migration executes idempotently and enforces ingest/RLS semantics", async 
       /REQUEST_ID_CONFLICT/
     );
 
-    const ownRows = await withRole(database, "authenticated", userA, () =>
-      database.query("select value_integer from public.health_metric_buckets")
+    const energy = [{
+      ...buckets[0],
+      metric_key: "active_energy",
+      value_integer: 87,
+      unit: "kcal"
+    }];
+    const sleep = [{
+      ...buckets[0],
+      metric_key: "sleep",
+      bucket_start: "2026-08-06T16:00:00.000Z",
+      bucket_end: "2026-08-06T23:00:00.000Z",
+      value_integer: 405,
+      unit: "minute",
+      provenance: "healthkit_sleep_summary"
+    }];
+    await database.query(
+      `select public.longos_ingest_health_step_buckets(
+        $1::uuid, $2::uuid, $3::uuid, $4::text, $5::jsonb
+      )`,
+      [userA, "00000000-0000-4000-8000-000000000003", installationID, "c".repeat(64), JSON.stringify(energy)]
     );
-    assert.deepEqual(ownRows.rows, [{ value_integer: 321 }]);
+    await database.query(
+      `select public.longos_ingest_health_step_buckets(
+        $1::uuid, $2::uuid, $3::uuid, $4::text, $5::jsonb
+      )`,
+      [userA, "00000000-0000-4000-8000-000000000004", installationID, "d".repeat(64), JSON.stringify(sleep)]
+    );
+
+    const correctedSleep = [{
+      ...sleep[0],
+      bucket_start: "2026-08-06T15:50:00.000Z",
+      value_integer: 415,
+      source_updated_at: "2026-08-07T01:06:00.000Z"
+    }];
+    await database.query(
+      `select public.longos_ingest_health_step_buckets(
+        $1::uuid, $2::uuid, $3::uuid, $4::text, $5::jsonb
+      )`,
+      [userA, "00000000-0000-4000-8000-000000000005", installationID, "e".repeat(64), JSON.stringify(correctedSleep)]
+    );
+
+    const ownRows = await withRole(database, "authenticated", userA, () =>
+      database.query("select metric_key, value_integer from public.health_metric_buckets order by metric_key")
+    );
+    assert.deepEqual(ownRows.rows, [
+      { metric_key: "active_energy", value_integer: 87 },
+      { metric_key: "sleep", value_integer: 415 },
+      { metric_key: "steps", value_integer: 321 }
+    ]);
+
+    const statuses = await withRole(database, "authenticated", userA, () =>
+      database.query("select metric_key from public.health_sync_status order by metric_key")
+    );
+    assert.deepEqual(statuses.rows, [
+      { metric_key: "active_energy" },
+      { metric_key: "sleep" },
+      { metric_key: "steps" }
+    ]);
 
     const otherRows = await withRole(database, "authenticated", userB, () =>
       database.query("select value_integer from public.health_metric_buckets")

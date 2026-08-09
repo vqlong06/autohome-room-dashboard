@@ -22,7 +22,7 @@ struct CloudConsentView: View {
                     disclosureRow(
                         icon: "figure.walk",
                         title: "Dữ liệu",
-                        text: "Tổng Steps theo bucket giờ, timestamp và ngữ cảnh múi giờ. Không gửi raw samples hoặc GPS."
+                        text: "Tổng Steps và Active Energy theo bucket giờ; giấc ngủ chỉ gửi giờ ngủ, giờ thức và số phút tổng hợp theo ngày. Không gửi raw samples hoặc GPS."
                     )
                     disclosureRow(
                         icon: "server.rack",

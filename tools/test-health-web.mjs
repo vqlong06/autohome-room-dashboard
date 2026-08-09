@@ -4,10 +4,13 @@ import vm from 'node:vm';
 
 const rootHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const publicHtml = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
-const migration = await readFile(
-  new URL('../LongOS Sync/Supabase/migrations/202608070001_health_steps.sql', import.meta.url),
+const migration = (await Promise.all([
+  '202608070001_health_steps.sql',
+  '202608090001_health_sleep_energy.sql'
+].map(name => readFile(
+  new URL(`../LongOS Sync/Supabase/migrations/${name}`, import.meta.url),
   'utf8'
-);
+)))).join('\n');
 
 assert.equal(publicHtml, rootHtml, 'root and public dashboards must remain identical');
 
@@ -19,6 +22,9 @@ for (const id of [
   'healthAccountBtn',
   'healthAuthState',
   'healthStepsToday',
+  'healthEnergyToday',
+  'healthSleepDuration',
+  'healthSleepWindow',
   'healthStepsMeta',
   'healthSyncFreshness',
   'healthCardAction',
@@ -93,10 +99,13 @@ vm.runInNewContext(
 assert.equal(storageContext.loaded.accessToken, 'a');
 assert.equal(storageContext.loaded.refreshToken, 'r');
 
-assert.match(rootHtml, /\/rest\/v1\/health_metric_buckets\?metric_key=eq\.steps/);
-assert.match(rootHtml, /\/rest\/v1\/health_sync_status\?metric_key=eq\.steps/);
-assert.match(rootHtml, /select=value_integer,source_updated_at,updated_at/);
-assert.match(rootHtml, /select=last_source_updated_at,last_ingested_at,updated_at/);
+assert.match(rootHtml, /\/rest\/v1\/health_metric_buckets\?metric_key=in\.\(steps,active_energy,sleep\)/);
+assert.match(rootHtml, /\/rest\/v1\/health_sync_status\?metric_key=in\.\(steps,active_energy,sleep\)/);
+assert.match(rootHtml, /select=metric_key,bucket_start,bucket_end,value_integer,unit,source_updated_at,updated_at/);
+assert.match(rootHtml, /select=metric_key,last_source_updated_at,last_ingested_at,updated_at/);
+assert.match(rootHtml, /metric === 'active_energy' && row\.unit === 'kcal'/);
+assert.match(rootHtml, /metric === 'sleep' && row\.unit === 'minute'/);
+assert.match(rootHtml, /state\.healthSleepStart = latestSleep\?\.start \?\? 0/);
 assert.doesNotMatch(rootHtml, /health_metric_buckets[^\n]*user_id=/, 'web must rely on owner RLS rather than choose a user id');
 assert.doesNotMatch(rootHtml, /health_sync_status[^\n]*user_id=/, 'web must rely on owner RLS rather than choose a user id');
 
@@ -105,5 +114,7 @@ assert.match(migration, /grant select on table public\.health_metric_buckets to 
 assert.match(migration, /using \(\(select auth\.uid\(\)\) = user_id\);/i);
 assert.match(migration, /alter table public\.health_sync_status enable row level security;/i);
 assert.match(migration, /grant select on table public\.health_sync_status to authenticated;/i);
+assert.match(migration, /metric_key in \('steps', 'active_energy', 'sleep'\)/i);
+assert.match(migration, /health_metric_buckets_sleep_day_unique/i);
 
 console.log('LongOS authenticated HealthKit web tests: OK');

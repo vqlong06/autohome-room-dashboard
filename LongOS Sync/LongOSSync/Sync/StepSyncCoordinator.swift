@@ -16,6 +16,10 @@ final class StepSyncCoordinator: ObservableObject {
     @Published private(set) var isBusy = false
     @Published private(set) var healthRequestCompleted = false
     @Published private(set) var todaySteps: Int?
+    @Published private(set) var todayActiveEnergyKcal: Int?
+    @Published private(set) var latestSleepMinutes: Int?
+    @Published private(set) var latestSleepStart: Date?
+    @Published private(set) var latestSleepEnd: Date?
     @Published private(set) var lastSuccessfulSyncAt: Date?
     @Published private(set) var pendingUploadCount = 0
     @Published private(set) var lastErrorMessage: String?
@@ -104,6 +108,10 @@ final class StepSyncCoordinator: ObservableObject {
         cloudConsent.activate(ownerID: nil)
         healthRequestCompleted = false
         todaySteps = nil
+        todayActiveEnergyKcal = nil
+        latestSleepMinutes = nil
+        latestSleepStart = nil
+        latestSleepEnd = nil
         lastSuccessfulSyncAt = nil
         pendingUploadCount = 0
         statusMessage = "Đã đăng xuất"
@@ -113,11 +121,11 @@ final class StepSyncCoordinator: ObservableObject {
         guard let ownerID = session?.userID, !isBusy else { return }
         isBusy = true
         lastErrorMessage = nil
-        statusMessage = "Đang yêu cầu quyền Steps…"
+        statusMessage = "Đang yêu cầu quyền HealthKit…"
         defer { isBusy = false }
 
         do {
-            try await healthReader.requestStepAuthorization()
+            try await healthReader.requestHealthAuthorization()
             defaults.set(true, forKey: healthRequestKey(ownerID: ownerID))
             healthRequestCompleted = true
             statusMessage = "Đã gửi yêu cầu HealthKit"
@@ -133,7 +141,7 @@ final class StepSyncCoordinator: ObservableObject {
         guard !isBusy, let ownerID = session?.userID, healthRequestCompleted else { return }
         isBusy = true
         lastErrorMessage = nil
-        statusMessage = reason == .manual ? "Đang đồng bộ…" : "Đang cập nhật Steps…"
+        statusMessage = reason == .manual ? "Đang đồng bộ…" : "Đang cập nhật HealthKit…"
         defer {
             isBusy = false
             refreshLocalState()
@@ -141,8 +149,8 @@ final class StepSyncCoordinator: ObservableObject {
 
         do {
             let reconciliationDays = shouldRunThirtyDayReconciliation(ownerID: ownerID) ? 30 : 8
-            let buckets = try await healthReader.fetchHourlyBuckets(ownerID: ownerID, days: reconciliationDays)
-            updateTodaySteps(from: buckets)
+            let buckets = try await healthReader.fetchMetricBuckets(ownerID: ownerID, days: reconciliationDays)
+            updateTodayMetrics(from: buckets)
             try updateReconciliationState(ownerID: ownerID, days: reconciliationDays)
 
             if cloudConsent.isGranted {
@@ -152,7 +160,7 @@ final class StepSyncCoordinator: ObservableObject {
                 }
                 try await uploadEligibleItems(ownerID: ownerID)
             } else {
-                statusMessage = buckets.isEmpty ? "Chưa có dữ liệu Steps" : "Đã đọc Steps trên iPhone"
+                statusMessage = buckets.isEmpty ? "Chưa có dữ liệu HealthKit" : "Đã đọc HealthKit trên iPhone"
             }
         } catch is CancellationError {
             statusMessage = "Đồng bộ đã dừng"
@@ -214,18 +222,27 @@ final class StepSyncCoordinator: ObservableObject {
     }
 
     private func healthRequestKey(ownerID: String) -> String {
-        "longos.health-request-completed.\(ownerID.lowercased()).v1"
+        "longos.health-request-completed.\(ownerID.lowercased()).v2"
     }
 
-    private func updateTodaySteps(from buckets: [StepBucket]) {
+    private func updateTodayMetrics(from buckets: [StepBucket]) {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = .current
         formatter.dateFormat = "yyyy-MM-dd"
         let today = formatter.string(from: .now)
-        let values = buckets.filter { $0.localDate == today }.map(\.value)
-        todaySteps = values.isEmpty ? nil : values.reduce(0, +)
+        let todayBuckets = buckets.filter { $0.localDate == today }
+        let steps = todayBuckets.filter { $0.metric == "steps" }.map(\.value)
+        let energy = todayBuckets.filter { $0.metric == "active_energy" }.map(\.value)
+        let sleep = todayBuckets
+            .filter { $0.metric == "sleep" }
+            .max { $0.sourceUpdatedAt < $1.sourceUpdatedAt }
+        todaySteps = steps.isEmpty ? nil : steps.reduce(0, +)
+        todayActiveEnergyKcal = energy.isEmpty ? nil : energy.reduce(0, +)
+        latestSleepMinutes = sleep?.value
+        latestSleepStart = sleep?.start
+        latestSleepEnd = sleep?.end
     }
 
     private func persistChangedBuckets(_ buckets: [StepBucket], ownerID: String) throws {
@@ -244,6 +261,8 @@ final class StepSyncCoordinator: ObservableObject {
             }
             if let pending = pendingByID[bucket.id] {
                 if pending.stepValue != bucket.value ||
+                    pending.metricKey != bucket.metric ||
+                    pending.unit != bucket.unit ||
                     pending.bucketStart != bucket.start ||
                     pending.bucketEnd != bucket.end ||
                     pending.timezoneID != bucket.timezoneId ||

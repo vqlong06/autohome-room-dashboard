@@ -10,7 +10,9 @@ final class SyncedStepBucket {
     var localDate: String
     var timezoneID: String
     var utcOffsetMinutes: Int
+    var metricKey: String = "steps"
     var stepValue: Int
+    var unit: String = "count"
     var algorithmVersion: Int
     var uploadedAt: Date
 
@@ -22,7 +24,9 @@ final class SyncedStepBucket {
         localDate = bucket.localDate
         timezoneID = bucket.timezoneId
         utcOffsetMinutes = bucket.utcOffsetMinutes
+        metricKey = bucket.metric
         stepValue = bucket.value
+        unit = bucket.unit
         algorithmVersion = bucket.algorithmVersion
         self.uploadedAt = uploadedAt
     }
@@ -33,7 +37,9 @@ final class SyncedStepBucket {
             localDate == bucket.localDate &&
             timezoneID == bucket.timezoneId &&
             utcOffsetMinutes == bucket.utcOffsetMinutes &&
+            metricKey == bucket.metric &&
             stepValue == bucket.value &&
+            unit == bucket.unit &&
             algorithmVersion == bucket.algorithmVersion
     }
 
@@ -43,7 +49,9 @@ final class SyncedStepBucket {
         localDate = bucket.localDate
         timezoneID = bucket.timezoneId
         utcOffsetMinutes = bucket.utcOffsetMinutes
+        metricKey = bucket.metric
         stepValue = bucket.value
+        unit = bucket.unit
         algorithmVersion = bucket.algorithmVersion
         self.uploadedAt = uploadedAt
     }
