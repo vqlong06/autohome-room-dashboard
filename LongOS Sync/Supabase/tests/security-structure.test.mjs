@@ -4,7 +4,8 @@ import test from "node:test";
 
 const migration = (await Promise.all([
   "202608070001_health_steps.sql",
-  "202608090001_health_sleep_energy.sql"
+  "202608090001_health_sleep_energy.sql",
+  "202608130001_health_recovery_workouts.sql"
 ].map((name) => readFile(new URL(`../migrations/${name}`, import.meta.url), "utf8")))).join("\n");
 const ingest = await readFile(new URL("../functions/health-ingest/index.ts", import.meta.url), "utf8");
 const deletion = await readFile(new URL("../functions/health-delete/index.ts", import.meta.url), "utf8");

@@ -8,7 +8,7 @@ LongOS Sync là cầu nối riêng tư:
 Apple Watch → HealthKit trên iPhone → LongOS Sync → Supabase → LongOS
 ```
 
-App đồng bộ ba chỉ số HealthKit: Steps, Active Energy và bản tóm tắt Sleep. Website không thể đánh thức app iPhone; background scheduling của iOS không có SLA.
+App đồng bộ Steps, Active Energy, Sleep/REM/Deep, HRV SDNN, nhịp tim nghỉ và thời lượng Workout. Website không thể đánh thức app iPhone; background scheduling của iOS không có SLA.
 
 ## Daily intelligence trên iPhone
 
@@ -24,6 +24,8 @@ App đồng bộ ba chỉ số HealthKit: Steps, Active Energy và bản tóm t�
 - App không ghi dữ liệu HealthKit.
 - Steps và Active Energy dùng thống kê HealthKit đã hợp nhất nguồn, không upload raw samples.
 - Sleep chỉ upload bản tổng hợp theo ngày gồm giờ ngủ, giờ thức và phút thực ngủ; không upload raw sleep stages.
+- REM/Deep được cộng theo giấc ngủ được chọn; HRV SDNN và nhịp tim nghỉ dùng thống kê ngày, không upload raw heart-rate stream.
+- Workout giữ từng mốc bắt đầu/kết thúc và thời lượng nhưng không gửi loại Workout, GPS hay raw samples.
 - Room telemetry hiện tại vẫn công khai và không được dùng làm nơi lưu Health.
 - Health tables chỉ đọc được bởi chính tài khoản đã đăng nhập.
 - Mọi write đi qua `health-ingest`; app không có quyền DML trực tiếp.
@@ -32,9 +34,9 @@ App đồng bộ ba chỉ số HealthKit: Steps, Active Energy và bản tóm t�
 ## Luồng đồng bộ
 
 1. Người dùng đăng nhập Supabase.
-2. Người dùng đọc giải thích và xin quyền Steps, Active Energy và Sleep từ HealthKit.
+2. Người dùng đọc giải thích và xin quyền cho các nhóm HealthKit được allowlist.
 3. Người dùng bật consent upload riêng; mặc định consent này tắt.
-4. App chạy `HKStatisticsCollectionQuery` theo bucket một giờ cho Steps/Active Energy và `HKSampleQuery` cho Sleep trong hôm nay cùng 7 ngày trước.
+4. App chạy thống kê giờ cho Steps/Active Energy, thống kê ngày cho HRV/nhịp tim nghỉ và sample query cho Sleep/Workout trong cửa sổ reconcile.
 5. Mỗi bucket có định danh deterministic và được lưu vào SwiftData trước khi gửi.
 6. Uploader gửi từng request idempotent, xóa hàng đợi chỉ sau ACK.
 7. Edge Function xác thực JWT, tự lấy user ID, validate payload và gọi RPC transaction.
@@ -44,7 +46,7 @@ App đồng bộ ba chỉ số HealthKit: Steps, Active Energy và bản tóm t�
 
 - Nhấn **Đồng bộ ngay**.
 - App launch/foreground.
-- `HKObserverQuery` báo một trong ba loại dữ liệu thay đổi.
+- `HKObserverQuery` báo một trong các loại dữ liệu HealthKit đã cấp quyền thay đổi.
 - HealthKit background delivery, tối đa theo cadence iOS cho phép.
 - `BGAppRefreshTask` là cơ hội bổ sung, không phải lịch chính xác.
 

@@ -125,6 +125,20 @@ public enum SleepSummaryBuilder {
         }
         return episodes
     }
+
+    public static func coveredSeconds(
+        intervals: [DateInterval],
+        within bounds: DateInterval
+    ) -> TimeInterval {
+        let clipped = intervals.compactMap { interval -> DateInterval? in
+            let start = max(interval.start, bounds.start)
+            let end = min(interval.end, bounds.end)
+            guard end > start else { return nil }
+            return DateInterval(start: start, end: end)
+        }
+        return merge(intervals: clipped, maximumWakeGap: 0)
+            .reduce(0) { $0 + $1.asleepSeconds }
+    }
 }
 
 public struct HealthDailyGoals: Equatable, Sendable {

@@ -22,7 +22,7 @@ struct CloudConsentView: View {
                     disclosureRow(
                         icon: "figure.walk",
                         title: "Dữ liệu",
-                        text: "Tổng Steps và Active Energy theo bucket giờ; giấc ngủ chỉ gửi giờ ngủ, giờ thức và số phút tổng hợp theo ngày. Không gửi raw samples hoặc GPS."
+                        text: "Steps và Active Energy theo giờ; Sleep/REM/Deep, HRV SDNN và nhịp tim nghỉ dạng tổng hợp ngày; mỗi Workout chỉ có giờ bắt đầu, kết thúc và thời lượng. Không gửi raw heart-rate stream, raw sleep stages hoặc GPS."
                     )
                     disclosureRow(
                         icon: "server.rack",
@@ -32,7 +32,7 @@ struct CloudConsentView: View {
                     disclosureRow(
                         icon: "sparkles",
                         title: "Mục đích",
-                        text: "Hiển thị hoạt động cá nhân và về sau phân tích mối liên hệ với không gian sống. Không dùng quảng cáo."
+                        text: "Hiển thị hoạt động và hồi phục cá nhân, đồng thời đối chiếu theo thời gian với không gian sống. Không dùng quảng cáo hoặc chẩn đoán y tế."
                     )
                     disclosureRow(
                         icon: "trash",

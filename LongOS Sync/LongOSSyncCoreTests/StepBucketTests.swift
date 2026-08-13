@@ -103,6 +103,19 @@ final class StepBucketTests: XCTestCase {
         XCTAssertEqual(episodes.count, 2)
     }
 
+    func testSleepStageCoverageClipsAndDoesNotDoubleCount() {
+        let base = Date(timeIntervalSince1970: 0)
+        let coverage = SleepSummaryBuilder.coveredSeconds(
+            intervals: [
+                DateInterval(start: base.addingTimeInterval(-30 * 60), duration: 90 * 60),
+                DateInterval(start: base.addingTimeInterval(30 * 60), duration: 60 * 60)
+            ],
+            within: DateInterval(start: base, duration: 2 * 60 * 60)
+        )
+
+        XCTAssertEqual(coverage, 90 * 60)
+    }
+
     func testDailySummaryDoesNotTreatMissingMetricsAsZero() {
         let summary = HealthDailySummaryBuilder.make(
             steps: 5_000,

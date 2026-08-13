@@ -122,10 +122,10 @@ const rootManifest = JSON.parse(rootManifestSource);
 assert.equal(Object.hasOwn(rootManifest, 'longos_revision'), false, 'Tracked manifest must not contain a release revision');
 assert.equal(rootManifest.name, 'LongOS');
 assert.equal(rootManifest.short_name, 'LongOS');
-assert.equal(rootManifest.start_url, './?pwa=20260813.2');
-assert.match(publicHtml, /name="longos-build" content="20260813\.2"/);
-assert.match(publicHtml, /name="autohome-build" content="20260813\.2"/);
-assert.match(publicHtml, /manifest\.webmanifest\?v=20260813\.2/);
+assert.equal(rootManifest.start_url, './?pwa=20260813.3');
+assert.match(publicHtml, /name="longos-build" content="20260813\.3"/);
+assert.match(publicHtml, /name="autohome-build" content="20260813\.3"/);
+assert.match(publicHtml, /manifest\.webmanifest\?v=20260813\.3/);
 assert.match(firmware, /longos-sensor-2026-08-02\.1/);
 
 assert.match(publicHtml, /const CLOUD_POLL_INTERVAL_MS = 30 \* 1000;/);

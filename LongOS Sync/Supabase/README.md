@@ -6,6 +6,7 @@ Thư mục này chứa backend Health riêng của app. Không trộn migration 
 
 - `migrations/202608070001_health_steps.sql`: bảng private, RLS và RPC transaction.
 - `migrations/202608090001_health_sleep_energy.sql`: mở rộng schema/RPC cho Active Energy và Sleep summary.
+- `migrations/202608130001_health_recovery_workouts.sql`: mở rộng allowlist/RPC cho HRV, nhịp tim nghỉ, REM/Deep và Workout duration.
 - `functions/health-ingest/`: xác thực JWT, validate payload HealthKit và ingest idempotent.
 - `functions/health-delete/`: xóa toàn bộ Health data của caller.
 - `tests/`: contract/security tests không cần secret.
@@ -25,7 +26,7 @@ SUPABASE_SERVICE_ROLE_KEY
 ## Thứ tự triển khai
 
 1. Tạo/review project Supabase dành cho LongOS Sync hoặc xác nhận dùng chung project với room telemetry.
-2. Chạy cả hai migration theo thứ tự timestamp trong SQL Editor hoặc Supabase CLI.
+2. Chạy cả ba migration theo thứ tự timestamp trong SQL Editor hoặc Supabase CLI.
 3. Deploy `health-ingest` và `health-delete`.
 4. Tạo ít nhất một user email/password cho thử nghiệm.
 5. Kiểm tra anon/user A/user B trước khi cài app production.

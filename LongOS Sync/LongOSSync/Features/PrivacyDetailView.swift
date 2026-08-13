@@ -12,7 +12,7 @@ struct PrivacyDetailView: View {
                     Text("LongOS Sync là công cụ wellness cá nhân, không phải thiết bị y tế và không đưa ra chẩn đoán.")
                     section(
                         "LongOS Sync thu thập gì?",
-                        "Chỉ tổng Steps và Active Energy theo bucket giờ; với Sleep chỉ có giờ ngủ, giờ thức và số phút ngủ tổng hợp theo ngày, cùng timestamp, múi giờ và trạng thái đồng bộ. Không upload raw stages, GPS, ECG, thuốc hoặc clinical records."
+                        "Steps và Active Energy theo bucket giờ; Sleep/REM/Deep, HRV SDNN và nhịp tim nghỉ dạng tổng hợp ngày; Workout chỉ có mốc bắt đầu, kết thúc và thời lượng. Không upload raw heart-rate stream, raw sleep stages, tuyến đường GPS, ECG, thuốc hoặc clinical records."
                     )
                     section(
                         "Consent",

@@ -55,6 +55,25 @@ test("accepts Active Energy and daily Sleep summaries", () => {
   assert.equal(databaseBuckets(parsedSleep)[0].provenance, "healthkit_sleep_summary");
 });
 
+test("accepts recovery, sleep-stage and Workout summaries", () => {
+  const cases = [
+    ["hrv_sdnn", "ms", 52, "healthkit_statistics_daily"],
+    ["resting_heart_rate", "bpm", 61, "healthkit_statistics_daily"],
+    ["sleep_rem", "minute", 95, "healthkit_sleep_stage_summary"],
+    ["sleep_deep", "minute", 72, "healthkit_sleep_stage_summary"],
+    ["workout_duration", "minute", 45, "healthkit_workout_summary"],
+  ];
+  for (const [metric, unit, value, provenance] of cases) {
+    const payload = valid();
+    payload.buckets[0].metric = metric;
+    payload.buckets[0].unit = unit;
+    payload.buckets[0].value = value;
+    const parsed = parseHealthIngestRequest(payload, now);
+    assert.equal(parsed.buckets[0].metric, metric);
+    assert.equal(databaseBuckets(parsed)[0].provenance, provenance);
+  }
+});
+
 test("accepts uppercase UUIDs emitted by Foundation and normalizes them", () => {
   const payload = valid();
   payload.requestId = "A1B2C3D4-E5F6-4A7B-8C9D-A1B2C3D4E5F6";
@@ -118,6 +137,16 @@ test("rejects duplicate bucket identities", () => {
   secondSleep.end = "2026-08-07T03:00:00.000Z";
   duplicateSleepDay.buckets.push(secondSleep);
   assert.throws(() => parseHealthIngestRequest(duplicateSleepDay, now), ContractError);
+
+  const duplicateHRVDay = valid();
+  duplicateHRVDay.buckets[0].metric = "hrv_sdnn";
+  duplicateHRVDay.buckets[0].unit = "ms";
+  duplicateHRVDay.buckets[0].value = 50;
+  const secondHRV = structuredClone(duplicateHRVDay.buckets[0]);
+  secondHRV.start = "2026-08-07T02:00:00.000Z";
+  secondHRV.end = "2026-08-07T03:00:00.000Z";
+  duplicateHRVDay.buckets.push(secondHRV);
+  assert.throws(() => parseHealthIngestRequest(duplicateHRVDay, now), ContractError);
 });
 
 test("rejects zero-minute Sleep summaries", () => {

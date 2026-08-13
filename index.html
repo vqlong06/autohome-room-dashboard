@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LongOS — Không gian của Long</title>
   <meta name="theme-color" content="#0b0e15">
-  <meta name="longos-build" content="20260813.2">
+  <meta name="longos-build" content="20260813.3">
   <!-- Legacy marker lets already-installed AutoHome builds discover this update. -->
-  <meta name="autohome-build" content="20260813.2">
+  <meta name="autohome-build" content="20260813.3">
   <meta name="application-name" content="LongOS">
   <meta name="apple-mobile-web-app-title" content="LongOS">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="./manifest.webmanifest?v=20260813.2">
+  <link rel="manifest" href="./manifest.webmanifest?v=20260813.3">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260713">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260713">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -4041,10 +4041,10 @@
           <p id="healthStepsMeta" class="health-copy">Đăng nhập tài khoản LongOS để xem dữ liệu HealthKit của bạn.</p>
           <p id="healthSyncFreshness" class="health-copy">ESP32 vẫn hiển thị độc lập; dữ liệu sức khỏe không bao giờ đọc bằng quyền anonymous.</p>
           <div class="health-availability" aria-label="Dữ liệu sức khỏe nâng cao">
-            <div class="health-availability-item"><strong>HRV</strong><span>Chưa được LongOS Sync gửi lên</span></div>
-            <div class="health-availability-item"><strong>Nhịp tim nghỉ</strong><span>Chưa được LongOS Sync gửi lên</span></div>
-            <div class="health-availability-item"><strong>REM / Deep</strong><span>Chưa được LongOS Sync gửi lên</span></div>
-            <div class="health-availability-item"><strong>Workout</strong><span>Chưa được LongOS Sync gửi lên</span></div>
+            <div class="health-availability-item"><strong>HRV</strong><span id="healthHRV">Chưa có dữ liệu</span></div>
+            <div class="health-availability-item"><strong>Nhịp tim nghỉ</strong><span id="healthRestingHeartRate">Chưa có dữ liệu</span></div>
+            <div class="health-availability-item"><strong>REM / Deep</strong><span id="healthSleepStages">Chưa có dữ liệu</span></div>
+            <div class="health-availability-item"><strong>Workout</strong><span id="healthWorkout">Chưa có dữ liệu</span></div>
           </div>
         </div>
         <div class="health-actions">
@@ -4651,6 +4651,13 @@
       healthSleepMinutes: null,
       healthSleepStart: 0,
       healthSleepEnd: 0,
+      healthSleepREMMinutes: null,
+      healthSleepDeepMinutes: null,
+      healthHRVToday: null,
+      healthRestingHeartRateToday: null,
+      healthRecoveryScore: null,
+      healthWorkoutMinutes: null,
+      healthWorkoutsToday: [],
       healthBucketCount: 0,
       healthFreshAt: 0,
       healthError: '',
@@ -4702,6 +4709,10 @@
       healthEnergyToday: document.getElementById('healthEnergyToday'),
       healthSleepDuration: document.getElementById('healthSleepDuration'),
       healthSleepWindow: document.getElementById('healthSleepWindow'),
+      healthHRV: document.getElementById('healthHRV'),
+      healthRestingHeartRate: document.getElementById('healthRestingHeartRate'),
+      healthSleepStages: document.getElementById('healthSleepStages'),
+      healthWorkout: document.getElementById('healthWorkout'),
       healthScoreRing: document.getElementById('healthScoreRing'),
       healthDailyScore: document.getElementById('healthDailyScore'),
       healthDailyTitle: document.getElementById('healthDailyTitle'),
@@ -4996,6 +5007,18 @@
       } else {
         els.healthSleepWindow.textContent = 'Chưa có dữ liệu';
       }
+      els.healthHRV.textContent = state.healthHRVToday === null ? 'Chưa có dữ liệu' : `${state.healthHRVToday} ms · SDNN`;
+      els.healthRestingHeartRate.textContent = state.healthRestingHeartRateToday === null
+        ? 'Chưa có dữ liệu'
+        : `${state.healthRestingHeartRateToday} bpm`;
+      const sleepStages = [
+        state.healthSleepREMMinutes === null ? null : `REM ${formatHealthDuration(state.healthSleepREMMinutes)}`,
+        state.healthSleepDeepMinutes === null ? null : `Deep ${formatHealthDuration(state.healthSleepDeepMinutes)}`
+      ].filter(Boolean);
+      els.healthSleepStages.textContent = sleepStages.length ? sleepStages.join(' · ') : 'Chưa có dữ liệu';
+      els.healthWorkout.textContent = state.healthWorkoutMinutes === null
+        ? 'Chưa có dữ liệu'
+        : `${state.healthWorkoutsToday.length} buổi · ${formatHealthDuration(state.healthWorkoutMinutes)}`;
 
       const stepsProgress = healthProgress(state.healthStepsToday, settings.stepsGoal);
       const energyProgress = healthProgress(state.healthEnergyToday, settings.energyGoal);
@@ -5066,7 +5089,7 @@
       const aqi = finiteNumber(state.outdoor?.aqi);
       const aqiPenalty = aqi === null ? 0 : Math.max(0, Math.min(22, (aqi - 50) * 0.18));
       const environmentScore = environmentBase === null ? null : todayScore(environmentBase - aqiPenalty);
-      const recoveryScore = null;
+      const recoveryScore = state.healthRecoveryScore;
       const roomSleep = roomStatsDuringSleep();
 
       const brief = [];
@@ -5138,7 +5161,9 @@
       );
       setTodayScore(
         els.todayRecoveryScore, els.todayRecoveryCopy, els.todayRecoveryBar, model.recoveryScore,
-        'Cần HRV và nhịp tim nghỉ; LongOS không ước đoán'
+        model.recoveryScore === null
+          ? 'Cần HRV, nhịp tim nghỉ và ít nhất 7 ngày nền cá nhân'
+          : 'So sánh HRV và nhịp tim nghỉ với nền cá nhân gần đây'
       );
       setTodayScore(
         els.todayActivityScore, els.todayActivityCopy, els.todayActivityBar, model.activityScore,
@@ -5223,6 +5248,9 @@
         add(state.healthSleepStart, 'health', 'Sức khỏe', 'Bắt đầu giấc ngủ', `Giấc ngủ dài ${formatHealthDuration(state.healthSleepMinutes)}`);
         add(state.healthSleepEnd, 'health', 'Sức khỏe', 'Kết thúc giấc ngủ', `Tổng thời gian ${formatHealthDuration(state.healthSleepMinutes)}`);
       }
+      state.healthWorkoutsToday.forEach(workout => {
+        add(workout.start, 'health', 'Sức khỏe', 'Workout', `${formatHealthDuration(workout.minutes)} · kết thúc ${new Date(workout.end).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`);
+      });
       if (state.healthFreshAt > 0) {
         add(state.healthFreshAt, 'health', 'Sức khỏe', 'LongOS Sync cập nhật', 'Đã nhận bản tổng hợp HealthKit mới nhất');
       }
@@ -5380,6 +5408,13 @@
         state.healthSleepMinutes = null;
         state.healthSleepStart = 0;
         state.healthSleepEnd = 0;
+        state.healthSleepREMMinutes = null;
+        state.healthSleepDeepMinutes = null;
+        state.healthHRVToday = null;
+        state.healthRestingHeartRateToday = null;
+        state.healthRecoveryScore = null;
+        state.healthWorkoutMinutes = null;
+        state.healthWorkoutsToday = [];
         renderHealthValues();
         els.healthStepsMeta.textContent = 'Đăng nhập tài khoản LongOS để xem dữ liệu HealthKit của bạn.';
         els.healthSyncFreshness.textContent = 'ESP32 vẫn hiển thị độc lập; dữ liệu sức khỏe không bao giờ đọc bằng quyền anonymous.';
@@ -5416,56 +5451,78 @@
 
     async function fetchHealthRows(accessToken) {
       const date = localDateKey();
-      const bucketUrl = `${SUPABASE_URL}/rest/v1/health_metric_buckets?metric_key=in.(steps,active_energy,sleep)`
+      const baselineStart = localDateKey(new Date(Date.now() - 29 * MS_DAY));
+      const metrics = 'steps,active_energy,sleep,sleep_rem,sleep_deep,hrv_sdnn,resting_heart_rate,workout_duration';
+      const bucketUrl = `${SUPABASE_URL}/rest/v1/health_metric_buckets?metric_key=in.(${metrics})`
         + `&local_date=eq.${encodeURIComponent(date)}`
-        + '&select=metric_key,bucket_start,bucket_end,value_integer,unit,source_updated_at,updated_at&order=bucket_start.asc';
-      const statusUrl = `${SUPABASE_URL}/rest/v1/health_sync_status?metric_key=in.(steps,active_energy,sleep)`
+        + '&select=metric_key,bucket_start,bucket_end,local_date,value_integer,unit,source_updated_at,updated_at&order=bucket_start.asc';
+      const baselineUrl = `${SUPABASE_URL}/rest/v1/health_metric_buckets?metric_key=in.(hrv_sdnn,resting_heart_rate)`
+        + `&local_date=gte.${encodeURIComponent(baselineStart)}`
+        + `&local_date=lt.${encodeURIComponent(date)}`
+        + '&select=metric_key,bucket_start,bucket_end,local_date,value_integer,unit,source_updated_at,updated_at&order=local_date.asc';
+      const statusUrl = `${SUPABASE_URL}/rest/v1/health_sync_status?metric_key=in.(${metrics})`
         + '&select=metric_key,last_source_updated_at,last_ingested_at,updated_at&order=last_ingested_at.desc';
       const headers = healthHeaders(accessToken);
-      const [buckets, status] = await Promise.all([
+      const [buckets, baseline, status] = await Promise.all([
         fetchJsonWithTimeout(bucketUrl, { cache: 'no-store', headers }),
+        fetchJsonWithTimeout(baselineUrl, { cache: 'no-store', headers }),
         fetchJsonWithTimeout(statusUrl, { cache: 'no-store', headers })
       ]);
-      return { buckets, status };
+      return { buckets, baseline, status };
     }
 
     async function fetchHealthDashboard() {
       let session = await refreshHealthSession(false);
       if (!session) return false;
       let result = await fetchHealthRows(session.accessToken);
-      if (result.buckets.response.status === 401 || result.status.response.status === 401) {
+      if (result.buckets.response.status === 401 || result.baseline.response.status === 401 || result.status.response.status === 401) {
         session = await refreshHealthSession(true);
         result = await fetchHealthRows(session.accessToken);
       }
-      if (!result.buckets.response.ok || !result.status.response.ok) {
+      if (!result.buckets.response.ok || !result.baseline.response.ok || !result.status.response.ok) {
         throw new Error('Supabase chưa cho phép đọc dữ liệu HealthKit của tài khoản này.');
       }
 
-      const rows = Array.isArray(result.buckets.data) ? result.buckets.data : [];
+      const rows = [
+        ...(Array.isArray(result.buckets.data) ? result.buckets.data : []),
+        ...(Array.isArray(result.baseline.data) ? result.baseline.data : [])
+      ];
+      const today = localDateKey();
       let stepsTotal = 0;
       let energyTotal = 0;
       let stepCount = 0;
       let energyCount = 0;
       let latestSleep = null;
+      let sleepREM = null;
+      let sleepDeep = null;
+      let hrvToday = null;
+      let restingHeartRateToday = null;
+      const hrvBaseline = [];
+      const restingHeartRateBaseline = [];
+      const workouts = [];
       let freshest = 0;
       rows.forEach(row => {
         const value = Number(row.value_integer);
         const metric = row.metric_key;
-        const valid = Number.isSafeInteger(value) && value >= 0 && (
-          (metric === 'steps' && row.unit === 'count' && value <= 2000000)
-          || (metric === 'active_energy' && row.unit === 'kcal' && value <= 100000)
-          || (metric === 'sleep' && row.unit === 'minute' && value <= 1440)
+        const valid = Number.isSafeInteger(value) && (
+          (metric === 'steps' && row.unit === 'count' && value >= 0 && value <= 2000000)
+          || (metric === 'active_energy' && row.unit === 'kcal' && value >= 0 && value <= 100000)
+          || (['sleep', 'sleep_rem', 'sleep_deep', 'workout_duration'].includes(metric)
+            && row.unit === 'minute' && value >= 1 && value <= 1440)
+          || (metric === 'hrv_sdnn' && row.unit === 'ms' && value >= 1 && value <= 2000)
+          || (metric === 'resting_heart_rate' && row.unit === 'bpm' && value >= 20 && value <= 300)
         );
         if (!valid) {
           throw new Error('Bucket HealthKit có giá trị không hợp lệ.');
         }
-        if (metric === 'steps') {
+        const isToday = row.local_date === today;
+        if (metric === 'steps' && isToday) {
           stepsTotal += value;
           stepCount += 1;
-        } else if (metric === 'active_energy') {
+        } else if (metric === 'active_energy' && isToday) {
           energyTotal += value;
           energyCount += 1;
-        } else if (metric === 'sleep') {
+        } else if (metric === 'sleep' && isToday) {
           const start = Date.parse(row.bucket_start);
           const end = Date.parse(row.bucket_end);
           if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
@@ -5475,6 +5532,23 @@
           if (!latestSleep || updatedAt >= latestSleep.updatedAt) {
             latestSleep = { minutes: value, start, end, updatedAt };
           }
+        } else if (metric === 'sleep_rem' && isToday) {
+          sleepREM = value;
+        } else if (metric === 'sleep_deep' && isToday) {
+          sleepDeep = value;
+        } else if (metric === 'hrv_sdnn') {
+          if (isToday) hrvToday = value;
+          else hrvBaseline.push(value);
+        } else if (metric === 'resting_heart_rate') {
+          if (isToday) restingHeartRateToday = value;
+          else restingHeartRateBaseline.push(value);
+        } else if (metric === 'workout_duration' && isToday) {
+          const start = Date.parse(row.bucket_start);
+          const end = Date.parse(row.bucket_end);
+          if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+            throw new Error('Mốc Workout không hợp lệ.');
+          }
+          workouts.push({ start, end, minutes: value });
         }
         freshest = Math.max(freshest, Date.parse(row.source_updated_at) || 0, Date.parse(row.updated_at) || 0);
       });
@@ -5492,7 +5566,23 @@
       state.healthSleepMinutes = latestSleep?.minutes ?? null;
       state.healthSleepStart = latestSleep?.start ?? 0;
       state.healthSleepEnd = latestSleep?.end ?? 0;
-      state.healthBucketCount = rows.length;
+      state.healthSleepREMMinutes = sleepREM;
+      state.healthSleepDeepMinutes = sleepDeep;
+      state.healthHRVToday = hrvToday;
+      state.healthRestingHeartRateToday = restingHeartRateToday;
+      state.healthWorkoutMinutes = workouts.length
+        ? workouts.reduce((sum, workout) => sum + workout.minutes, 0)
+        : null;
+      state.healthWorkoutsToday = workouts;
+      if (hrvToday !== null && restingHeartRateToday !== null
+        && hrvBaseline.length >= 7 && restingHeartRateBaseline.length >= 7) {
+        const hrvMean = hrvBaseline.reduce((sum, value) => sum + value, 0) / hrvBaseline.length;
+        const restingMean = restingHeartRateBaseline.reduce((sum, value) => sum + value, 0) / restingHeartRateBaseline.length;
+        state.healthRecoveryScore = todayScore(((hrvToday / hrvMean) * 100 + (restingMean / restingHeartRateToday) * 100) / 2);
+      } else {
+        state.healthRecoveryScore = null;
+      }
+      state.healthBucketCount = rows.filter(row => row.local_date === today).length;
       state.healthFreshAt = freshest;
       state.healthLoadedAt = Date.now();
       state.healthError = '';
@@ -5537,6 +5627,13 @@
       state.healthSleepMinutes = null;
       state.healthSleepStart = 0;
       state.healthSleepEnd = 0;
+      state.healthSleepREMMinutes = null;
+      state.healthSleepDeepMinutes = null;
+      state.healthHRVToday = null;
+      state.healthRestingHeartRateToday = null;
+      state.healthRecoveryScore = null;
+      state.healthWorkoutMinutes = null;
+      state.healthWorkoutsToday = [];
       state.healthBucketCount = 0;
       state.healthFreshAt = 0;
       state.healthError = '';

@@ -28,6 +28,7 @@ struct DashboardView: View {
                     dailyIntelligenceCard
                     stepsHero
                     healthSummary
+                    advancedHealthSummary
                     healthAccessCard
                     cloudCard
                     syncCard
@@ -76,7 +77,7 @@ struct DashboardView: View {
                     Task { await coordinator.deleteCloudHealthData() }
                 }
             } message: {
-                Text("Thao tác này xóa Steps, Active Energy và giấc ngủ của tài khoản khỏi Supabase, đồng thời tắt cloud sync. Dữ liệu gốc trong Apple Health không bị xóa.")
+                Text("Thao tác này xóa toàn bộ dữ liệu HealthKit đã đồng bộ của tài khoản khỏi Supabase, đồng thời tắt cloud sync. Dữ liệu gốc trong Apple Health không bị xóa.")
             }
         }
     }
@@ -221,13 +222,50 @@ struct DashboardView: View {
         )
     }
 
+    private var advancedHealthSummary: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label("Chỉ số HealthKit chuyên sâu", systemImage: "heart.text.clipboard")
+                .font(.headline)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
+                advancedMetricCard(
+                    title: "HRV",
+                    value: coordinator.latestHRVMilliseconds?.formatted() ?? "--",
+                    unit: "ms",
+                    detail: "SDNN trung bình hôm nay"
+                )
+                advancedMetricCard(
+                    title: "Nhịp tim nghỉ",
+                    value: coordinator.latestRestingHeartRateBPM?.formatted() ?? "--",
+                    unit: "bpm",
+                    detail: "Giá trị HealthKit hôm nay"
+                )
+                advancedMetricCard(
+                    title: "REM / Deep",
+                    value: sleepStagesText,
+                    unit: "",
+                    detail: "Trong giấc ngủ gần nhất"
+                )
+                advancedMetricCard(
+                    title: "Workout",
+                    value: coordinator.todayWorkoutMinutes.map(durationText) ?? "--",
+                    unit: "",
+                    detail: coordinator.todayWorkoutMinutes == nil
+                        ? "Chưa có workout hôm nay"
+                        : "\(coordinator.todayWorkoutCount) buổi hôm nay"
+                )
+            }
+        }
+        .padding(18)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+
     private var healthAccessCard: some View {
         StatusCard(
             icon: "heart.text.square",
             title: "Apple Health",
             detail: coordinator.healthRequestCompleted
-                ? "Đã gửi yêu cầu đọc Steps, Active Energy và Sleep. Apple không tiết lộ trạng thái quyền đọc; dữ liệu trống không đồng nghĩa với 0."
-                : "Chỉ xin quyền đọc Steps, Active Energy và Sleep. App không ghi dữ liệu vào HealthKit.",
+                ? "Đã yêu cầu đọc Steps, Active Energy, Sleep/REM/Deep, HRV, nhịp tim nghỉ và Workout. Apple không tiết lộ trạng thái từng quyền; dữ liệu trống không đồng nghĩa với 0."
+                : "Chỉ xin quyền đọc các bản tổng hợp Steps, Active Energy, Sleep/REM/Deep, HRV, nhịp tim nghỉ và Workout. App không ghi dữ liệu vào HealthKit.",
             badge: coordinator.healthRequestCompleted ? "Đã yêu cầu" : "Chưa yêu cầu",
             badgeColor: coordinator.healthRequestCompleted ? .mint : .secondary
         ) {
@@ -247,7 +285,7 @@ struct DashboardView: View {
             icon: "cloud",
             title: "Cloud sync riêng tư",
             detail: consent.isGranted
-                ? "Bucket Steps, kcal hoạt động và bản tổng hợp giấc ngủ được gửi đến Supabase để dùng trong LongOS. Bạn có thể tắt bất cứ lúc nào."
+                ? "Các bucket và bản tổng hợp HealthKit đã chọn được gửi đến Supabase để dùng trong LongOS; không có raw heart-rate stream, GPS hay raw sleep stages."
                 : "Mặc định tắt. HealthKit authorization không tự cho phép upload.",
             badge: consent.isGranted ? "Đang bật" : "Đang tắt",
             badgeColor: consent.isGranted ? .mint : .secondary
@@ -355,7 +393,7 @@ struct DashboardView: View {
 
     private var webDashboardDetail: String {
         if consent.isGranted, coordinator.lastSuccessfulSyncAt != nil {
-            return "Xem Steps, kcal hoạt động và giấc ngủ đã đồng bộ cạnh dữ liệu ESP32."
+            return "Xem Steps, kcal, giấc ngủ, HRV, nhịp tim nghỉ và Workout đã đồng bộ cạnh dữ liệu ESP32."
         }
         if consent.isGranted {
             return "Hãy đồng bộ HealthKit ít nhất một lần để dữ liệu xuất hiện trên web."
@@ -382,6 +420,13 @@ struct DashboardView: View {
             return "LongOS không coi thiếu quyền hoặc chưa sync là 0."
         }
         return "Ngủ \(start.formatted(date: .omitted, time: .shortened)) – thức \(end.formatted(date: .omitted, time: .shortened))"
+    }
+
+    private var sleepStagesText: String {
+        let rem = coordinator.latestSleepREMMinutes.map { "REM \(durationText($0))" }
+        let deep = coordinator.latestSleepDeepMinutes.map { "Deep \(durationText($0))" }
+        let values = [rem, deep].compactMap { $0 }
+        return values.isEmpty ? "--" : values.joined(separator: " · ")
     }
 
     private var dailySummary: HealthDailySummary {
@@ -422,6 +467,35 @@ struct DashboardView: View {
         .padding(18)
         .frame(maxWidth: .infinity, minHeight: 178, alignment: .leading)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private func advancedMetricCard(
+        title: String,
+        value: String,
+        unit: String,
+        detail: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(value)
+                    .font(.title3.bold())
+                    .monospacedDigit()
+                if !unit.isEmpty {
+                    Text(unit)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Text(detail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 104, alignment: .leading)
+        .padding(14)
+        .background(.background.opacity(0.45), in: RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder

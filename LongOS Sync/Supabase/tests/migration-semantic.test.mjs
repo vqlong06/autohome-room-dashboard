@@ -13,7 +13,11 @@ const sleepEnergyMigration = await readFile(
   new URL("../migrations/202608090001_health_sleep_energy.sql", import.meta.url),
   "utf8"
 );
-const migration = `${stepsMigration}\n${sleepEnergyMigration}`;
+const recoveryWorkoutMigration = await readFile(
+  new URL("../migrations/202608130001_health_recovery_workouts.sql", import.meta.url),
+  "utf8"
+);
+const migration = `${stepsMigration}\n${sleepEnergyMigration}\n${recoveryWorkoutMigration}`;
 
 const bootstrap = `
   create role anon nologin;
@@ -167,6 +171,50 @@ test("migration executes idempotently and enforces ingest/RLS semantics", async 
       [userA, "00000000-0000-4000-8000-000000000004", installationID, "d".repeat(64), JSON.stringify(sleep)]
     );
 
+    const recoveryAndWorkout = [
+      {
+        ...buckets[0],
+        metric_key: "hrv_sdnn",
+        value_integer: 52,
+        unit: "ms",
+        provenance: "healthkit_statistics_daily"
+      },
+      {
+        ...buckets[0],
+        metric_key: "resting_heart_rate",
+        value_integer: 61,
+        unit: "bpm",
+        provenance: "healthkit_statistics_daily"
+      },
+      {
+        ...buckets[0],
+        metric_key: "sleep_rem",
+        value_integer: 95,
+        unit: "minute",
+        provenance: "healthkit_sleep_stage_summary"
+      },
+      {
+        ...buckets[0],
+        metric_key: "sleep_deep",
+        value_integer: 72,
+        unit: "minute",
+        provenance: "healthkit_sleep_stage_summary"
+      },
+      {
+        ...buckets[0],
+        metric_key: "workout_duration",
+        value_integer: 45,
+        unit: "minute",
+        provenance: "healthkit_workout_summary"
+      }
+    ];
+    await database.query(
+      `select public.longos_ingest_health_step_buckets(
+        $1::uuid, $2::uuid, $3::uuid, $4::text, $5::jsonb
+      )`,
+      [userA, "00000000-0000-4000-8000-000000000006", installationID, "f".repeat(64), JSON.stringify(recoveryAndWorkout)]
+    );
+
     const correctedSleep = [{
       ...sleep[0],
       bucket_start: "2026-08-06T15:50:00.000Z",
@@ -185,8 +233,13 @@ test("migration executes idempotently and enforces ingest/RLS semantics", async 
     );
     assert.deepEqual(ownRows.rows, [
       { metric_key: "active_energy", value_integer: 87 },
+      { metric_key: "hrv_sdnn", value_integer: 52 },
+      { metric_key: "resting_heart_rate", value_integer: 61 },
       { metric_key: "sleep", value_integer: 415 },
-      { metric_key: "steps", value_integer: 321 }
+      { metric_key: "sleep_deep", value_integer: 72 },
+      { metric_key: "sleep_rem", value_integer: 95 },
+      { metric_key: "steps", value_integer: 321 },
+      { metric_key: "workout_duration", value_integer: 45 }
     ]);
 
     const statuses = await withRole(database, "authenticated", userA, () =>
@@ -194,8 +247,13 @@ test("migration executes idempotently and enforces ingest/RLS semantics", async 
     );
     assert.deepEqual(statuses.rows, [
       { metric_key: "active_energy" },
+      { metric_key: "hrv_sdnn" },
+      { metric_key: "resting_heart_rate" },
       { metric_key: "sleep" },
-      { metric_key: "steps" }
+      { metric_key: "sleep_deep" },
+      { metric_key: "sleep_rem" },
+      { metric_key: "steps" },
+      { metric_key: "workout_duration" }
     ]);
 
     const otherRows = await withRole(database, "authenticated", userB, () =>

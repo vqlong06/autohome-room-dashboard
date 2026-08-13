@@ -1,29 +1,31 @@
 # LongOS Sync
 
-LongOS Sync là ứng dụng iPhone riêng của LongOS. App đọc **Steps**, **Active Energy** và **Sleep** từ HealthKit, lưu hàng đợi trên máy rồi đồng bộ dữ liệu tổng hợp lên vùng Supabase riêng tư.
+LongOS Sync là ứng dụng iPhone riêng của LongOS. App đọc **Steps**, **Active Energy**, **Sleep/REM/Deep**, **HRV SDNN**, **nhịp tim nghỉ** và **Workout** từ HealthKit, lưu hàng đợi trên máy rồi đồng bộ dữ liệu tổng hợp lên vùng Supabase riêng tư.
 
 Ứng dụng không ghi vào Apple Health, không có watchOS target và không dùng các bảng phòng công khai `room_latest` / `room_readings`.
 
 ## Trạng thái milestone
 
-Phiên bản 0.4 gồm:
+Phiên bản 0.5 gồm:
 
 - SwiftUI, iOS 17+ và SwiftData.
 - Đăng nhập Supabase bằng email/password.
-- Xin quyền chỉ đọc Steps, Active Energy và Sleep Analysis.
+- Xin quyền chỉ đọc Steps, Active Energy, Sleep Analysis, HRV SDNN, nhịp tim nghỉ và Workout.
 - Consent HealthKit và consent upload Supabase là hai bước độc lập.
 - Tính Steps và Active Energy theo bucket giờ bằng `HKStatisticsCollectionQuery`.
 - Gộp các khoảng đang ngủ bị chồng lấn từ HealthKit thành một bản tóm tắt mỗi ngày: giờ ngủ, giờ thức và tổng phút thực ngủ; không upload raw sleep stages.
+- Tổng hợp REM/Deep theo giấc ngủ được chọn, HRV SDNN và nhịp tim nghỉ theo ngày; không upload raw heart-rate stream.
+- Đồng bộ từng Workout bằng giờ bắt đầu/kết thúc và thời lượng; không upload loại workout, tuyến đường GPS hoặc raw workout samples.
 - Reconcile hôm nay và 7 ngày gần nhất.
 - Hàng đợi offline, retry có giới hạn và upload idempotent.
 - `HKObserverQuery`, HealthKit background delivery và `BGAppRefreshTask` theo kiểu best-effort.
-- Hiển thị Steps, kcal vận động, giấc ngủ gần nhất, lần sync cuối, hàng đợi và lỗi gần nhất.
+- Hiển thị Steps, kcal vận động, giấc ngủ, REM/Deep, HRV, nhịp tim nghỉ, Workout, lần sync cuối, hàng đợi và lỗi gần nhất.
 - Tính điểm sức khỏe hôm nay từ các chỉ số đang có mà không coi dữ liệu thiếu là 0.
 - Hiển thị tiến độ Steps, Active Energy và Sleep theo mục tiêu cá nhân; mục tiêu chỉ lưu trên iPhone.
 - Tạo nhận xét ưu tiên ngắn từ HealthKit, ví dụ hồi phục sau một đêm ngủ thiếu hoặc đi bộ nhẹ khi cuối ngày còn thiếu vận động.
 - Backend Auth/RLS/Edge Function nằm trong thư mục `Supabase/` của app.
 
-Chưa thuộc phạm vi: nhịp tim, HRV, workout chi tiết, Activity Rings, ECG, thuốc, hồ sơ bệnh án và watchOS.
+Chưa thuộc phạm vi: raw nhịp tim liên tục, loại/route/energy chi tiết của Workout, respiratory rate, Activity Rings, ECG, thuốc, hồ sơ bệnh án và watchOS.
 
 ## Cấu trúc
 
@@ -85,7 +87,7 @@ Trong Xcode:
 2. Chọn Apple Account/Personal Team và bundle identifier riêng.
 3. Giữ Automatic Signing.
 4. Kiểm tra capability HealthKit và Background Delivery.
-5. Cài lên iPhone, đăng nhập rồi cấp quyền Steps, Active Energy và Sleep.
+5. Cài lên iPhone, đăng nhập rồi cấp các quyền HealthKit chỉ đọc mà app giải thích trên màn hình.
 6. Bật consent cloud riêng trong app trước khi nhấn **Đồng bộ ngay**.
 
 ## Test không cần Xcode

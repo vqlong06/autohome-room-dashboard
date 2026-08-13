@@ -4,7 +4,7 @@
   "description": "Home. Health. Life. In sync. — hệ điều hành dữ liệu cá nhân của Long",
   "id": "./",
   "lang": "vi",
-  "start_url": "./?pwa=20260813.2",
+  "start_url": "./?pwa=20260813.3",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

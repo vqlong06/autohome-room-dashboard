@@ -2,7 +2,7 @@
 
 ## `health_metric_buckets`
 
-Bucket HealthKit đã tổng hợp cho `steps`, `active_energy` và `sleep`.
+Bucket HealthKit đã tổng hợp cho `steps`, `active_energy`, `sleep`, `sleep_rem`, `sleep_deep`, `hrv_sdnn`, `resting_heart_rate` và `workout_duration`.
 
 Khóa idempotent:
 
@@ -13,20 +13,21 @@ Khóa idempotent:
 Các trường quan trọng:
 
 - `user_id`: chủ sở hữu từ Supabase Auth.
-- `metric_key`: `steps`, `active_energy` hoặc `sleep`.
+- `metric_key`: một trong tám metric được allowlist ở trên.
 - `bucket_start`, `bucket_end`: timestamp UTC.
 - `local_date`, `timezone_id`, `utc_offset_minutes`: ngữ cảnh lịch địa phương.
-- `value_integer`: số bước, kcal hoặc phút ngủ trong giới hạn theo metric.
-- `unit`: `count`, `kcal` hoặc `minute` tương ứng.
-- `provenance`: `healthkit_statistics` cho Steps/Active Energy và `healthkit_sleep_summary` cho Sleep.
+- `value_integer`: integer tổng hợp trong giới hạn riêng của metric.
+- `unit`: `count`, `kcal`, `minute`, `ms` hoặc `bpm` tương ứng.
+- `provenance`: phân biệt thống kê HealthKit, bản tổng hợp Sleep/stage, thống kê ngày và Workout summary.
 - `source_updated_at`: lần app quan sát thống kê này.
 
 Chỉ owner được SELECT qua RLS. Không có policy write cho app.
 
-Sleep dùng thêm unique key theo ngày thức dậy để bản tóm tắt được sửa thay vì nhân đôi:
+Sleep, REM, Deep, HRV và nhịp tim nghỉ dùng unique key theo ngày để bản tóm tắt được sửa thay vì nhân đôi:
 
 ```text
-(user_id, metric_key, local_date, algorithm_version) where metric_key = 'sleep'
+(user_id, metric_key, local_date, algorithm_version)
+where metric_key in ('sleep', 'sleep_rem', 'sleep_deep', 'hrv_sdnn', 'resting_heart_rate')
 ```
 
 ## `health_sync_status`
@@ -71,4 +72,4 @@ Lưu SHA-256 của canonical payload và ACK. Cùng request ID/cùng hash trả 
 }
 ```
 
-Giới hạn: tối đa 500 bucket/256 KiB; chỉ metric/unit/version allowlist; integer không âm; duration > 0 và ≤ 24 giờ; timestamp không quá xa tương lai; body không được có `userId`.
+Giới hạn: tối đa 500 bucket/256 KiB; chỉ metric/unit/version allowlist; integer nằm trong giới hạn riêng của metric; duration > 0 và ≤ 24 giờ; timestamp không quá xa tương lai; body không được có `userId`.

@@ -27,13 +27,17 @@
 - Morning Climate Brief sau 14–30 đêm hợp lệ.
 - Chỉ nói tương quan, không tuyên bố nguyên nhân hay chẩn đoán.
 
-## M3 — Recovery
+## M1.5 — Recovery + Workout summaries (hoàn thành)
 
-Resting HR, HRV SDNN và respiratory rate dạng daily baseline; không upload raw heart-rate stream.
+App 0.5 đồng bộ Resting HR, HRV SDNN, REM/Deep và thời lượng Workout. Web chỉ tạo recovery score khi có cả hai recovery metric và tối thiểu 7 ngày nền cá nhân; không upload raw heart-rate stream.
+
+## M3 — Recovery mở rộng
+
+Respiratory rate, baseline bền vững hơn và kiểm thử xu hướng nhiều tuần.
 
 ## Deferred
 
-Activity Rings, workout, VO₂ max, SpO₂, weight/BMI và watchOS.
+Activity Rings, Workout route/type/energy chi tiết, VO₂ max, SpO₂, weight/BMI và watchOS.
 
 ## Excluded sớm
 

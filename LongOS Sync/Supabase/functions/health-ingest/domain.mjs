@@ -15,10 +15,22 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 const LOCAL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_FUTURE_MS = 10 * 60 * 1000;
 const MAX_AGE_MS = 400 * 24 * 60 * 60 * 1000;
+const DAILY_METRICS = new Set([
+  "sleep",
+  "sleep_rem",
+  "sleep_deep",
+  "hrv_sdnn",
+  "resting_heart_rate"
+]);
 const METRIC_CONTRACTS = new Map([
   ["steps", { unit: "count", maximum: 2_000_000, provenance: "healthkit_statistics" }],
   ["active_energy", { unit: "kcal", maximum: 100_000, provenance: "healthkit_statistics" }],
   ["sleep", { unit: "minute", minimum: 1, maximum: 1_440, provenance: "healthkit_sleep_summary" }],
+  ["sleep_rem", { unit: "minute", minimum: 1, maximum: 1_440, provenance: "healthkit_sleep_stage_summary" }],
+  ["sleep_deep", { unit: "minute", minimum: 1, maximum: 1_440, provenance: "healthkit_sleep_stage_summary" }],
+  ["hrv_sdnn", { unit: "ms", minimum: 1, maximum: 2_000, provenance: "healthkit_statistics_daily" }],
+  ["resting_heart_rate", { unit: "bpm", minimum: 20, maximum: 300, provenance: "healthkit_statistics_daily" }],
+  ["workout_duration", { unit: "minute", minimum: 1, maximum: 1_440, provenance: "healthkit_workout_summary" }],
 ]);
 
 export class ContractError extends Error {
@@ -69,7 +81,7 @@ export function parseHealthIngestRequest(input, now = new Date()) {
     parseLocalDate(bucket.localDate);
     parseTimeZone(bucket.timezoneId);
 
-    const identity = bucket.metric === "sleep"
+    const identity = DAILY_METRICS.has(bucket.metric)
       ? [bucket.metric, bucket.localDate, bucket.algorithmVersion].join("|")
       : [bucket.metric, start, end, bucket.algorithmVersion].join("|");
     if (identities.has(identity)) throw new ContractError();

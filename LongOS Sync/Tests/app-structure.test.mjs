@@ -26,19 +26,30 @@ async function filesRecursively(directory) {
   return nested.flat();
 }
 
-test("requests read-only Steps, Active Energy and Sleep with aggregate queries", () => {
+test("requests the approved HealthKit summaries with read-only aggregate queries", () => {
   assert.match(health, /quantityType\(forIdentifier: \.stepCount\)/);
   assert.match(health, /quantityType\(forIdentifier: \.activeEnergyBurned\)/);
   assert.match(health, /categoryType\(forIdentifier: \.sleepAnalysis\)/);
+  assert.match(health, /quantityType\(forIdentifier: \.heartRateVariabilitySDNN\)/);
+  assert.match(health, /quantityType\(forIdentifier: \.restingHeartRate\)/);
+  assert.match(health, /HKObjectType\.workoutType\(\)/);
   assert.match(health, /HKStatisticsCollectionQuery/);
   assert.match(health, /HKSampleQuery/);
   assert.match(health, /options: \.cumulativeSum/);
-  assert.match(health, /let readTypes: Set<HKObjectType> = \[types\.steps, types\.activeEnergy, types\.sleep\]/);
+  assert.match(health, /types\.hrvSDNN/);
+  assert.match(health, /types\.restingHeartRate/);
+  assert.match(health, /types\.workout/);
   assert.match(health, /requestAuthorization\(toShare: \[\], read: readTypes\)/);
-  assert.match(coordinator, /health-request-completed\..*\.v2/);
+  assert.match(coordinator, /health-request-completed\..*\.v3/);
   assert.match(health, /metric: "active_energy"/);
   assert.match(health, /metric: "sleep"/);
+  assert.match(health, /metric: "hrv_sdnn"/);
+  assert.match(health, /metric: "resting_heart_rate"/);
+  assert.match(health, /metric: "workout_duration"/);
+  assert.match(health, /"sleep_rem"/);
+  assert.match(health, /"sleep_deep"/);
   assert.match(health, /StepBucketIdentity\.makeDaily/);
+  assert.doesNotMatch(health, /quantityType\(forIdentifier: \.heartRate\)/);
   assert.doesNotMatch(info, /NSHealthUpdateUsageDescription/);
 });
 

@@ -6,7 +6,8 @@ const rootHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8
 const publicHtml = await readFile(new URL('../public/index.html', import.meta.url), 'utf8');
 const migration = (await Promise.all([
   '202608070001_health_steps.sql',
-  '202608090001_health_sleep_energy.sql'
+  '202608090001_health_sleep_energy.sql',
+  '202608130001_health_recovery_workouts.sql'
 ].map(name => readFile(
   new URL(`../LongOS Sync/Supabase/migrations/${name}`, import.meta.url),
   'utf8'
@@ -25,6 +26,10 @@ for (const id of [
   'healthEnergyToday',
   'healthSleepDuration',
   'healthSleepWindow',
+  'healthHRV',
+  'healthRestingHeartRate',
+  'healthSleepStages',
+  'healthWorkout',
   'healthDailyScore',
   'healthDailyTitle',
   'healthDailyInsight',
@@ -132,14 +137,21 @@ assert.match(rootHtml, /function buildTodayModel\(\)/);
 assert.match(rootHtml, /function exportTodayReport\(\)/);
 assert.match(rootHtml, /function buildUnifiedTimeline\(\)/);
 assert.match(rootHtml, /function renderUnifiedTimeline\(\)/);
-assert.match(rootHtml, /Cần HRV và nhịp tim nghỉ; LongOS không ước đoán/);
+assert.match(rootHtml, /Cần HRV, nhịp tim nghỉ và ít nhất 7 ngày nền cá nhân/);
+assert.match(rootHtml, /state\.healthRecoveryScore = todayScore/);
 
-assert.match(rootHtml, /\/rest\/v1\/health_metric_buckets\?metric_key=in\.\(steps,active_energy,sleep\)/);
-assert.match(rootHtml, /\/rest\/v1\/health_sync_status\?metric_key=in\.\(steps,active_energy,sleep\)/);
-assert.match(rootHtml, /select=metric_key,bucket_start,bucket_end,value_integer,unit,source_updated_at,updated_at/);
+assert.match(rootHtml, /const metrics = 'steps,active_energy,sleep,sleep_rem,sleep_deep,hrv_sdnn,resting_heart_rate,workout_duration'/);
+assert.match(rootHtml, /\/rest\/v1\/health_metric_buckets\?metric_key=in\.\(\$\{metrics\}\)/);
+assert.match(rootHtml, /metric_key=in\.\(hrv_sdnn,resting_heart_rate\)/);
+assert.match(rootHtml, /local_date=lt\.\$\{encodeURIComponent\(date\)\}/);
+assert.match(rootHtml, /\/rest\/v1\/health_sync_status\?metric_key=in\.\(\$\{metrics\}\)/);
+assert.match(rootHtml, /select=metric_key,bucket_start,bucket_end,local_date,value_integer,unit,source_updated_at,updated_at/);
 assert.match(rootHtml, /select=metric_key,last_source_updated_at,last_ingested_at,updated_at/);
 assert.match(rootHtml, /metric === 'active_energy' && row\.unit === 'kcal'/);
-assert.match(rootHtml, /metric === 'sleep' && row\.unit === 'minute'/);
+assert.match(rootHtml, /\['sleep', 'sleep_rem', 'sleep_deep', 'workout_duration'\]\.includes\(metric\)/);
+assert.match(rootHtml, /metric === 'hrv_sdnn' && row\.unit === 'ms'/);
+assert.match(rootHtml, /metric === 'resting_heart_rate' && row\.unit === 'bpm'/);
+assert.match(rootHtml, /metric === 'workout_duration'/);
 assert.match(rootHtml, /state\.healthSleepStart = latestSleep\?\.start \?\? 0/);
 assert.doesNotMatch(rootHtml, /health_metric_buckets[^\n]*user_id=/, 'web must rely on owner RLS rather than choose a user id');
 assert.doesNotMatch(rootHtml, /health_sync_status[^\n]*user_id=/, 'web must rely on owner RLS rather than choose a user id');
@@ -149,7 +161,8 @@ assert.match(migration, /grant select on table public\.health_metric_buckets to 
 assert.match(migration, /using \(\(select auth\.uid\(\)\) = user_id\);/i);
 assert.match(migration, /alter table public\.health_sync_status enable row level security;/i);
 assert.match(migration, /grant select on table public\.health_sync_status to authenticated;/i);
-assert.match(migration, /metric_key in \('steps', 'active_energy', 'sleep'\)/i);
+assert.match(migration, /'hrv_sdnn', 'resting_heart_rate', 'workout_duration'/i);
 assert.match(migration, /health_metric_buckets_sleep_day_unique/i);
+assert.match(migration, /health_metric_buckets_daily_summary_unique/i);
 
 console.log('LongOS authenticated HealthKit web tests: OK');

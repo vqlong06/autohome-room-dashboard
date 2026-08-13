@@ -20,6 +20,12 @@ final class StepSyncCoordinator: ObservableObject {
     @Published private(set) var latestSleepMinutes: Int?
     @Published private(set) var latestSleepStart: Date?
     @Published private(set) var latestSleepEnd: Date?
+    @Published private(set) var latestSleepREMMinutes: Int?
+    @Published private(set) var latestSleepDeepMinutes: Int?
+    @Published private(set) var latestHRVMilliseconds: Int?
+    @Published private(set) var latestRestingHeartRateBPM: Int?
+    @Published private(set) var todayWorkoutMinutes: Int?
+    @Published private(set) var todayWorkoutCount = 0
     @Published private(set) var lastSuccessfulSyncAt: Date?
     @Published private(set) var pendingUploadCount = 0
     @Published private(set) var lastErrorMessage: String?
@@ -112,6 +118,12 @@ final class StepSyncCoordinator: ObservableObject {
         latestSleepMinutes = nil
         latestSleepStart = nil
         latestSleepEnd = nil
+        latestSleepREMMinutes = nil
+        latestSleepDeepMinutes = nil
+        latestHRVMilliseconds = nil
+        latestRestingHeartRateBPM = nil
+        todayWorkoutMinutes = nil
+        todayWorkoutCount = 0
         lastSuccessfulSyncAt = nil
         pendingUploadCount = 0
         statusMessage = "Đã đăng xuất"
@@ -222,7 +234,7 @@ final class StepSyncCoordinator: ObservableObject {
     }
 
     private func healthRequestKey(ownerID: String) -> String {
-        "longos.health-request-completed.\(ownerID.lowercased()).v2"
+        "longos.health-request-completed.\(ownerID.lowercased()).v3"
     }
 
     private func updateTodayMetrics(from buckets: [StepBucket]) {
@@ -238,11 +250,28 @@ final class StepSyncCoordinator: ObservableObject {
         let sleep = todayBuckets
             .filter { $0.metric == "sleep" }
             .max { $0.sourceUpdatedAt < $1.sourceUpdatedAt }
+        let sleepREM = latestBucket(metric: "sleep_rem", in: todayBuckets)
+        let sleepDeep = latestBucket(metric: "sleep_deep", in: todayBuckets)
+        let hrv = latestBucket(metric: "hrv_sdnn", in: todayBuckets)
+        let restingHeartRate = latestBucket(metric: "resting_heart_rate", in: todayBuckets)
+        let workouts = todayBuckets.filter { $0.metric == "workout_duration" }
         todaySteps = steps.isEmpty ? nil : steps.reduce(0, +)
         todayActiveEnergyKcal = energy.isEmpty ? nil : energy.reduce(0, +)
         latestSleepMinutes = sleep?.value
         latestSleepStart = sleep?.start
         latestSleepEnd = sleep?.end
+        latestSleepREMMinutes = sleepREM?.value
+        latestSleepDeepMinutes = sleepDeep?.value
+        latestHRVMilliseconds = hrv?.value
+        latestRestingHeartRateBPM = restingHeartRate?.value
+        todayWorkoutMinutes = workouts.isEmpty ? nil : workouts.map(\.value).reduce(0, +)
+        todayWorkoutCount = workouts.count
+    }
+
+    private func latestBucket(metric: String, in buckets: [StepBucket]) -> StepBucket? {
+        buckets
+            .filter { $0.metric == metric }
+            .max { $0.sourceUpdatedAt < $1.sourceUpdatedAt }
     }
 
     private func persistChangedBuckets(_ buckets: [StepBucket], ownerID: String) throws {
