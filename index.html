@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LongOS — Không gian của Long</title>
   <meta name="theme-color" content="#0b0e15">
-  <meta name="longos-build" content="20260801.3">
+  <meta name="longos-build" content="20260813.2">
   <!-- Legacy marker lets already-installed AutoHome builds discover this update. -->
-  <meta name="autohome-build" content="20260801.3">
+  <meta name="autohome-build" content="20260813.2">
   <meta name="application-name" content="LongOS">
   <meta name="apple-mobile-web-app-title" content="LongOS">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="./manifest.webmanifest?v=20260801.3">
+  <link rel="manifest" href="./manifest.webmanifest?v=20260813.2">
   <link rel="icon" type="image/svg+xml" href="./favicon.svg?v=20260713">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20260713">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3143,12 +3143,575 @@
         opacity: 0 !important;
       }
     }
+
+    /* ===================== LONGOS INFORMATION ARCHITECTURE ===================== */
+    .dashboard-nav {
+      grid-template-columns: repeat(6, minmax(96px, 1fr));
+    }
+
+    .dashboard-nav::before {
+      width: calc((100% - 28px) / 6);
+    }
+
+    .dashboard[data-active-view="today"] > [data-dashboard-view],
+    .dashboard[data-active-view="health"] > [data-dashboard-view],
+    .dashboard[data-active-view="system"] > [data-dashboard-view] {
+      grid-column: 1 / -1;
+      margin-top: 0;
+    }
+
+    .today-hero,
+    .today-score-grid,
+    .today-pulse,
+    .today-intelligence {
+      grid-column: 1 / -1;
+    }
+
+    .today-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .today-eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .today-title {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(34px, 5vw, 58px);
+      font-weight: 650;
+      line-height: .98;
+    }
+
+    .today-brief {
+      max-width: 820px;
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .today-hero-actions {
+      display: grid;
+      justify-items: end;
+      gap: 10px;
+    }
+
+    .today-sync {
+      color: var(--muted);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .today-score-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .today-score-card {
+      position: relative;
+      min-height: 170px;
+      padding: 20px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .today-score-label,
+    .today-pulse-label {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .today-score-value {
+      display: block;
+      margin-top: 18px;
+      font-family: var(--font-display);
+      font-size: clamp(38px, 5vw, 54px);
+      font-weight: 650;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .today-score-copy {
+      min-height: 36px;
+      margin: 8px 0 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .today-score-track {
+      height: 5px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--line);
+    }
+
+    .today-score-track > span {
+      display: block;
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+      transition: width 600ms var(--ease-standard);
+    }
+
+    .today-score-card.activity .today-score-track > span { background: var(--warm); }
+    .today-score-card.environment .today-score-track > span { background: var(--cool); }
+    .today-score-card.recovery .today-score-track > span { background: var(--chip); }
+
+    .today-pulse {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .today-pulse-item {
+      min-width: 0;
+      padding: 14px;
+      background: var(--surface-soft);
+    }
+
+    .today-pulse-value {
+      display: block;
+      margin-top: 8px;
+      font-family: var(--font-display);
+      font-size: clamp(21px, 3vw, 30px);
+      font-weight: 650;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    .today-pulse-copy {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .today-intelligence {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
+      gap: 12px;
+    }
+
+    .today-insight {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .today-insight-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .today-insight h2 {
+      margin: 8px 0 0;
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 34px);
+      font-weight: 650;
+      line-height: 1.08;
+    }
+
+    .today-insight-copy {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .confidence-badge {
+      flex: none;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .today-action-list {
+      display: grid;
+      gap: 8px;
+      margin: 15px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .today-action-list li {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      padding: 11px 0;
+      border-top: 1px solid var(--line);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .today-action-list li::before {
+      content: attr(data-rank);
+      display: grid;
+      width: 22px;
+      height: 22px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--surface-soft);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .health-availability {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .health-availability-item {
+      padding: 14px;
+      background: var(--surface-soft);
+    }
+
+    .health-availability-item strong,
+    .health-availability-item span {
+      display: block;
+    }
+
+    .health-availability-item span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .unified-timeline-card {
+      grid-column: 1 / -1;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .unified-timeline-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .timeline-list {
+      display: grid;
+      gap: 0;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .timeline-event {
+      display: grid;
+      grid-template-columns: 70px 12px minmax(0, 1fr);
+      gap: 12px;
+      min-height: 70px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .timeline-time {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .timeline-dot {
+      --timeline-tone: var(--accent);
+      width: 10px;
+      height: 10px;
+      margin-top: 2px;
+      border-radius: 50%;
+      background: var(--timeline-tone);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--timeline-tone), transparent 84%);
+    }
+
+    .timeline-dot.warm { --timeline-tone: var(--warm); }
+    .timeline-dot.health { --timeline-tone: var(--chip); }
+    .timeline-dot.cool { --timeline-tone: var(--cool); }
+
+    .timeline-empty {
+      grid-column: 1 / -1;
+    }
+
+    .timeline-body strong,
+    .timeline-body span {
+      display: block;
+    }
+
+    .timeline-body strong {
+      font-size: 13px;
+    }
+
+    .timeline-body span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .dashboard[data-active-view="health"] > .health-card {
+      order: 2;
+    }
+
+    .dashboard[data-active-view="system"] > .system-status {
+      order: 2;
+    }
+
+    .dashboard[data-active-view="system"] > .details {
+      order: 3;
+    }
+
+    .dashboard[data-active-view="system"] > .system-tools {
+      order: 4;
+    }
+
+    .health-card {
+      grid-template-columns: minmax(0, 1fr) 190px;
+      align-items: stretch;
+      gap: 20px;
+      padding: 24px;
+    }
+
+    .health-daily-summary {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr);
+      gap: 20px;
+      align-items: center;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 12px;
+      background: var(--surface-soft);
+    }
+
+    .health-score-ring {
+      --health-score: 0;
+      width: 116px;
+      aspect-ratio: 1;
+      display: grid;
+      place-content: center;
+      border-radius: 50%;
+      text-align: center;
+      background:
+        radial-gradient(circle at center, var(--panel) 58%, transparent 60%),
+        conic-gradient(var(--accent) calc(var(--health-score) * 1%), var(--line) 0);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line), transparent 25%);
+      transition: background 500ms var(--ease-standard);
+    }
+
+    .health-score-ring > span {
+      font-family: var(--font-display);
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .health-score-ring > small {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .health-daily-copy strong {
+      display: block;
+      margin-top: 6px;
+      font-family: var(--font-display);
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1.05;
+      font-weight: 650;
+    }
+
+    .health-daily-copy p {
+      max-width: 720px;
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .health-metric {
+      border: 0;
+      background: var(--surface-soft);
+    }
+
+    .health-progress {
+      height: 6px;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--line);
+    }
+
+    .health-progress > span {
+      display: block;
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+      transition: width 600ms var(--ease-standard);
+    }
+
+    .health-actions {
+      align-content: end;
+    }
+
+    .system-status[open] .device-grid {
+      margin-top: 14px;
+    }
+
+    .system-tools {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .system-tool-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .system-tool-status {
+      min-height: 18px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 720px) {
+      .dashboard-nav {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+      }
+
+      .dashboard-tab {
+        padding-inline: 2px;
+        font-size: 8px;
+      }
+
+      .dashboard-tab-icon {
+        width: 18px;
+        height: 18px;
+      }
+
+      .health-card {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 20px 16px;
+      }
+
+      .health-daily-summary {
+        grid-template-columns: 96px minmax(0, 1fr);
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .health-score-ring {
+        width: 88px;
+      }
+
+      .health-score-ring > span {
+        font-size: 28px;
+      }
+
+      .health-metrics,
+      .system-tool-actions,
+      .today-score-grid,
+      .today-pulse,
+      .today-intelligence,
+      .health-availability {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .today-hero {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 22px 16px;
+      }
+
+      .today-hero-actions {
+        justify-items: stretch;
+      }
+
+      .today-sync {
+        text-align: left;
+      }
+
+      .today-score-grid,
+      .today-intelligence {
+        gap: 10px;
+      }
+
+      .today-pulse {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 12px;
+      }
+
+      .unified-timeline-card {
+        padding: 18px 16px;
+      }
+
+      .unified-timeline-head {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .timeline-event {
+        grid-template-columns: 54px 10px minmax(0, 1fr);
+        gap: 9px;
+      }
+    }
   </style>
 </head>
 <body class="is-loading">
   <div class="environment-layer" aria-hidden="true"></div>
   <main class="app">
-    <section class="dashboard" data-active-view="overview" aria-label="Bảng điều khiển LongOS">
+    <section class="dashboard" data-active-view="today" aria-label="Bảng điều khiển LongOS">
       <div class="topbar">
         <div>
           <p class="brand-kicker">LongOS / Trực tiếp</p>
@@ -3176,11 +3739,23 @@
       </div>
 
       <nav class="dashboard-nav" aria-label="Điều hướng dashboard">
-        <button class="dashboard-tab active" type="button" data-dashboard-tab="overview" aria-pressed="true">
+        <button class="dashboard-tab active" type="button" data-dashboard-tab="today" aria-pressed="true">
+          <span class="dashboard-tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 3v3M17 3v3M4 9h16"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="m8 15 2 2 5-5"/></svg>
+          </span>
+          <span>Hôm nay</span>
+        </button>
+        <button class="dashboard-tab" type="button" data-dashboard-tab="overview" aria-pressed="false">
           <span class="dashboard-tab-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
           </span>
-          <span>Tổng quan</span>
+          <span>Không gian</span>
+        </button>
+        <button class="dashboard-tab" type="button" data-dashboard-tab="health" aria-pressed="false">
+          <span class="dashboard-tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/><path d="M7.5 12h2l1.2-2.5 2.1 5 1.2-2.5h2.5"/></svg>
+          </span>
+          <span>Sức khỏe</span>
         </button>
         <button class="dashboard-tab" type="button" data-dashboard-tab="ac" aria-pressed="false">
           <span class="dashboard-tab-icon" aria-hidden="true">
@@ -3192,11 +3767,100 @@
           <span class="dashboard-tab-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 4-4 3 2 5-6"/></svg>
           </span>
-          <span>Biểu đồ</span>
+          <span>Phân tích</span>
+        </button>
+        <button class="dashboard-tab" type="button" data-dashboard-tab="system" aria-pressed="false">
+          <span class="dashboard-tab-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01M11 7h7M11 17h7"/></svg>
+          </span>
+          <span>Hệ thống</span>
         </button>
       </nav>
 
-      <details class="system-status" data-dashboard-view="overview">
+      <section class="today-hero" data-dashboard-view="today" aria-label="LongOS hôm nay">
+        <div>
+          <p id="todayDate" class="today-eyebrow">Hôm nay</p>
+          <h2 id="todayGreeting" class="today-title">Chào Long</h2>
+          <p id="todayBrief" class="today-brief">LongOS đang tổng hợp không gian và sức khỏe của bạn.</p>
+        </div>
+        <div class="today-hero-actions">
+          <button id="todayExportReport" class="btn primary" type="button">Xuất báo cáo ảnh</button>
+          <span id="todaySync" class="today-sync">Đang kiểm tra dữ liệu mới nhất</span>
+        </div>
+      </section>
+
+      <section class="today-score-grid" data-dashboard-view="today" aria-label="Điểm số hôm nay">
+        <article class="today-score-card sleep">
+          <span class="today-score-label">Sleep</span>
+          <strong id="todaySleepScore" class="today-score-value">--</strong>
+          <p id="todaySleepCopy" class="today-score-copy">Chờ dữ liệu giấc ngủ</p>
+          <div class="today-score-track" aria-hidden="true"><span id="todaySleepBar"></span></div>
+        </article>
+        <article class="today-score-card recovery">
+          <span class="today-score-label">Recovery</span>
+          <strong id="todayRecoveryScore" class="today-score-value">--</strong>
+          <p id="todayRecoveryCopy" class="today-score-copy">Chờ dữ liệu hồi phục</p>
+          <div class="today-score-track" aria-hidden="true"><span id="todayRecoveryBar"></span></div>
+        </article>
+        <article class="today-score-card activity">
+          <span class="today-score-label">Activity</span>
+          <strong id="todayActivityScore" class="today-score-value">--</strong>
+          <p id="todayActivityCopy" class="today-score-copy">Chờ dữ liệu vận động</p>
+          <div class="today-score-track" aria-hidden="true"><span id="todayActivityBar"></span></div>
+        </article>
+        <article class="today-score-card environment">
+          <span class="today-score-label">Environment</span>
+          <strong id="todayEnvironmentScore" class="today-score-value">--</strong>
+          <p id="todayEnvironmentCopy" class="today-score-copy">Chờ cảm biến phòng</p>
+          <div class="today-score-track" aria-hidden="true"><span id="todayEnvironmentBar"></span></div>
+        </article>
+      </section>
+
+      <section class="today-pulse" data-dashboard-view="today" aria-label="Chỉ số quan trọng hôm nay">
+        <article class="today-pulse-item">
+          <span class="today-pulse-label">Giấc ngủ</span>
+          <strong id="todaySleepValue" class="today-pulse-value">--</strong>
+          <p id="todaySleepMeta" class="today-pulse-copy">Chưa có dữ liệu</p>
+        </article>
+        <article class="today-pulse-item">
+          <span class="today-pulse-label">Vận động</span>
+          <strong id="todayStepsValue" class="today-pulse-value">--</strong>
+          <p id="todayStepsMeta" class="today-pulse-copy">Bước chân hôm nay</p>
+        </article>
+        <article class="today-pulse-item">
+          <span class="today-pulse-label">Không gian</span>
+          <strong id="todayRoomValue" class="today-pulse-value">--</strong>
+          <p id="todayRoomMeta" class="today-pulse-copy">Chờ cảm biến phòng</p>
+        </article>
+        <article class="today-pulse-item">
+          <span class="today-pulse-label">Ngoài trời</span>
+          <strong id="todayOutdoorValue" class="today-pulse-value">--</strong>
+          <p id="todayOutdoorMeta" class="today-pulse-copy">Chờ thời tiết</p>
+        </article>
+      </section>
+
+      <section class="today-intelligence" data-dashboard-view="today" aria-label="Phân tích chéo hôm nay">
+        <article class="today-insight">
+          <div class="today-insight-head">
+            <div>
+              <span class="today-pulse-label">Home × Health</span>
+              <h2 id="homeHealthTitle">Đang tích lũy</h2>
+            </div>
+            <span id="homeHealthConfidence" class="confidence-badge">Chưa đủ mẫu</span>
+          </div>
+          <p id="homeHealthCopy" class="today-insight-copy">Cần một giấc ngủ có thời gian bắt đầu và kết thúc để đối chiếu với dữ liệu phòng.</p>
+          <p id="homeHealthSamples" class="today-insight-copy">0 mẫu khớp thời gian</p>
+        </article>
+        <article class="today-insight">
+          <span class="today-pulse-label">Next Action</span>
+          <h2>Việc đáng làm tiếp theo</h2>
+          <ol id="todayActionList" class="today-action-list">
+            <li data-rank="1">Đang đợi dữ liệu đủ mới để đưa ra ưu tiên.</li>
+          </ol>
+        </article>
+      </section>
+
+      <details class="system-status" data-dashboard-view="system" hidden open>
         <summary>
           <span>
             <strong>Trạng thái hệ thống</strong>
@@ -3233,7 +3897,7 @@
         </section>
       </details>
 
-      <section class="comfort-card" data-dashboard-view="overview" aria-label="Trạng thái phòng">
+      <section class="comfort-card" data-dashboard-view="overview" aria-label="Trạng thái phòng" hidden>
         <div>
           <p class="comfort-kicker">Trạng thái phòng</p>
           <p id="comfortTitle" class="comfort-title">Đang đo</p>
@@ -3259,7 +3923,7 @@
         </div>
       </section>
 
-      <div class="grid" data-dashboard-view="overview">
+      <div class="grid" data-dashboard-view="overview" hidden>
         <article class="metric-card">
           <div>
             <p class="metric-label">Nhiệt độ</p>
@@ -3329,11 +3993,22 @@
         </article>
       </div>
 
-      <section class="health-card" data-dashboard-view="overview" aria-label="Steps, năng lượng và giấc ngủ từ HealthKit">
+      <section class="health-card" data-dashboard-view="health" aria-label="Steps, năng lượng và giấc ngủ từ HealthKit" hidden>
         <div>
           <div class="health-head">
             <p class="metric-label">HealthKit / Hôm nay</p>
             <span id="healthAuthState" class="health-badge">Riêng tư · chưa đăng nhập</span>
+          </div>
+          <div class="health-daily-summary">
+            <div id="healthScoreRing" class="health-score-ring" style="--health-score:0">
+              <span id="healthDailyScore">--</span>
+              <small>điểm ngày</small>
+            </div>
+            <div class="health-daily-copy">
+              <span class="health-metric-label">Nhịp hôm nay</span>
+              <strong id="healthDailyTitle">Chưa có dữ liệu sức khỏe</strong>
+              <p id="healthDailyInsight">Đăng nhập một lần trên thiết bị này để LongOS tự khôi phục phiên ở những lần mở sau.</p>
+            </div>
           </div>
           <div class="health-metrics">
             <div class="health-metric">
@@ -3343,6 +4018,7 @@
                 <span class="health-unit">bước</span>
               </div>
               <span class="health-window">Tổng hôm nay</span>
+              <div class="health-progress" aria-hidden="true"><span id="healthStepsProgress"></span></div>
             </div>
             <div class="health-metric">
               <span class="health-metric-label">Năng lượng hoạt động</span>
@@ -3351,6 +4027,7 @@
                 <span class="health-unit">kcal</span>
               </div>
               <span class="health-window">Active Energy Burned</span>
+              <div class="health-progress" aria-hidden="true"><span id="healthEnergyProgress"></span></div>
             </div>
             <div class="health-metric">
               <span class="health-metric-label">Giấc ngủ gần nhất</span>
@@ -3358,18 +4035,25 @@
                 <span id="healthSleepDuration" class="health-value">--</span>
               </div>
               <span id="healthSleepWindow" class="health-window">Chưa có dữ liệu</span>
+              <div class="health-progress" aria-hidden="true"><span id="healthSleepProgress"></span></div>
             </div>
           </div>
           <p id="healthStepsMeta" class="health-copy">Đăng nhập tài khoản LongOS để xem dữ liệu HealthKit của bạn.</p>
           <p id="healthSyncFreshness" class="health-copy">ESP32 vẫn hiển thị độc lập; dữ liệu sức khỏe không bao giờ đọc bằng quyền anonymous.</p>
+          <div class="health-availability" aria-label="Dữ liệu sức khỏe nâng cao">
+            <div class="health-availability-item"><strong>HRV</strong><span>Chưa được LongOS Sync gửi lên</span></div>
+            <div class="health-availability-item"><strong>Nhịp tim nghỉ</strong><span>Chưa được LongOS Sync gửi lên</span></div>
+            <div class="health-availability-item"><strong>REM / Deep</strong><span>Chưa được LongOS Sync gửi lên</span></div>
+            <div class="health-availability-item"><strong>Workout</strong><span>Chưa được LongOS Sync gửi lên</span></div>
+          </div>
         </div>
         <div class="health-actions">
           <button id="healthCardAction" class="btn primary" type="button">Đăng nhập</button>
-          <span class="health-privacy">Chỉ phiên tab này lưu token. Mật khẩu không được lưu.</span>
+          <span class="health-privacy">Thiết bị này ghi nhớ phiên đến khi bạn đăng xuất. Mật khẩu không được lưu.</span>
         </div>
       </section>
 
-      <section class="weather-card" data-dashboard-view="overview" aria-label="So sánh trong phòng và ngoài trời">
+      <section class="weather-card" data-dashboard-view="overview" aria-label="So sánh trong phòng và ngoài trời" hidden>
         <div class="weather-head">
           <div>
             <p class="compare-label">Trong phòng và ngoài trời</p>
@@ -3424,7 +4108,7 @@
         <p class="weather-attrib">Nguồn ngoài trời: Open-Meteo</p>
       </section>
 
-      <section class="insights-card" data-dashboard-view="overview" aria-label="Phân tích phòng">
+      <section class="insights-card" data-dashboard-view="overview" aria-label="Phân tích phòng" hidden>
         <div class="weather-head">
           <div>
             <p class="compare-label">Phân tích phòng</p>
@@ -3475,6 +4159,17 @@
           <span id="monthDelta" class="delta">--</span>
           <p id="monthSummary" class="compare-copy">Đang tích lũy dữ liệu</p>
         </article>
+      </section>
+
+      <section class="unified-timeline-card" data-dashboard-view="data" aria-label="Dòng thời gian hợp nhất" hidden>
+        <div class="unified-timeline-head">
+          <div>
+            <p class="compare-label">Dòng thời gian hợp nhất</p>
+            <p id="timelineSummary" class="compare-copy">Đang ghép dữ liệu Không gian và Sức khỏe</p>
+          </div>
+          <span class="confidence-badge">Dữ liệu thật</span>
+        </div>
+        <ol id="unifiedTimeline" class="timeline-list" aria-live="polite"></ol>
       </section>
 
       <section class="insights-card ac-month-card" data-dashboard-view="ac" aria-label="Điện điều hoà theo tháng" hidden>
@@ -3592,7 +4287,7 @@
         </div>
       </section>
 
-      <section class="details" data-dashboard-view="data" aria-label="Chi tiết cảm biến" hidden>
+      <section class="details" data-dashboard-view="system" aria-label="Chi tiết cảm biến" hidden>
         <div>
           <p class="detail-label">Cập nhật</p>
           <p id="updatedAt" class="detail-value">--:--:--</p>
@@ -3609,6 +4304,19 @@
           <p class="detail-label">Bản</p>
           <p id="appVersion" class="detail-value">--</p>
         </div>
+      </section>
+
+      <section class="system-tools" data-dashboard-view="system" aria-label="Công cụ hệ thống" hidden>
+        <div>
+          <p class="compare-label">Công cụ nhanh</p>
+          <p class="compare-copy">Kiểm tra và xuất trạng thái mà không cần nối cáp vào ESP32.</p>
+        </div>
+        <div class="system-tool-actions">
+          <button id="systemRefreshNow" class="btn primary" type="button">Làm mới dữ liệu</button>
+          <button id="systemCopyAddress" class="btn" type="button">Sao chép IP ESP32</button>
+          <button id="systemExportStatus" class="btn" type="button">Xuất trạng thái JSON</button>
+        </div>
+        <p id="systemToolStatus" class="system-tool-status" role="status" aria-live="polite"></p>
       </section>
     </section>
   </main>
@@ -3654,6 +4362,17 @@
         <p class="field-hint">Tiền điện dùng biểu giá sinh hoạt EVN bậc thang, VAT 8%. Giá không đổi theo ngày.</p>
       </div>
 
+      <p class="field-group-title">Mục tiêu sức khỏe</p>
+      <div class="field-row">
+        <div class="field"><label for="setStepsGoal">Bước chân / ngày</label><input id="setStepsGoal" type="number" min="1000" max="100000" step="500" inputmode="numeric"></div>
+        <div class="field"><label for="setEnergyGoal">Năng lượng (kcal)</label><input id="setEnergyGoal" type="number" min="50" max="5000" step="50" inputmode="numeric"></div>
+      </div>
+      <div class="field">
+        <label for="setSleepGoal">Giấc ngủ mục tiêu (phút)</label>
+        <input id="setSleepGoal" type="number" min="180" max="720" step="30" inputmode="numeric">
+        <p class="field-hint">Dùng để tính tiến độ và điểm ngày trên tab Sức khỏe.</p>
+      </div>
+
       <p class="field-group-title">Hiển thị</p>
       <div class="field-row">
         <div class="field">
@@ -3680,7 +4399,7 @@
         <h2>HealthKit riêng tư</h2>
         <button id="healthAuthClose" class="icon-btn" type="button" aria-label="Đóng">✕</button>
       </div>
-      <p class="panel-sub">Đăng nhập Supabase để web chỉ đọc Steps, kcal hoạt động và giấc ngủ thuộc chính tài khoản của bạn qua RLS.</p>
+      <p class="panel-sub">Đăng nhập Supabase một lần trên thiết bị này. LongOS chỉ đọc Steps, kcal hoạt động và giấc ngủ thuộc tài khoản của bạn qua RLS.</p>
 
       <form id="healthAuthForm" class="health-auth-form">
         <div class="field">
@@ -3690,7 +4409,7 @@
         <div class="field">
           <label for="healthPassword">Mật khẩu</label>
           <input id="healthPassword" type="password" autocomplete="current-password" required>
-          <p class="field-hint">Mật khẩu chỉ được gửi trực tiếp tới Supabase Auth và không lưu trong trình duyệt.</p>
+          <p class="field-hint">Mật khẩu chỉ gửi trực tiếp tới Supabase Auth và không lưu. Phiên đăng nhập được giữ trên trình duyệt này đến khi bạn đăng xuất.</p>
         </div>
         <p id="healthAuthStatus" class="health-auth-status" role="status" aria-live="polite"></p>
         <div class="panel-actions">
@@ -3794,6 +4513,9 @@
       humidHigh: 75,   // % -> "ẩm cao"
       acKw: 0.9,       // kW (công suất AC, cho ước tính kWh/tiền điện)
       monthlyKwh: 250, // kWh/tháng, dùng để ước tính bậc điện biên
+      stepsGoal: 10000,
+      energyGoal: 500,
+      sleepGoalMin: 480,
       theme: 'auto',   // auto | light | dark
       refreshSec: 1
     };
@@ -3932,6 +4654,7 @@
       healthBucketCount: 0,
       healthFreshAt: 0,
       healthError: '',
+      acSessionsToday: null,
       demoStart: Date.now(),
       demoMode: params.get('demo') === '1',
       cloudMode: params.get('source') === 'cloud'
@@ -3943,12 +4666,49 @@
       statusPill: document.getElementById('statusPill'),
       statusDot: document.getElementById('statusDot'),
       statusText: document.getElementById('statusText'),
+      todayDate: document.getElementById('todayDate'),
+      todayGreeting: document.getElementById('todayGreeting'),
+      todayBrief: document.getElementById('todayBrief'),
+      todaySync: document.getElementById('todaySync'),
+      todayExportReport: document.getElementById('todayExportReport'),
+      todaySleepScore: document.getElementById('todaySleepScore'),
+      todayRecoveryScore: document.getElementById('todayRecoveryScore'),
+      todayActivityScore: document.getElementById('todayActivityScore'),
+      todayEnvironmentScore: document.getElementById('todayEnvironmentScore'),
+      todaySleepCopy: document.getElementById('todaySleepCopy'),
+      todayRecoveryCopy: document.getElementById('todayRecoveryCopy'),
+      todayActivityCopy: document.getElementById('todayActivityCopy'),
+      todayEnvironmentCopy: document.getElementById('todayEnvironmentCopy'),
+      todaySleepBar: document.getElementById('todaySleepBar'),
+      todayRecoveryBar: document.getElementById('todayRecoveryBar'),
+      todayActivityBar: document.getElementById('todayActivityBar'),
+      todayEnvironmentBar: document.getElementById('todayEnvironmentBar'),
+      todaySleepValue: document.getElementById('todaySleepValue'),
+      todaySleepMeta: document.getElementById('todaySleepMeta'),
+      todayStepsValue: document.getElementById('todayStepsValue'),
+      todayStepsMeta: document.getElementById('todayStepsMeta'),
+      todayRoomValue: document.getElementById('todayRoomValue'),
+      todayRoomMeta: document.getElementById('todayRoomMeta'),
+      todayOutdoorValue: document.getElementById('todayOutdoorValue'),
+      todayOutdoorMeta: document.getElementById('todayOutdoorMeta'),
+      homeHealthTitle: document.getElementById('homeHealthTitle'),
+      homeHealthCopy: document.getElementById('homeHealthCopy'),
+      homeHealthConfidence: document.getElementById('homeHealthConfidence'),
+      homeHealthSamples: document.getElementById('homeHealthSamples'),
+      todayActionList: document.getElementById('todayActionList'),
       healthAccountBtn: document.getElementById('healthAccountBtn'),
       healthAuthState: document.getElementById('healthAuthState'),
       healthStepsToday: document.getElementById('healthStepsToday'),
       healthEnergyToday: document.getElementById('healthEnergyToday'),
       healthSleepDuration: document.getElementById('healthSleepDuration'),
       healthSleepWindow: document.getElementById('healthSleepWindow'),
+      healthScoreRing: document.getElementById('healthScoreRing'),
+      healthDailyScore: document.getElementById('healthDailyScore'),
+      healthDailyTitle: document.getElementById('healthDailyTitle'),
+      healthDailyInsight: document.getElementById('healthDailyInsight'),
+      healthStepsProgress: document.getElementById('healthStepsProgress'),
+      healthEnergyProgress: document.getElementById('healthEnergyProgress'),
+      healthSleepProgress: document.getElementById('healthSleepProgress'),
       healthStepsMeta: document.getElementById('healthStepsMeta'),
       healthSyncFreshness: document.getElementById('healthSyncFreshness'),
       healthCardAction: document.getElementById('healthCardAction'),
@@ -3963,6 +4723,10 @@
       healthSessionEmail: document.getElementById('healthSessionEmail'),
       healthRefresh: document.getElementById('healthRefresh'),
       healthSignOut: document.getElementById('healthSignOut'),
+      systemRefreshNow: document.getElementById('systemRefreshNow'),
+      systemCopyAddress: document.getElementById('systemCopyAddress'),
+      systemExportStatus: document.getElementById('systemExportStatus'),
+      systemToolStatus: document.getElementById('systemToolStatus'),
       deviceStatus: document.getElementById('deviceStatus'),
       deviceDetail: document.getElementById('deviceDetail'),
       chipTemp: document.getElementById('chipTemp'),
@@ -4003,6 +4767,8 @@
       weekSummary: document.getElementById('weekSummary'),
       monthDelta: document.getElementById('monthDelta'),
       monthSummary: document.getElementById('monthSummary'),
+      unifiedTimeline: document.getElementById('unifiedTimeline'),
+      timelineSummary: document.getElementById('timelineSummary'),
       historySummary: document.getElementById('historySummary'),
       historyChart: document.getElementById('historyChart'),
       historyChartWrap: document.getElementById('historyChartWrap'),
@@ -4055,7 +4821,9 @@
 
     function loadHealthSession() {
       try {
-        const raw = sessionStorage.getItem(HEALTH_SESSION_KEY);
+        const persistent = localStorage.getItem(HEALTH_SESSION_KEY);
+        const legacy = persistent ? null : sessionStorage.getItem(HEALTH_SESSION_KEY);
+        const raw = persistent || legacy;
         if (!raw) return null;
         const value = JSON.parse(raw);
         if (!value || typeof value !== 'object') return null;
@@ -4063,13 +4831,18 @@
         if (typeof value.refreshToken !== 'string' || value.refreshToken.length === 0) return null;
         if (!Number.isFinite(value.expiresAt) || value.expiresAt <= 0) return null;
         if (typeof value.email !== 'string' || !value.email.includes('@')) return null;
-        return {
+        const session = {
           accessToken: value.accessToken,
           refreshToken: value.refreshToken,
           expiresAt: value.expiresAt,
           email: value.email,
           userId: typeof value.userId === 'string' ? value.userId : ''
         };
+        if (!persistent && legacy) {
+          localStorage.setItem(HEALTH_SESSION_KEY, JSON.stringify(session));
+          sessionStorage.removeItem(HEALTH_SESSION_KEY);
+        }
+        return session;
       } catch (error) {
         return null;
       }
@@ -4078,8 +4851,9 @@
     function persistHealthSession(session) {
       state.healthSession = session;
       try {
-        if (session) sessionStorage.setItem(HEALTH_SESSION_KEY, JSON.stringify(session));
-        else sessionStorage.removeItem(HEALTH_SESSION_KEY);
+        if (session) localStorage.setItem(HEALTH_SESSION_KEY, JSON.stringify(session));
+        else localStorage.removeItem(HEALTH_SESSION_KEY);
+        sessionStorage.removeItem(HEALTH_SESSION_KEY);
       } catch (error) {
         // The in-memory session still works when private storage is unavailable.
       }
@@ -4173,6 +4947,41 @@
       return remainder === 0 ? `${hours}g` : `${hours}g ${remainder}p`;
     }
 
+    function healthProgress(value, goal) {
+      if (!Number.isFinite(value) || !Number.isFinite(goal) || goal <= 0) return 0;
+      return Math.max(0, Math.min(100, Math.round((value / goal) * 100)));
+    }
+
+    function renderHealthContext(score, availableCount) {
+      if (availableCount === 0) {
+        els.healthDailyScore.textContent = '--';
+        els.healthDailyTitle.textContent = state.healthSession ? 'Đang chờ HealthKit' : 'Chưa có dữ liệu sức khỏe';
+        els.healthDailyInsight.textContent = state.healthSession
+          ? 'Mở LongOS Sync trên iPhone để gửi bản tổng hợp mới nhất lên tài khoản của bạn.'
+          : 'Đăng nhập một lần trên thiết bị này để LongOS tự khôi phục phiên ở những lần mở sau.';
+        return;
+      }
+
+      els.healthDailyScore.textContent = String(score);
+      const temperature = finiteNumber(state.latestReading?.temperatureC);
+      if (score >= 85) {
+        els.healthDailyTitle.textContent = 'Nhịp ngày rất tốt';
+        els.healthDailyInsight.textContent = 'Vận động và nghỉ ngơi đang cân bằng. Tiếp tục duy trì nhịp hiện tại.';
+      } else if (state.healthSleepMinutes !== null && state.healthSleepMinutes < settings.sleepGoalMin * 0.75) {
+        els.healthDailyTitle.textContent = 'Ưu tiên hồi phục';
+        els.healthDailyInsight.textContent = 'Giấc ngủ đang thấp hơn mục tiêu. Hôm nay nên giảm cường độ và đi ngủ sớm hơn.';
+      } else if (temperature !== null && temperature >= settings.warmAbove) {
+        els.healthDailyTitle.textContent = 'Giữ cơ thể mát';
+        els.healthDailyInsight.textContent = `Phòng đang ${temperature.toFixed(1)}°C. Uống đủ nước và làm mát trước khi tăng vận động.`;
+      } else if ((state.healthStepsToday ?? 0) < settings.stepsGoal * 0.5 && new Date().getHours() >= 17) {
+        els.healthDailyTitle.textContent = 'Còn thiếu vận động';
+        els.healthDailyInsight.textContent = 'Một quãng đi bộ nhẹ tối nay sẽ giúp tiến gần mục tiêu bước chân mà không quá sức.';
+      } else {
+        els.healthDailyTitle.textContent = 'Đang đi đúng nhịp';
+        els.healthDailyInsight.textContent = 'Các chỉ số hôm nay đang tiến triển ổn. LongOS sẽ cập nhật nhận xét khi có thêm dữ liệu.';
+      }
+    }
+
     function renderHealthValues() {
       els.healthStepsToday.textContent = state.healthStepsToday === null
         ? '--'
@@ -4187,6 +4996,372 @@
       } else {
         els.healthSleepWindow.textContent = 'Chưa có dữ liệu';
       }
+
+      const stepsProgress = healthProgress(state.healthStepsToday, settings.stepsGoal);
+      const energyProgress = healthProgress(state.healthEnergyToday, settings.energyGoal);
+      const sleepProgress = healthProgress(state.healthSleepMinutes, settings.sleepGoalMin);
+      els.healthStepsProgress.style.width = `${stepsProgress}%`;
+      els.healthEnergyProgress.style.width = `${energyProgress}%`;
+      els.healthSleepProgress.style.width = `${sleepProgress}%`;
+      const available = [state.healthStepsToday, state.healthEnergyToday, state.healthSleepMinutes]
+        .map((value, index) => value === null ? null : [stepsProgress, energyProgress, sleepProgress][index])
+        .filter(value => value !== null);
+      const score = available.length
+        ? Math.round(available.reduce((sum, value) => sum + value, 0) / available.length)
+        : 0;
+      els.healthScoreRing.style.setProperty('--health-score', String(score));
+      renderHealthContext(score, available.length);
+      renderTodayDashboard();
+      renderUnifiedTimeline();
+    }
+
+    function todayScore(value) {
+      return Number.isFinite(value) ? clamp(Math.round(value), 0, 100) : null;
+    }
+
+    function setTodayScore(valueEl, copyEl, barEl, score, copy) {
+      valueEl.textContent = score === null ? '--' : String(score);
+      copyEl.textContent = copy;
+      barEl.style.width = `${score === null ? 0 : score}%`;
+    }
+
+    function roomStatsDuringSleep() {
+      if (!(state.healthSleepStart > 0 && state.healthSleepEnd > state.healthSleepStart)) return null;
+      const newestHistoryAt = state.historyPoints[state.historyPoints.length - 1]?.recordedAtMs || 0;
+      const cacheKey = `${state.healthSleepStart}:${state.healthSleepEnd}:${state.historyPoints.length}:${newestHistoryAt}`;
+      if (roomStatsDuringSleep.cacheKey === cacheKey) return roomStatsDuringSleep.cacheValue;
+      const points = validHistoryPoints().filter(point => point.recordedAtMs >= state.healthSleepStart
+        && point.recordedAtMs <= state.healthSleepEnd);
+      if (!points.length) {
+        roomStatsDuringSleep.cacheKey = cacheKey;
+        roomStatsDuringSleep.cacheValue = null;
+        return null;
+      }
+      const temperatureC = averageFinite(points, 'temperatureC');
+      const humidity = averageFinite(points, 'humidity');
+      if (temperatureC === null || humidity === null) return null;
+      const value = { temperatureC, humidity, samples: points.length };
+      roomStatsDuringSleep.cacheKey = cacheKey;
+      roomStatsDuringSleep.cacheValue = value;
+      return value;
+    }
+
+    function buildTodayModel() {
+      const reading = state.latestReading || {};
+      const temperatureC = finiteNumber(reading.temperatureC);
+      const humidity = finiteNumber(reading.humidity);
+      const roomReady = Boolean(reading.deviceOnline && reading.sensorOnline
+        && temperatureC !== null && humidity !== null);
+      const sleepScore = state.healthSleepMinutes === null
+        ? null
+        : todayScore((state.healthSleepMinutes / settings.sleepGoalMin) * 100);
+      const activityParts = [
+        state.healthStepsToday === null ? null : healthProgress(state.healthStepsToday, settings.stepsGoal),
+        state.healthEnergyToday === null ? null : healthProgress(state.healthEnergyToday, settings.energyGoal)
+      ].filter(value => value !== null);
+      const activityScore = activityParts.length
+        ? todayScore(activityParts.reduce((sum, value) => sum + value, 0) / activityParts.length)
+        : null;
+      const environmentBase = roomReady ? computeComfortScore(temperatureC, humidity) : null;
+      const aqi = finiteNumber(state.outdoor?.aqi);
+      const aqiPenalty = aqi === null ? 0 : Math.max(0, Math.min(22, (aqi - 50) * 0.18));
+      const environmentScore = environmentBase === null ? null : todayScore(environmentBase - aqiPenalty);
+      const recoveryScore = null;
+      const roomSleep = roomStatsDuringSleep();
+
+      const brief = [];
+      if (roomReady) {
+        const roomState = comfortState(temperatureC, humidity);
+        brief.push(`Phòng hiện ${temperatureC.toFixed(1)}°C và ${Math.round(humidity)}%: ${roomState.title.toLowerCase()}.`);
+      } else {
+        brief.push('Chưa có reading phòng đủ mới để đánh giá không gian.');
+      }
+      if (state.healthSleepMinutes !== null) {
+        brief.push(`Giấc ngủ gần nhất ${formatHealthDuration(state.healthSleepMinutes)} so với mục tiêu ${formatHealthDuration(settings.sleepGoalMin)}.`);
+      } else if (state.healthSession) {
+        brief.push('HealthKit chưa gửi giấc ngủ mới nhất.');
+      } else {
+        brief.push('Đăng nhập Sức khỏe để ghép dữ liệu cơ thể với môi trường phòng.');
+      }
+      if (activityScore !== null) {
+        brief.push(`Tiến độ vận động hôm nay đạt khoảng ${activityScore}/100.`);
+      }
+
+      const actions = [];
+      if (!roomReady) actions.push({ priority: 100, text: 'Kiểm tra ESP32 hoặc SHT30 vì reading phòng hiện chưa đủ mới.' });
+      if (aqi !== null && aqi > 100) actions.push({ priority: 95, text: `AQI ngoài trời ${Math.round(aqi)}: ưu tiên đóng cửa và hạn chế lấy gió ngoài.` });
+      if (temperatureC !== null && temperatureC >= settings.hotAbove) {
+        actions.push({ priority: 90, text: `Làm mát phòng; nhiệt độ đang ${temperatureC.toFixed(1)}°C, vượt ngưỡng nóng ${settings.hotAbove.toFixed(1)}°C.` });
+      } else if (humidity !== null && humidity >= settings.humidHigh) {
+        actions.push({ priority: 80, text: `Giảm ẩm hoặc tăng thông gió phù hợp; độ ẩm đang ${Math.round(humidity)}%.` });
+      }
+      if (state.healthSleepMinutes !== null && state.healthSleepMinutes < settings.sleepGoalMin * 0.8) {
+        actions.push({ priority: 75, text: 'Giữ buổi tối nhẹ hơn và dành thêm thời gian ngủ để tiến gần mục tiêu.' });
+      }
+      if (state.healthStepsToday !== null && state.healthStepsToday < settings.stepsGoal * 0.55 && new Date().getHours() >= 15) {
+        actions.push({ priority: 55, text: 'Thêm một quãng đi bộ nhẹ để thu hẹp phần bước chân còn thiếu.' });
+      }
+      if (!state.healthSession) actions.push({ priority: 35, text: 'Đăng nhập tab Sức khỏe một lần để LongOS ghi nhớ phiên trên thiết bị này.' });
+      if (!actions.length) actions.push({ priority: 1, text: 'Duy trì nhịp hiện tại; chưa có cảnh báo ưu tiên từ dữ liệu mới nhất.' });
+      actions.sort((a, b) => b.priority - a.priority);
+
+      return {
+        roomReady,
+        temperatureC,
+        humidity,
+        aqi,
+        sleepScore,
+        recoveryScore,
+        activityScore,
+        environmentScore,
+        roomSleep,
+        brief: brief.join(' '),
+        actions: actions.slice(0, 3)
+      };
+    }
+
+    function renderTodayDashboard() {
+      if (!els.todayBrief) return;
+      const model = buildTodayModel();
+      state.todayModel = model;
+      const now = new Date();
+      const hour = now.getHours();
+      els.todayDate.textContent = new Intl.DateTimeFormat('vi-VN', {
+        weekday: 'long', day: '2-digit', month: 'long'
+      }).format(now);
+      els.todayGreeting.textContent = hour < 11 ? 'Chào buổi sáng, Long' : (hour < 18 ? 'Chào buổi chiều, Long' : 'Chào buổi tối, Long');
+      els.todayBrief.textContent = model.brief;
+
+      setTodayScore(
+        els.todaySleepScore, els.todaySleepCopy, els.todaySleepBar, model.sleepScore,
+        model.sleepScore === null ? 'Chờ dữ liệu giấc ngủ' : `${formatHealthDuration(state.healthSleepMinutes)} / mục tiêu ${formatHealthDuration(settings.sleepGoalMin)}`
+      );
+      setTodayScore(
+        els.todayRecoveryScore, els.todayRecoveryCopy, els.todayRecoveryBar, model.recoveryScore,
+        'Cần HRV và nhịp tim nghỉ; LongOS không ước đoán'
+      );
+      setTodayScore(
+        els.todayActivityScore, els.todayActivityCopy, els.todayActivityBar, model.activityScore,
+        model.activityScore === null ? 'Chờ Steps và Active Energy' : 'Tổng hợp bước chân và năng lượng hoạt động'
+      );
+      setTodayScore(
+        els.todayEnvironmentScore, els.todayEnvironmentCopy, els.todayEnvironmentBar, model.environmentScore,
+        model.environmentScore === null ? 'Chờ cảm biến phòng' : (model.aqi === null ? 'Nhiệt độ và độ ẩm trong phòng' : 'Phòng và chất lượng không khí ngoài trời')
+      );
+
+      els.todaySleepValue.textContent = formatHealthDuration(state.healthSleepMinutes);
+      els.todaySleepMeta.textContent = state.healthSleepStart > 0 ? `Kết thúc ${relativeAge(state.healthSleepEnd)}` : 'Chưa có dữ liệu';
+      els.todayStepsValue.textContent = state.healthStepsToday === null ? '--' : new Intl.NumberFormat('vi-VN').format(state.healthStepsToday);
+      els.todayStepsMeta.textContent = state.healthEnergyToday === null ? 'Bước chân hôm nay' : `${new Intl.NumberFormat('vi-VN').format(state.healthEnergyToday)} kcal hoạt động`;
+      els.todayRoomValue.textContent = model.roomReady ? `${model.temperatureC.toFixed(1)}°C` : '--';
+      els.todayRoomMeta.textContent = model.roomReady ? `${Math.round(model.humidity)}% · ${comfortState(model.temperatureC, model.humidity).title}` : 'Chờ cảm biến phòng';
+      els.todayOutdoorValue.textContent = model.aqi === null ? '--' : `AQI ${Math.round(model.aqi)}`;
+      els.todayOutdoorMeta.textContent = state.outdoor && !state.outdoor.error
+        ? `${formatTemperature(state.outdoor.temperatureC)} · ${weatherCodeInfo(state.outdoor.weatherCode)[1]}`
+        : 'Chờ thời tiết';
+
+      if (model.roomSleep) {
+        els.homeHealthTitle.textContent = 'Môi trường lúc ngủ';
+        els.homeHealthCopy.textContent = `Trong giấc ngủ gần nhất, phòng trung bình ${model.roomSleep.temperatureC.toFixed(1)}°C và ${Math.round(model.roomSleep.humidity)}%. Đây là đối chiếu theo thời gian, chưa phải quan hệ nhân quả.`;
+        els.homeHealthConfidence.textContent = 'Tin cậy thấp · 1 giấc';
+        els.homeHealthSamples.textContent = `${model.roomSleep.samples} mẫu cảm biến khớp thời gian`;
+      } else {
+        els.homeHealthTitle.textContent = 'Đang tích lũy';
+        els.homeHealthCopy.textContent = 'Cần một giấc ngủ có thời gian bắt đầu và kết thúc trùng với lịch sử phòng để đối chiếu.';
+        els.homeHealthConfidence.textContent = 'Chưa đủ mẫu';
+        els.homeHealthSamples.textContent = '0 mẫu khớp thời gian';
+      }
+
+      els.todayActionList.replaceChildren(...model.actions.map((action, index) => {
+        const item = document.createElement('li');
+        item.dataset.rank = String(index + 1);
+        item.textContent = action.text;
+        return item;
+      }));
+
+      const roomSync = state.latestReading?.updatedAtIso ? relativeAge(Date.parse(state.latestReading.updatedAtIso)) : 'chưa có';
+      const healthSync = state.healthFreshAt > 0 ? relativeAge(state.healthFreshAt) : 'chưa có';
+      els.todaySync.textContent = `Phòng: ${roomSync} · Health: ${healthSync}`;
+    }
+
+    function buildUnifiedTimeline() {
+      const events = [];
+      const now = Date.now();
+      const todayStart = startOfDay(new Date()).getTime();
+      const earliest = todayStart - 12 * MS_HOUR;
+      const add = (ms, tone, source, title, copy) => {
+        if (!Number.isFinite(ms) || ms < earliest || ms > now + 5 * 60 * 1000) return;
+        events.push({ ms, tone, source, title, copy });
+      };
+
+      const reading = state.latestReading || {};
+      const readingAt = reading.updatedAtIso ? Date.parse(reading.updatedAtIso) : NaN;
+      const roomTemp = finiteNumber(reading.temperatureC);
+      const roomHumidity = finiteNumber(reading.humidity);
+      if (roomTemp !== null && roomHumidity !== null) {
+        add(readingAt, 'room', 'Không gian', 'Reading phòng mới nhất', `${roomTemp.toFixed(1)}°C · ${Math.round(roomHumidity)}%`);
+      }
+
+      const points = todayPoints();
+      if (points.length >= 2) {
+        const temperaturePoints = points.map(point => ({
+          ...point,
+          temperatureC: finiteNumber(point.temperatureC),
+          humidity: finiteNumber(point.humidity)
+        })).filter(point => point.temperatureC !== null);
+        if (temperaturePoints.length >= 2) {
+          const hottest = temperaturePoints.reduce((best, point) => point.temperatureC > best.temperatureC ? point : best);
+          const coolest = temperaturePoints.reduce((best, point) => point.temperatureC < best.temperatureC ? point : best);
+          add(hottest.recordedAtMs, 'warm', 'Không gian', 'Nóng nhất hôm nay', `${hottest.temperatureC.toFixed(1)}°C${finiteNumber(hottest.humidity) === null ? '' : ` · ${Math.round(hottest.humidity)}%`}`);
+          if (coolest.recordedAtMs !== hottest.recordedAtMs) {
+            add(coolest.recordedAtMs, 'cool', 'Không gian', 'Mát nhất hôm nay', `${coolest.temperatureC.toFixed(1)}°C${finiteNumber(coolest.humidity) === null ? '' : ` · ${Math.round(coolest.humidity)}%`}`);
+          }
+        }
+      }
+
+      if (state.healthSleepStart > 0 && state.healthSleepEnd > state.healthSleepStart) {
+        add(state.healthSleepStart, 'health', 'Sức khỏe', 'Bắt đầu giấc ngủ', `Giấc ngủ dài ${formatHealthDuration(state.healthSleepMinutes)}`);
+        add(state.healthSleepEnd, 'health', 'Sức khỏe', 'Kết thúc giấc ngủ', `Tổng thời gian ${formatHealthDuration(state.healthSleepMinutes)}`);
+      }
+      if (state.healthFreshAt > 0) {
+        add(state.healthFreshAt, 'health', 'Sức khỏe', 'LongOS Sync cập nhật', 'Đã nhận bản tổng hợp HealthKit mới nhất');
+      }
+
+      (state.acSessionsToday || []).slice(-2).forEach(session => {
+        add(session.startMs, 'cool', 'Không gian', 'Phiên điều hòa được suy luận', `${formatDurationShort(session.durationMs)} · khoảng ${session.kwh.toFixed(1)} kWh`);
+      });
+
+      return events.sort((a, b) => b.ms - a.ms).slice(0, 8);
+    }
+
+    function renderUnifiedTimeline() {
+      if (!els.unifiedTimeline || !els.timelineSummary) return;
+      const events = buildUnifiedTimeline();
+      if (!events.length) {
+        els.timelineSummary.textContent = 'Chưa có mốc đủ tin cậy để hiển thị';
+        const empty = document.createElement('li');
+        empty.className = 'timeline-event';
+        const body = document.createElement('div');
+        body.className = 'timeline-body timeline-empty';
+        const title = document.createElement('strong');
+        title.textContent = 'Đang tích lũy dữ liệu';
+        const copy = document.createElement('span');
+        copy.textContent = 'Timeline sẽ xuất hiện khi có reading phòng, HealthKit hoặc phiên điều hòa được suy luận.';
+        body.append(title, copy);
+        empty.append(body);
+        els.unifiedTimeline.replaceChildren(empty);
+        return;
+      }
+
+      const sources = [...new Set(events.map(event => event.source))];
+      els.timelineSummary.textContent = `${events.length} mốc thật · ${sources.join(' + ')}`;
+      const todayStart = startOfDay(new Date()).getTime();
+      const dateFormat = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' });
+      els.unifiedTimeline.replaceChildren(...events.map(event => {
+        const item = document.createElement('li');
+        item.className = 'timeline-event';
+        const time = document.createElement('time');
+        time.className = 'timeline-time';
+        time.dateTime = new Date(event.ms).toISOString();
+        time.textContent = event.ms >= todayStart
+          ? formatClockShort(event.ms)
+          : `${dateFormat.format(event.ms)} · ${formatClockShort(event.ms)}`;
+        const dot = document.createElement('span');
+        dot.className = `timeline-dot ${event.tone}`;
+        dot.setAttribute('aria-hidden', 'true');
+        const body = document.createElement('div');
+        body.className = 'timeline-body';
+        const title = document.createElement('strong');
+        title.textContent = event.title;
+        const copy = document.createElement('span');
+        copy.textContent = `${event.source} · ${event.copy}`;
+        body.append(title, copy);
+        item.append(time, dot, body);
+        return item;
+      }));
+    }
+
+    function reportWrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 5) {
+      const words = String(text || '').split(/\s+/);
+      const lines = [];
+      let line = '';
+      words.forEach(word => {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width <= maxWidth || !line) line = test;
+        else { lines.push(line); line = word; }
+      });
+      if (line) lines.push(line);
+      lines.slice(0, maxLines).forEach((value, index) => ctx.fillText(value, x, y + index * lineHeight));
+      return y + Math.min(lines.length, maxLines) * lineHeight;
+    }
+
+    async function exportTodayReport() {
+      renderTodayDashboard();
+      const model = state.todayModel || buildTodayModel();
+      const canvas = document.createElement('canvas');
+      canvas.width = 1080;
+      canvas.height = 1350;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0b0e15';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#3ad1c9';
+      ctx.fillRect(70, 70, 90, 8);
+      ctx.fillStyle = '#f4f7fb';
+      ctx.font = '700 28px sans-serif';
+      ctx.fillText('LONGOS / HÔM NAY', 70, 130);
+      ctx.font = '650 58px sans-serif';
+      ctx.fillText(new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date()), 70, 205);
+      ctx.fillStyle = '#a7b0c1';
+      ctx.font = '400 25px sans-serif';
+      reportWrapText(ctx, model.brief, 70, 265, 940, 38, 4);
+
+      const scores = [
+        ['SLEEP', model.sleepScore], ['RECOVERY', model.recoveryScore],
+        ['ACTIVITY', model.activityScore], ['ENVIRONMENT', model.environmentScore]
+      ];
+      scores.forEach(([label, score], index) => {
+        const x = 70 + (index % 2) * 480;
+        const y = 440 + Math.floor(index / 2) * 190;
+        ctx.fillStyle = '#151b27';
+        ctx.fillRect(x, y, 450, 160);
+        ctx.fillStyle = '#8f9bad';
+        ctx.font = '700 20px monospace';
+        ctx.fillText(label, x + 26, y + 40);
+        ctx.fillStyle = score === null ? '#667085' : '#f4f7fb';
+        ctx.font = '650 62px sans-serif';
+        ctx.fillText(score === null ? '--' : String(score), x + 26, y + 116);
+      });
+
+      ctx.fillStyle = '#3ad1c9';
+      ctx.font = '700 22px monospace';
+      ctx.fillText('NEXT ACTION', 70, 870);
+      ctx.fillStyle = '#f4f7fb';
+      ctx.font = '500 27px sans-serif';
+      let actionY = 920;
+      model.actions.forEach((action, index) => {
+        actionY = reportWrapText(ctx, `${index + 1}. ${action.text}`, 70, actionY, 940, 38, 3) + 18;
+      });
+      ctx.fillStyle = '#667085';
+      ctx.font = '400 18px monospace';
+      ctx.fillText(`Build ${APP_BUILD} · ${new Date().toLocaleString('vi-VN')}`, 70, 1290);
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) return;
+      const file = new File([blob], `longos-hom-nay-${localDateKey()}.png`, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'LongOS Hôm nay' });
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     function renderHealthCard() {
@@ -4209,6 +5384,7 @@
         els.healthStepsMeta.textContent = 'Đăng nhập tài khoản LongOS để xem dữ liệu HealthKit của bạn.';
         els.healthSyncFreshness.textContent = 'ESP32 vẫn hiển thị độc lập; dữ liệu sức khỏe không bao giờ đọc bằng quyền anonymous.';
         els.healthCardAction.textContent = 'Đăng nhập';
+        els.healthCardAction.disabled = false;
         return;
       }
 
@@ -6122,6 +7298,8 @@
       updateDeviceStatus(reading);
       updateStatus(reading);
       updateStats(reading.stats, reading);
+      renderTodayDashboard();
+      renderUnifiedTimeline();
       els.appVersion.textContent = reading.appVersion || '--';
       if (document.body.classList.contains('is-loading')) {
         requestAnimationFrame(() => document.body.classList.remove('is-loading'));
@@ -6167,6 +7345,7 @@
         state.latestReading = reading;
         render(reading);
         void maybeFetchCloudHistory();
+        if (dashboardViewIsActive('health')) renderHealthValues();
         void maybeFetchHealth();
       } finally {
         state.tickInFlight = false;
@@ -6747,6 +7926,7 @@
     function renderAcSessions() {
       if (!els.acSessionList) return;
       const sessions = computeAcSessions();
+      state.acSessionsToday = sessions;
       els.acSessionList.textContent = '';
       if (sessions === null) {
         els.acSessionSummary.textContent = 'Đang đợi dữ liệu thời tiết ngoài trời để tách phiên.';
@@ -7010,6 +8190,7 @@
       setLabel: 'locLabel', setLat: 'lat', setLon: 'lon',
       setWarm: 'warmAbove', setHot: 'hotAbove', setCool: 'coolBelow', setHumid: 'humidHigh',
       setAcKw: 'acKw', setMonthlyKwh: 'monthlyKwh',
+      setStepsGoal: 'stepsGoal', setEnergyGoal: 'energyGoal', setSleepGoal: 'sleepGoalMin',
       setTheme: 'theme', setRefresh: 'refreshSec'
     };
 
@@ -7046,6 +8227,9 @@
       // refresh hợp lệ 1-30s
       next.refreshSec = Math.min(30, Math.max(1, Math.round(next.refreshSec || 1)));
       next.monthlyKwh = Math.max(0, Math.round(next.monthlyKwh || DEFAULT_SETTINGS.monthlyKwh));
+      next.stepsGoal = Math.min(100000, Math.max(1000, Math.round(next.stepsGoal || DEFAULT_SETTINGS.stepsGoal)));
+      next.energyGoal = Math.min(5000, Math.max(50, Math.round(next.energyGoal || DEFAULT_SETTINGS.energyGoal)));
+      next.sleepGoalMin = Math.min(720, Math.max(180, Math.round(next.sleepGoalMin || DEFAULT_SETTINGS.sleepGoalMin)));
       settings = next;
       saveSettings();
       applyTheme();
@@ -7053,6 +8237,7 @@
       // ép cập nhật thời tiết theo toạ độ mới
       state.outdoorAttemptedAt = 0;
       maybeFetchOutdoorWeather(true);
+      renderHealthValues();
     }
 
     function useCurrentLocationForSettings() {
@@ -7147,14 +8332,74 @@
       }
     });
 
+    window.addEventListener('storage', event => {
+      if (event.key !== HEALTH_SESSION_KEY) return;
+      state.healthSession = loadHealthSession();
+      state.healthLoadedAt = 0;
+      state.healthError = '';
+      renderHealthCard();
+      if (state.healthSession) void maybeFetchHealth(true);
+    });
+
+    function setSystemToolStatus(message) {
+      els.systemToolStatus.textContent = message;
+    }
+
+    els.systemRefreshNow.addEventListener('click', async () => {
+      setSystemToolStatus('Đang làm mới dữ liệu…');
+      await tick();
+      setSystemToolStatus('Đã kiểm tra dữ liệu mới nhất.');
+    });
+
+    els.systemCopyAddress.addEventListener('click', async () => {
+      const ip = String(state.latestReading?.ip || '').trim();
+      if (!ip) {
+        setSystemToolStatus('Cloud chưa nhận được địa chỉ IP cục bộ của ESP32.');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(`http://${ip}`);
+        setSystemToolStatus(`Đã sao chép http://${ip}`);
+      } catch (error) {
+        setSystemToolStatus(`IP ESP32: ${ip}`);
+      }
+    });
+
+    els.systemExportStatus.addEventListener('click', () => {
+      const snapshot = {
+        exportedAt: new Date().toISOString(),
+        build: APP_BUILD,
+        cloudMode: state.cloudMode,
+        reading: state.latestReading,
+        historyPoints: state.historyPoints.length,
+        healthSignedIn: Boolean(state.healthSession)
+      };
+      const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `longos-status-${localDateKey()}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setSystemToolStatus('Đã xuất snapshot trạng thái, không kèm token đăng nhập.');
+    });
+
+    els.todayExportReport.addEventListener('click', () => {
+      hapticFeedback(10);
+      void exportTodayReport();
+    });
+
     const dashboardShell = document.querySelector('.dashboard');
     const dashboardNav = document.querySelector('.dashboard-nav');
     const dashboardTabs = Array.from(document.querySelectorAll('[data-dashboard-tab]'));
     const dashboardViews = Array.from(document.querySelectorAll('[data-dashboard-view]'));
     const dashboardTabOffsets = {
-      overview: '0px',
-      ac: 'calc(100% + 4px)',
-      data: 'calc(200% + 8px)'
+      today: '0px',
+      overview: 'calc(100% + 4px)',
+      health: 'calc(200% + 8px)',
+      ac: 'calc(300% + 12px)',
+      data: 'calc(400% + 16px)',
+      system: 'calc(500% + 20px)'
     };
 
     function setDashboardTabIndicator(view) {
@@ -7162,18 +8407,24 @@
     }
 
     const dashboardReadingOrder = [
+      '.today-hero[data-dashboard-view="today"]',
+      '.today-score-grid[data-dashboard-view="today"]',
+      '.today-pulse[data-dashboard-view="today"]',
+      '.today-intelligence[data-dashboard-view="today"]',
       '.grid[data-dashboard-view="overview"]',
-      '.health-card[data-dashboard-view="overview"]',
       '.comfort-card[data-dashboard-view="overview"]',
       '.weather-card[data-dashboard-view="overview"]',
       '.insights-card[data-dashboard-view="overview"]',
-      '.system-status[data-dashboard-view="overview"]',
+      '.health-card[data-dashboard-view="health"]',
       '.ac-month-card[data-dashboard-view="ac"]',
       '.ac-session-card[data-dashboard-view="ac"]',
       '.history-card[data-dashboard-view="data"]:not(.chip-card)',
       '.compare-grid[data-dashboard-view="data"]',
+      '.unified-timeline-card[data-dashboard-view="data"]',
       '.chip-card[data-dashboard-view="data"]',
-      '.details[data-dashboard-view="data"]'
+      '.system-status[data-dashboard-view="system"]',
+      '.details[data-dashboard-view="system"]',
+      '.system-tools[data-dashboard-view="system"]'
     ];
 
     dashboardReadingOrder.forEach(selector => {
@@ -7184,7 +8435,7 @@
     let dashboardViewEnterTimer = 0;
 
     function applyDashboardView(view) {
-      const nextView = ['overview', 'ac', 'data'].includes(view) ? view : 'overview';
+      const nextView = ['today', 'overview', 'health', 'ac', 'data', 'system'].includes(view) ? view : 'today';
       if (nextView !== 'data' && state.historyAnimFrame) {
         cancelAnimationFrame(state.historyAnimFrame);
         state.historyAnimFrame = 0;
@@ -7210,9 +8461,15 @@
       });
 
       requestAnimationFrame(() => {
-        if (nextView === 'overview') {
+        if (nextView === 'today') {
+          renderTodayDashboard();
+        } else if (nextView === 'overview') {
           drawOverviewCharts();
+        } else if (nextView === 'health') {
+          renderHealthCard();
+          void maybeFetchHealth();
         } else if (nextView === 'data') {
+          renderUnifiedTimeline();
           updateHistorySummary(buildHistoryStats());
           animateHistoryChart();
           drawChipChart();
@@ -7237,7 +8494,7 @@
     }
 
     function setDashboardView(view, shouldScroll = true) {
-      const nextView = ['overview', 'ac', 'data'].includes(view) ? view : 'overview';
+      const nextView = ['today', 'overview', 'health', 'ac', 'data', 'system'].includes(view) ? view : 'today';
       if (dashboardShell.dataset.viewReady === 'true' && dashboardShell.dataset.activeView === nextView) {
         if (shouldScroll) requestAnimationFrame(scrollDashboardToTop);
         return;
@@ -7313,7 +8570,7 @@
     }
 
     window.setTimeout(() => checkStandaloneUpdate(true), 1200);
-    setDashboardView('overview', false);
+    setDashboardView('today', false);
 
     renderHealthCard();
     void maybeFetchHealth(true);

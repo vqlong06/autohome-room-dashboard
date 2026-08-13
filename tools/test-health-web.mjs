@@ -25,6 +25,12 @@ for (const id of [
   'healthEnergyToday',
   'healthSleepDuration',
   'healthSleepWindow',
+  'healthDailyScore',
+  'healthDailyTitle',
+  'healthDailyInsight',
+  'healthStepsProgress',
+  'healthEnergyProgress',
+  'healthSleepProgress',
   'healthStepsMeta',
   'healthSyncFreshness',
   'healthCardAction',
@@ -35,6 +41,19 @@ for (const id of [
   'healthSignIn',
   'healthRefresh',
   'healthSignOut'
+  ,'todayDate'
+  ,'todayGreeting'
+  ,'todayBrief'
+  ,'todayExportReport'
+  ,'todaySleepScore'
+  ,'todayRecoveryScore'
+  ,'todayActivityScore'
+  ,'todayEnvironmentScore'
+  ,'homeHealthTitle'
+  ,'homeHealthConfidence'
+  ,'todayActionList'
+  ,'unifiedTimeline'
+  ,'timelineSummary'
 ]) {
   assert.equal((rootHtml.match(new RegExp(`id=["']${id}["']`, 'g')) || []).length, 1, `${id} must exist exactly once`);
 }
@@ -42,10 +61,11 @@ for (const id of [
 assert.match(rootHtml, /autocomplete="username"/);
 assert.match(rootHtml, /autocomplete="current-password"/);
 assert.match(rootHtml, /const HEALTH_SESSION_KEY = 'longos\.health\.session\.v1'/);
+assert.match(rootHtml, /localStorage\.getItem\(HEALTH_SESSION_KEY\)/);
+assert.match(rootHtml, /localStorage\.setItem\(HEALTH_SESSION_KEY, JSON\.stringify\(session\)\)/);
 assert.match(rootHtml, /sessionStorage\.getItem\(HEALTH_SESSION_KEY\)/);
-assert.match(rootHtml, /sessionStorage\.setItem\(HEALTH_SESSION_KEY, JSON\.stringify\(session\)\)/);
 assert.match(rootHtml, /sessionStorage\.removeItem\(HEALTH_SESSION_KEY\)/);
-assert.doesNotMatch(rootHtml, /localStorage\.(?:getItem|setItem)\(HEALTH_SESSION_KEY/);
+assert.match(rootHtml, /localStorage\.removeItem\(HEALTH_SESSION_KEY\)/);
 assert.doesNotMatch(rootHtml, /service[_-]?role/i, 'dashboard must not contain a service credential name or value');
 
 assert.match(rootHtml, /\/auth\/v1\/token\?grant_type=\$\{encodeURIComponent\(grantType\)\}/);
@@ -89,7 +109,11 @@ const storedSession = {
   userId: 'user-a'
 };
 const storageContext = {
-  sessionStorage: { getItem: () => JSON.stringify(storedSession) },
+  localStorage: {
+    getItem: () => JSON.stringify(storedSession),
+    setItem: () => {}
+  },
+  sessionStorage: { getItem: () => null, removeItem: () => {} },
   loaded: null
 };
 vm.runInNewContext(
@@ -98,6 +122,17 @@ vm.runInNewContext(
 );
 assert.equal(storageContext.loaded.accessToken, 'a');
 assert.equal(storageContext.loaded.refreshToken, 'r');
+
+for (const view of ['today', 'overview', 'health', 'ac', 'data', 'system']) {
+  assert.match(rootHtml, new RegExp(`data-dashboard-tab=["']${view}["']`));
+}
+
+assert.match(rootHtml, /setDashboardView\('today', false\)/);
+assert.match(rootHtml, /function buildTodayModel\(\)/);
+assert.match(rootHtml, /function exportTodayReport\(\)/);
+assert.match(rootHtml, /function buildUnifiedTimeline\(\)/);
+assert.match(rootHtml, /function renderUnifiedTimeline\(\)/);
+assert.match(rootHtml, /Cần HRV và nhịp tim nghỉ; LongOS không ước đoán/);
 
 assert.match(rootHtml, /\/rest\/v1\/health_metric_buckets\?metric_key=in\.\(steps,active_energy,sleep\)/);
 assert.match(rootHtml, /\/rest\/v1\/health_sync_status\?metric_key=in\.\(steps,active_energy,sleep\)/);
