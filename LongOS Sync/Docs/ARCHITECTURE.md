@@ -10,6 +10,14 @@ Apple Watch → HealthKit trên iPhone → LongOS Sync → Supabase → LongOS
 
 App đồng bộ ba chỉ số HealthKit: Steps, Active Energy và bản tóm tắt Sleep. Website không thể đánh thức app iPhone; background scheduling của iOS không có SLA.
 
+## Daily intelligence trên iPhone
+
+- App tính tiến độ Steps, Active Energy và Sleep theo mục tiêu lưu trong `UserDefaults` của chính iPhone.
+- Điểm ngày là trung bình của các chỉ số đang có, giới hạn mỗi tiến độ ở 100%; chỉ số thiếu không bị thay bằng 0.
+- Insight ưu tiên thiếu ngủ trước thiếu vận động cuối ngày và không được xem là tư vấn y tế.
+- Mục tiêu, điểm và insight là dữ liệu dẫn xuất cục bộ, không được thêm vào payload Supabase.
+- Environment score, dữ liệu phòng và timeline hợp nhất vẫn thuộc dashboard web; app HealthKit không đọc trực tiếp telemetry ESP32.
+
 ## Ranh giới hệ thống
 
 - HealthKit chỉ được đọc trên iPhone.

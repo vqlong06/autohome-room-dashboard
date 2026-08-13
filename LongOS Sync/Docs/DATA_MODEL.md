@@ -1,8 +1,8 @@
-# Data model LongOS Health M1
+# Data model LongOS Health
 
 ## `health_metric_buckets`
 
-Bucket Steps đã tổng hợp bởi HealthKit.
+Bucket HealthKit đã tổng hợp cho `steps`, `active_energy` và `sleep`.
 
 Khóa idempotent:
 
@@ -13,15 +13,21 @@ Khóa idempotent:
 Các trường quan trọng:
 
 - `user_id`: chủ sở hữu từ Supabase Auth.
-- `metric_key`: chỉ `steps` trong M1.
+- `metric_key`: `steps`, `active_energy` hoặc `sleep`.
 - `bucket_start`, `bucket_end`: timestamp UTC.
 - `local_date`, `timezone_id`, `utc_offset_minutes`: ngữ cảnh lịch địa phương.
-- `value_integer`: số bước không âm.
-- `unit`: `count`.
-- `provenance`: `healthkit_statistics`.
+- `value_integer`: số bước, kcal hoặc phút ngủ trong giới hạn theo metric.
+- `unit`: `count`, `kcal` hoặc `minute` tương ứng.
+- `provenance`: `healthkit_statistics` cho Steps/Active Energy và `healthkit_sleep_summary` cho Sleep.
 - `source_updated_at`: lần app quan sát thống kê này.
 
 Chỉ owner được SELECT qua RLS. Không có policy write cho app.
+
+Sleep dùng thêm unique key theo ngày thức dậy để bản tóm tắt được sửa thay vì nhân đôi:
+
+```text
+(user_id, metric_key, local_date, algorithm_version) where metric_key = 'sleep'
+```
 
 ## `health_sync_status`
 

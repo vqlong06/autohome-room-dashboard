@@ -6,7 +6,7 @@ LongOS Sync là ứng dụng iPhone riêng của LongOS. App đọc **Steps**, *
 
 ## Trạng thái milestone
 
-Phiên bản 0.3 gồm:
+Phiên bản 0.4 gồm:
 
 - SwiftUI, iOS 17+ và SwiftData.
 - Đăng nhập Supabase bằng email/password.
@@ -18,6 +18,9 @@ Phiên bản 0.3 gồm:
 - Hàng đợi offline, retry có giới hạn và upload idempotent.
 - `HKObserverQuery`, HealthKit background delivery và `BGAppRefreshTask` theo kiểu best-effort.
 - Hiển thị Steps, kcal vận động, giấc ngủ gần nhất, lần sync cuối, hàng đợi và lỗi gần nhất.
+- Tính điểm sức khỏe hôm nay từ các chỉ số đang có mà không coi dữ liệu thiếu là 0.
+- Hiển thị tiến độ Steps, Active Energy và Sleep theo mục tiêu cá nhân; mục tiêu chỉ lưu trên iPhone.
+- Tạo nhận xét ưu tiên ngắn từ HealthKit, ví dụ hồi phục sau một đêm ngủ thiếu hoặc đi bộ nhẹ khi cuối ngày còn thiếu vận động.
 - Backend Auth/RLS/Edge Function nằm trong thư mục `Supabase/` của app.
 
 Chưa thuộc phạm vi: nhịp tim, HRV, workout chi tiết, Activity Rings, ECG, thuốc, hồ sơ bệnh án và watchOS.
@@ -39,7 +42,7 @@ LongOS Sync/
 
 Backend và app iPhone nằm trong thư mục này. Dashboard root hiển thị Steps, kcal vận động và giấc ngủ đã đồng bộ cạnh dữ liệu ESP32; firmware không đọc hoặc lưu dữ liệu HealthKit.
 
-Từ bản 0.2, app có card **LongOS trên web** để mở dashboard cloud. Safari yêu cầu đăng nhập riêng bằng cùng tài khoản Supabase; app không nhúng session, token hoặc mật khẩu vào URL.
+App có card **LongOS trên web** để mở dashboard daily intelligence và timeline cloud. Safari yêu cầu đăng nhập riêng bằng cùng tài khoản Supabase; app không nhúng session, token hoặc mật khẩu vào URL.
 
 ## Cấu hình cục bộ
 

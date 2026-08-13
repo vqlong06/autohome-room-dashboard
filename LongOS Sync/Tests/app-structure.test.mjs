@@ -13,6 +13,8 @@ const info = await readFile(new URL("../LongOSSync/Info.plist", import.meta.url)
 const project = await readFile(new URL("../LongOSSync.xcodeproj/project.pbxproj", import.meta.url), "utf8");
 const configuration = await readFile(new URL("../LongOSSync/App/AppConfiguration.swift", import.meta.url), "utf8");
 const dashboard = await readFile(new URL("../LongOSSync/Features/DashboardView.swift", import.meta.url), "utf8");
+const healthGoals = await readFile(new URL("../LongOSSync/Features/HealthGoalsView.swift", import.meta.url), "utf8");
+const core = await readFile(new URL("../LongOSSyncCore/StepBucket.swift", import.meta.url), "utf8");
 const baseConfiguration = await readFile(new URL("../Config/Base.xcconfig", import.meta.url), "utf8");
 
 async function filesRecursively(directory) {
@@ -45,6 +47,16 @@ test("queue is saved before upload and deleted only in acknowledgement path", ()
   assert.match(coordinator, /uploadEligibleItems\(ownerID/);
   const acknowledge = coordinator.slice(coordinator.indexOf("private func acknowledge"));
   assert.match(acknowledge, /modelContext\.delete\(item\)/);
+});
+
+test("daily intelligence uses local goals and never uploads derived scores", () => {
+  assert.match(core, /HealthDailySummaryBuilder/);
+  assert.match(core, /available\.isEmpty \? nil/);
+  assert.match(dashboard, /dailyIntelligenceCard/);
+  assert.match(dashboard, /HealthGoalsView\(store: healthGoals\)/);
+  assert.match(healthGoals, /longos\.health-goal\.steps\.v1/);
+  assert.match(healthGoals, /Mục tiêu chỉ được lưu trên iPhone này/);
+  assert.doesNotMatch(healthGoals, /URLSession|HealthIngest|functions\/v1/);
 });
 
 test("HealthKit and Data Protection entitlements are present", () => {

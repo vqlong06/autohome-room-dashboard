@@ -21,6 +21,8 @@ Upload:
 
 Không upload raw step samples, raw sleep stages, GPS, ECG, thuốc, clinical records, mật khẩu, token hay dữ liệu phòng trong payload Health.
 
+Mục tiêu Steps/kcal/Sleep, phần trăm tiến độ, điểm sức khỏe hôm nay và nhận xét dẫn xuất chỉ lưu hoặc tính trên iPhone. Chúng không được upload trong payload HealthKit và không ghi ngược vào Apple Health.
+
 ## Mục đích và lưu giữ
 
 Dữ liệu chỉ dùng cho chức năng cá nhân LongOS, không dùng quảng cáo, bán dữ liệu hoặc huấn luyện mô hình chung. Thời hạn lưu phải được cấu hình và công bố trước production.

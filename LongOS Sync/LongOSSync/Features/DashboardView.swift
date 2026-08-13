@@ -5,8 +5,10 @@ struct DashboardView: View {
     @ObservedObject var consent: CloudSyncConsentStore
     let persistenceWarning: String?
 
+    @StateObject private var healthGoals = HealthGoalsStore()
     @State private var showsConsent = false
     @State private var showsPrivacy = false
+    @State private var showsHealthGoals = false
     @State private var confirmsCloudDeletion = false
 
     var body: some View {
@@ -23,6 +25,7 @@ struct DashboardView: View {
                         )
                     }
 
+                    dailyIntelligenceCard
                     stepsHero
                     healthSummary
                     healthAccessCard
@@ -47,6 +50,9 @@ struct DashboardView: View {
                         Button("Quyền riêng tư", systemImage: "hand.raised") {
                             showsPrivacy = true
                         }
+                        Button("Mục tiêu sức khỏe", systemImage: "target") {
+                            showsHealthGoals = true
+                        }
                         Button("Đăng xuất", systemImage: "rectangle.portrait.and.arrow.right") {
                             coordinator.signOut()
                         }
@@ -60,6 +66,9 @@ struct DashboardView: View {
             }
             .sheet(isPresented: $showsPrivacy) {
                 PrivacyDetailView()
+            }
+            .sheet(isPresented: $showsHealthGoals) {
+                HealthGoalsView(store: healthGoals)
             }
             .alert("Xóa dữ liệu Health trên cloud?", isPresented: $confirmsCloudDeletion) {
                 Button("Hủy", role: .cancel) {}
@@ -77,12 +86,67 @@ struct DashboardView: View {
             Text("LONGOS / IPHONE")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.mint)
+            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                .font(.caption)
+                .foregroundStyle(.secondary)
             Text("Chào Long")
                 .font(.largeTitle.bold())
             Text(coordinator.signedInEmail)
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var dailyIntelligenceCard: some View {
+        HStack(alignment: .top, spacing: 18) {
+            VStack(alignment: .leading, spacing: 9) {
+                Label("Sức khỏe hôm nay", systemImage: "waveform.path.ecg")
+                    .font(.headline)
+                    .foregroundStyle(.mint)
+                Text(dailySummary.title)
+                    .font(.title2.bold())
+                Text(dailySummary.insight)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 10) {
+                    Text("\(dailySummary.availableMetricCount)/3 chỉ số HealthKit")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Chỉnh mục tiêu") {
+                        showsHealthGoals = true
+                    }
+                    .font(.caption.weight(.semibold))
+                }
+            }
+            Spacer(minLength: 0)
+            dailyScoreRing
+        }
+        .padding(20)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24))
+    }
+
+    private var dailyScoreRing: some View {
+        ZStack {
+            Circle()
+                .stroke(.secondary.opacity(0.18), lineWidth: 8)
+            Circle()
+                .trim(from: 0, to: Double(dailySummary.score ?? 0) / 100)
+                .stroke(.mint, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            VStack(spacing: 1) {
+                Text(dailySummary.score.map(String.init) ?? "--")
+                    .font(.title2.bold())
+                    .monospacedDigit()
+                Text("điểm")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: 82, height: 82)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Điểm sức khỏe hôm nay")
+        .accessibilityValue(dailySummary.score.map { "\($0) trên 100" } ?? "Chưa có dữ liệu")
     }
 
     private var stepsHero: some View {
@@ -96,6 +160,10 @@ struct DashboardView: View {
                             .font(.system(size: 48, weight: .bold, design: .rounded))
                         Text("bước")
                             .foregroundStyle(.secondary)
+                        metricProgress(
+                            percent: dailySummary.steps.percent,
+                            goalText: "Mục tiêu \(healthGoals.goals.steps.formatted()) bước"
+                        )
                     } else {
                         Text("Chưa có dữ liệu")
                             .font(.title2.bold())
@@ -133,7 +201,9 @@ struct DashboardView: View {
             title: "Giấc ngủ gần nhất",
             value: sleepDurationText,
             unit: coordinator.latestSleepMinutes == nil ? "chưa có dữ liệu" : "thời gian ngủ",
-            detail: sleepWindowText
+            detail: sleepWindowText,
+            progressPercent: dailySummary.sleep.percent,
+            goalText: "Mục tiêu \(durationText(healthGoals.goals.sleepMinutes))"
         )
     }
 
@@ -145,7 +215,9 @@ struct DashboardView: View {
             unit: "kcal hoạt động",
             detail: coordinator.todayActiveEnergyKcal == nil
                 ? "LongOS không coi thiếu quyền hoặc chưa sync là 0."
-                : "Active Energy Burned từ Apple Health."
+                : "Active Energy Burned từ Apple Health.",
+            progressPercent: dailySummary.activeEnergy.percent,
+            goalText: "Mục tiêu \(healthGoals.goals.activeEnergyKcal.formatted()) kcal"
         )
     }
 
@@ -293,6 +365,10 @@ struct DashboardView: View {
 
     private var sleepDurationText: String {
         guard let minutes = coordinator.latestSleepMinutes else { return "--" }
+        return durationText(minutes)
+    }
+
+    private func durationText(_ minutes: Int) -> String {
         let hours = minutes / 60
         let remainder = minutes % 60
         if hours == 0 { return "\(remainder) phút" }
@@ -308,12 +384,24 @@ struct DashboardView: View {
         return "Ngủ \(start.formatted(date: .omitted, time: .shortened)) – thức \(end.formatted(date: .omitted, time: .shortened))"
     }
 
+    private var dailySummary: HealthDailySummary {
+        HealthDailySummaryBuilder.make(
+            steps: coordinator.todaySteps,
+            activeEnergyKcal: coordinator.todayActiveEnergyKcal,
+            sleepMinutes: coordinator.latestSleepMinutes,
+            goals: healthGoals.goals,
+            localHour: Calendar.current.component(.hour, from: .now)
+        )
+    }
+
     private func healthMetricCard(
         icon: String,
         title: String,
         value: String,
         unit: String,
-        detail: String
+        detail: String,
+        progressPercent: Int?,
+        goalText: String
     ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Label(title, systemImage: icon)
@@ -329,10 +417,30 @@ struct DashboardView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            metricProgress(percent: progressPercent, goalText: goalText)
         }
         .padding(18)
         .frame(maxWidth: .infinity, minHeight: 178, alignment: .leading)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    @ViewBuilder
+    private func metricProgress(percent: Int?, goalText: String) -> some View {
+        if let percent {
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView(value: Double(percent), total: 100)
+                    .tint(.mint)
+                HStack {
+                    Text(goalText)
+                    Spacer()
+                    Text("\(percent)%")
+                        .monospacedDigit()
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+            .padding(.top, 4)
+        }
     }
 
     private func metric(label: String, value: String) -> some View {

@@ -103,6 +103,60 @@ final class StepBucketTests: XCTestCase {
         XCTAssertEqual(episodes.count, 2)
     }
 
+    func testDailySummaryDoesNotTreatMissingMetricsAsZero() {
+        let summary = HealthDailySummaryBuilder.make(
+            steps: 5_000,
+            activeEnergyKcal: nil,
+            sleepMinutes: nil,
+            goals: HealthDailyGoals(),
+            localHour: 12
+        )
+
+        XCTAssertEqual(summary.score, 50)
+        XCTAssertEqual(summary.availableMetricCount, 1)
+        XCTAssertNil(summary.activeEnergy.percent)
+        XCTAssertNil(summary.sleep.percent)
+    }
+
+    func testDailySummaryCapsProgressAndAveragesAvailableMetrics() {
+        let summary = HealthDailySummaryBuilder.make(
+            steps: 15_000,
+            activeEnergyKcal: 250,
+            sleepMinutes: 480,
+            goals: HealthDailyGoals(),
+            localHour: 12
+        )
+
+        XCTAssertEqual(summary.steps.percent, 100)
+        XCTAssertEqual(summary.activeEnergy.percent, 50)
+        XCTAssertEqual(summary.sleep.percent, 100)
+        XCTAssertEqual(summary.score, 83)
+    }
+
+    func testDailySummaryPrioritizesLowSleep() {
+        let summary = HealthDailySummaryBuilder.make(
+            steps: 4_000,
+            activeEnergyKcal: 200,
+            sleepMinutes: 300,
+            goals: HealthDailyGoals(),
+            localHour: 18
+        )
+
+        XCTAssertEqual(summary.title, "Ưu tiên hồi phục")
+    }
+
+    func testDailySummarySuggestsWalkingLateInDay() {
+        let summary = HealthDailySummaryBuilder.make(
+            steps: 3_000,
+            activeEnergyKcal: 350,
+            sleepMinutes: 420,
+            goals: HealthDailyGoals(),
+            localHour: 18
+        )
+
+        XCTAssertEqual(summary.title, "Còn thiếu vận động")
+    }
+
     func testRequestUsesCamelCaseContractAndNeverContainsUserID() throws {
         let requestID = UUID(uuidString: "00000000-0000-4000-8000-000000000001")!
         let installationID = UUID(uuidString: "00000000-0000-4000-8000-000000000002")!

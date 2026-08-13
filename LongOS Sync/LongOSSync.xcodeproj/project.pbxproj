@@ -37,6 +37,7 @@
 		B1000000000000000000001C /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* Security.framework */; };
 		B1000000000000000000001D /* BackgroundTasks.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* BackgroundTasks.framework */; };
 		B1000000000000000000001E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* Assets.xcassets */; };
+		B1000000000000000000001F /* HealthGoalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026 /* HealthGoalsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,6 +87,7 @@
 		A10000000000000000000023 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		A10000000000000000000024 /* BackgroundTasks.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BackgroundTasks.framework; path = System/Library/Frameworks/BackgroundTasks.framework; sourceTree = SDKROOT; };
 		A10000000000000000000025 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A10000000000000000000026 /* HealthGoalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthGoalsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -217,6 +219,7 @@
 				A10000000000000000000009 /* DashboardView.swift */,
 				A1000000000000000000000A /* CloudConsentView.swift */,
 				A1000000000000000000000B /* PrivacyDetailView.swift */,
+				A10000000000000000000026 /* HealthGoalsView.swift */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -378,6 +381,7 @@
 				B10000000000000000000013 /* StepBucket.swift in Sources */,
 				B10000000000000000000014 /* IngestModels.swift in Sources */,
 				B10000000000000000000015 /* RetryPolicy.swift in Sources */,
+				B1000000000000000000001F /* HealthGoalsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -409,12 +413,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = LongOSSync/LongOSSync.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = NFT45PM64B;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LongOSSync/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_NAME = LongOSSync;
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -432,12 +436,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = LongOSSync/LongOSSync.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = NFT45PM64B;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LongOSSync/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
 				PRODUCT_NAME = LongOSSync;
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
