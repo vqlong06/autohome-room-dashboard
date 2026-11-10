@@ -551,12 +551,21 @@ const expectedPublicReleaseFiles = [
   'icon-192.png',
   'icon-512.png',
   'index.html',
-  'manifest.webmanifest'
+  'manifest.webmanifest',
+  'room3d/room3d-config.js',
+  'room3d/room3d-controller.js',
+  'room3d/room3d-data-adapter.js',
+  'room3d/room3d-debug.js',
+  'room3d/room3d-entry.js',
+  'room3d/room3d-heatmap.js',
+  'room3d/room3d-markers.js',
+  'room3d/room3d-scene.js',
+  'room3d/room3d.css'
 ];
 assert.deepEqual(
   PUBLIC_RELEASE_FILES,
   expectedPublicReleaseFiles,
-  'Pages release helper must preserve the independently reviewed seven-file allowlist'
+  'Pages release helper must preserve the approved public release allowlist'
 );
 const publicReleaseFiles = PUBLIC_RELEASE_FILES.map((path) => `public/${path}`);
 assert.deepEqual(

@@ -95,7 +95,16 @@ assert.deepEqual(trackedPublicFiles, [
   'public/icon-192.png',
   'public/icon-512.png',
   'public/index.html',
-  'public/manifest.webmanifest'
+  'public/manifest.webmanifest',
+  'public/room3d/room3d-config.js',
+  'public/room3d/room3d-controller.js',
+  'public/room3d/room3d-data-adapter.js',
+  'public/room3d/room3d-debug.js',
+  'public/room3d/room3d-entry.js',
+  'public/room3d/room3d-heatmap.js',
+  'public/room3d/room3d-markers.js',
+  'public/room3d/room3d-scene.js',
+  'public/room3d/room3d.css'
 ], 'Tracked public deploy files must match the release allowlist');
 
 assert.doesNotMatch(retiredHtml, /AutoHome|Phòng của Long|autohome\./i, 'Retired entry page must not expose legacy branding or storage keys');

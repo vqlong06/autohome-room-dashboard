@@ -19,6 +19,20 @@ const revision = '0123456789abcdef0123456789abcdef01234567';
 const sourceHtml = await readFile(resolve(publicDir, 'index.html'), 'utf8');
 const sourceManifest = await readFile(resolve(publicDir, 'manifest.webmanifest'), 'utf8');
 
+async function listAllFiles(dir, base = '') {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const results = [];
+  for (const entry of entries) {
+    const rel = base ? `${base}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      results.push(...await listAllFiles(resolve(dir, entry.name), rel));
+    } else if (entry.isFile()) {
+      results.push(rel);
+    }
+  }
+  return results.sort();
+}
+
 assert.equal(validatePagesRevision(revision), revision);
 for (const invalidRevision of [
   revision.slice(1),
@@ -72,7 +86,7 @@ try {
   const outputDir = resolve(temporaryRoot, 'staged');
   const result = await stagePagesRelease({ sourceDir: publicDir, outputDir, revision });
   assert.deepEqual(result.files, PUBLIC_RELEASE_FILES);
-  assert.deepEqual((await readdir(outputDir)).sort(), PUBLIC_RELEASE_FILES);
+  assert.deepEqual(await listAllFiles(outputDir), PUBLIC_RELEASE_FILES);
   assert.match(await readFile(resolve(outputDir, 'index.html'), 'utf8'), new RegExp(revision));
   assert.equal(
     JSON.parse(await readFile(resolve(outputDir, 'manifest.webmanifest'), 'utf8')).longos_revision,
@@ -103,12 +117,15 @@ try {
   const fixtureSource = resolve(temporaryRoot, 'fixture-source');
   await mkdir(fixtureSource);
   for (const file of PUBLIC_RELEASE_FILES) {
-    await copyFile(resolve(publicDir, file), resolve(fixtureSource, file));
+    const dest = resolve(fixtureSource, file);
+    await mkdir(dirname(dest), { recursive: true });
+    await copyFile(resolve(publicDir, file), dest);
   }
   await writeFile(resolve(fixtureSource, 'not-public.txt'), 'must not be staged');
   const explicitOutput = resolve(temporaryRoot, 'explicit-allowlist');
   await stagePagesRelease({ sourceDir: fixtureSource, outputDir: explicitOutput, revision });
-  assert.deepEqual((await readdir(explicitOutput)).sort(), PUBLIC_RELEASE_FILES, 'extra source files must not enter the artifact');
+
+  assert.deepEqual(await listAllFiles(explicitOutput), PUBLIC_RELEASE_FILES, 'extra source files must not enter the artifact');
 
   const cliOutput = resolve(temporaryRoot, 'cli-output');
   const cliLog = execFileSync(process.execPath, [
@@ -117,7 +134,7 @@ try {
     '--output', cliOutput,
     '--revision', revision
   ], { cwd: root, encoding: 'utf8' });
-  assert.match(cliLog, new RegExp(`LongOS Pages release staged: ${revision} \\(7 files\\)`));
+  assert.match(cliLog, new RegExp(`LongOS Pages release staged: ${revision} \\(${PUBLIC_RELEASE_FILES.length} files\\)`));
   assert.equal(JSON.parse(await readFile(resolve(cliOutput, 'manifest.webmanifest'), 'utf8')).longos_revision, revision);
 
   const outputSymlinkTarget = resolve(temporaryRoot, 'output-symlink-target');
