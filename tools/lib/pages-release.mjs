@@ -8,7 +8,16 @@ export const PUBLIC_RELEASE_FILES = Object.freeze([
   'icon-192.png',
   'icon-512.png',
   'index.html',
-  'manifest.webmanifest'
+  'manifest.webmanifest',
+  'room3d/room3d-config.js',
+  'room3d/room3d-controller.js',
+  'room3d/room3d-data-adapter.js',
+  'room3d/room3d-debug.js',
+  'room3d/room3d-entry.js',
+  'room3d/room3d-heatmap.js',
+  'room3d/room3d-markers.js',
+  'room3d/room3d-scene.js',
+  'room3d/room3d.css'
 ]);
 
 const RELEASE_REVISION_PATTERN = /^[0-9a-f]{40}$/;
@@ -158,6 +167,7 @@ export async function stagePagesRelease({ sourceDir, outputDir, revision } = {})
     }
 
     const outputPath = resolve(canonicalOutputRoot, file);
+    await mkdir(dirname(outputPath), { recursive: true, mode: 0o755 });
     if (file === 'index.html') {
       const html = await readFile(sourcePath, 'utf8');
       await writeFile(outputPath, injectPagesRevision(html, validatedRevision), { mode: 0o644 });
@@ -170,7 +180,21 @@ export async function stagePagesRelease({ sourceDir, outputDir, revision } = {})
     await chmod(outputPath, 0o644);
   }
 
-  const stagedFiles = (await readdir(canonicalOutputRoot)).sort();
+  async function listAllFiles(dir, base = '') {
+    const entries = await readdir(dir, { withFileTypes: true });
+    const results = [];
+    for (const entry of entries) {
+      const rel = base ? `${base}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        results.push(...await listAllFiles(resolve(dir, entry.name), rel));
+      } else if (entry.isFile()) {
+        results.push(rel);
+      }
+    }
+    return results.sort();
+  }
+
+  const stagedFiles = await listAllFiles(canonicalOutputRoot);
   if (JSON.stringify(stagedFiles) !== JSON.stringify(PUBLIC_RELEASE_FILES)) {
     throw new Error('staged Pages files do not match the public release allowlist');
   }
